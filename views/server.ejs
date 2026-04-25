@@ -178,6 +178,10 @@
                 <input type="text" id="appReviewerRoleIds" placeholder="123, 456, 789">
               </label>
 
+              <label class="rr-label">Transcript Channel ID
+                <input type="text" id="appTranscriptChannelId" maxlength="30" placeholder="Channel ID to post transcripts when a submission is deleted (optional)">
+              </label>
+
               <div class="app-two-cols">
                 <label class="rr-label">Accent Color
                   <input type="color" id="appStyleAccent" value="#22d3ee">
@@ -222,6 +226,8 @@
                 <div class="app-builder-header">
                   <h4>Status Update Messages</h4>
                   <label class="app-notify-toggle"><input type="checkbox" id="appNotifyEnabled" checked> Notify applicant on status updates</label>
+                  <label class="app-notify-toggle"><input type="checkbox" id="appShowApplicationField" checked> Include "Application" field in embed</label>
+                  <label class="app-notify-toggle"><input type="checkbox" id="appShowStatusField" checked> Include "New Status" field in embed</label>
                 </div>
                 <p class="app-builder-tip">For each status, choose no DM, generic embed, or a saved embed template from the Messages/Embeds area.</p>
                 <div id="appStatusTemplates" class="app-status-templates"></div>

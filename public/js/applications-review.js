@@ -136,7 +136,8 @@
         <textarea id="reviewNote" rows="4" maxlength="2000" placeholder="Add a note for audit trail…">${escHtml(sub.reviewNote || '')}</textarea>
       </label>
 
-      <div style="margin:10px 0 16px;display:flex;justify-content:flex-end">
+      <div style="margin:10px 0 16px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-danger" id="reviewDeleteBtn">Delete Submission</button>
         <button class="btn btn-primary" id="reviewSaveBtn">Save Review</button>
       </div>
 
@@ -145,6 +146,30 @@
 
     const saveBtn = document.getElementById('reviewSaveBtn');
     saveBtn?.addEventListener('click', () => saveReview(sub));
+
+    const deleteBtn = document.getElementById('reviewDeleteBtn');
+    deleteBtn?.addEventListener('click', () => deleteSubmission(sub));
+  }
+
+  async function deleteSubmission(sub) {
+    const applicationId = selectEl.value;
+    if (!applicationId) return;
+
+    if (!confirm(`Delete this submission from ${sub.applicantUsername}?\n\nThis cannot be undone. If a transcript channel is configured, a log will be posted there first.`)) return;
+
+    const btn = document.getElementById('reviewDeleteBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
+
+    try {
+      await apiFetch(`/guild/${guildId}/applications/${applicationId}/submissions/${sub._id}`, { method: 'DELETE' });
+      submissions = submissions.filter((s) => s._id !== sub._id);
+      activeSubmissionId = submissions[0]?._id || null;
+      renderList();
+      renderDetail();
+    } catch (err) {
+      alert(`Failed to delete submission: ${err.message}`);
+      if (btn) { btn.disabled = false; btn.textContent = 'Delete Submission'; }
+    }
   }
 
   async function saveReview(sub) {

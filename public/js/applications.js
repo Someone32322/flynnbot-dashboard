@@ -215,6 +215,7 @@
     document.getElementById('appRecipientType').value = app?.recipient?.type || 'channel';
     document.getElementById('appRecipientTargetId').value = app?.recipient?.targetId || '';
     document.getElementById('appReviewerRoleIds').value = (app?.reviewerRoleIds || []).join(', ');
+    document.getElementById('appTranscriptChannelId').value = app?.transcriptChannelId || '';
 
     document.getElementById('appStyleAccent').value = app?.style?.accent || '#22d3ee';
     document.getElementById('appStyleAnim').value = app?.style?.animationPreset || 'wave';
@@ -229,6 +230,8 @@
     renderFieldBuilder();
 
     notifyEnabledEl.checked = app?.reviewNotifications?.enabled !== false;
+    document.getElementById('appShowApplicationField').checked = app?.reviewNotifications?.showApplicationField !== false;
+    document.getElementById('appShowStatusField').checked = app?.reviewNotifications?.showStatusField !== false;
     renderStatusTemplates(app?.reviewNotifications?.templates || {});
 
     fieldsJsonEl.value = JSON.stringify(builderFields, null, 2);
@@ -444,6 +447,7 @@
         targetId: document.getElementById('appRecipientTargetId').value.trim(),
       },
       reviewerRoleIds,
+      transcriptChannelId: document.getElementById('appTranscriptChannelId').value.trim() || null,
       abuseProtection: {
         oneSubmissionPerUser: document.getElementById('appOnePerUser').checked,
         blockIfPendingExists: document.getElementById('appBlockPending').checked,
@@ -457,6 +461,8 @@
       fields: builderFields.map(normalizeFieldClient),
       reviewNotifications: {
         enabled: notifyEnabledEl.checked,
+        showApplicationField: document.getElementById('appShowApplicationField').checked,
+        showStatusField: document.getElementById('appShowStatusField').checked,
         templates: getTemplateValues(),
       },
     };

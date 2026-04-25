@@ -57,6 +57,7 @@ const applicationFormSchema = new mongoose.Schema(
     },
 
     reviewerRoleIds: { type: [String], default: [] },
+    transcriptChannelId: { type: String, default: null },
 
     abuseProtection: {
       oneSubmissionPerUser: { type: Boolean, default: true },
@@ -89,6 +90,8 @@ const applicationFormSchema = new mongoose.Schema(
     fields: { type: [applicationFieldSchema], default: [] },
     reviewNotifications: {
       enabled: { type: Boolean, default: true },
+      showApplicationField: { type: Boolean, default: true },
+      showStatusField: { type: Boolean, default: true },
       templates: {
         pending: { type: reviewNotificationTemplateSchema, default: () => ({ mode: 'none' }) },
         in_review: { type: reviewNotificationTemplateSchema, default: () => ({ mode: 'generic', genericTitle: 'Application In Review', genericDescription: 'Your application is now being reviewed.', genericColor: '#f59e0b' }) },

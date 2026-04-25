@@ -1222,6 +1222,8 @@ function normalizeReviewTemplate(raw, fallback = {}) {
 function normalizeReviewNotifications(raw) {
   return {
     enabled: raw?.enabled !== false,
+    showApplicationField: raw?.showApplicationField !== false,
+    showStatusField: raw?.showStatusField !== false,
     templates: {
       pending: normalizeReviewTemplate(raw?.templates?.pending, { mode: 'none' }),
       in_review: normalizeReviewTemplate(raw?.templates?.in_review, {
@@ -1267,6 +1269,9 @@ function normalizeApplicationPayload(body, actor) {
     reviewerRoleIds: Array.isArray(body?.reviewerRoleIds)
       ? body.reviewerRoleIds.filter((id) => typeof id === 'string' && /^\d+$/.test(id)).slice(0, 20)
       : [],
+    transcriptChannelId: typeof body?.transcriptChannelId === 'string' && /^\d+$/.test(body.transcriptChannelId)
+      ? body.transcriptChannelId
+      : null,
     abuseProtection: {
       oneSubmissionPerUser: body?.abuseProtection?.oneSubmissionPerUser !== false,
       blockIfPendingExists: body?.abuseProtection?.blockIfPendingExists !== false,
@@ -1384,9 +1389,13 @@ async function deliverApplicantReviewStatus({ form, submission, previousStatus }
   }
 
   if (!embed.fields) embed.fields = [];
-  embed.fields.push({ name: 'Application', value: form.name, inline: true });
-  if (!isSubmitEvent) {
+  if (form.reviewNotifications.showApplicationField !== false) {
+    embed.fields.push({ name: 'Application', value: form.name, inline: true });
+  }
+  if (!isSubmitEvent && form.reviewNotifications.showStatusField !== false) {
     embed.fields.push({ name: 'New Status', value: submission.status.replace('_', ' '), inline: true });
+  }
+  if (!isSubmitEvent) {
     if (submission.reviewNote) {
       embed.fields.push({ name: 'Review Note', value: String(submission.reviewNote).slice(0, 1000), inline: false });
     }
@@ -1658,6 +1667,68 @@ router.get('/guild/:guildId/applications/:applicationId/submissions', requireAut
   } catch (err) {
     console.error('[API] GET application submissions', err);
     res.status(500).json({ error: 'Failed to fetch submissions' });
+  }
+});
+
+// ── DELETE /api/guild/:guildId/applications/:applicationId/submissions/:submissionId ──
+router.delete('/guild/:guildId/applications/:applicationId/submissions/:submissionId', requireAuth, requireApplicationReviewer, async (req, res) => {
+  try {
+    const { guildId, applicationId, submissionId } = req.params;
+
+    const submission = await ApplicationSubmission.findOne({ _id: submissionId, guildId, applicationId }).lean();
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+
+    // Post transcript to the configured channel before deleting
+    const form = await ApplicationForm.findOne({ _id: applicationId, guildId }).lean();
+    if (form?.transcriptChannelId) {
+      try {
+        const embed = {
+          title: `Application Transcript — ${form.name}`,
+          color: 0x94a3b8,
+          description: `Submission by **${escapeMarkdown(submission.applicantUsername)}** (<@${submission.applicantUserId}>) was deleted by **${escapeMarkdown(req.user.username)}**.`,
+          fields: [
+            {
+              name: 'Applicant',
+              value: `<@${submission.applicantUserId}> (${submission.applicantUserId})`,
+              inline: true,
+            },
+            {
+              name: 'Status at Deletion',
+              value: submission.status.replace('_', ' '),
+              inline: true,
+            },
+            {
+              name: 'Deleted By',
+              value: `${escapeMarkdown(req.user.username)} (${req.user.id})`,
+              inline: true,
+            },
+            ...submission.answers.slice(0, 20).map((ans) => ({
+              name: ans.label,
+              value: formatAnswerForEmbed(ans.type, ans.value),
+              inline: false,
+            })),
+          ],
+          footer: { text: `Submission ID: ${submission._id}` },
+          timestamp: new Date().toISOString(),
+        };
+        if (submission.reviewNote) {
+          embed.fields.splice(3, 0, {
+            name: 'Review Note',
+            value: String(submission.reviewNote).slice(0, 1000),
+            inline: false,
+          });
+        }
+        await discordApi.postMessage(form.transcriptChannelId, { embeds: [embed] });
+      } catch (transcriptErr) {
+        console.error('[API] DELETE submission transcript warning', transcriptErr?.message || transcriptErr);
+      }
+    }
+
+    await ApplicationSubmission.deleteOne({ _id: submissionId, guildId, applicationId });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[API] DELETE submission', err);
+    res.status(500).json({ error: 'Failed to delete submission' });
   }
 });
 
