@@ -1,0 +1,34 @@
+<%- include('partials/head', { title: guild.name + ' Applications Review' }) %>
+<body>
+  <%- include('partials/nav') %>
+
+  <main class="app-review-shell" id="appReviewShell" data-guild-id="<%= guild.id %>" data-is-admin="<%= isGuildAdmin ? '1' : '0' %>">
+    <div class="app-review-wrap">
+      <header class="app-review-head">
+        <div>
+          <h1 class="section-page-title">Application Reviews</h1>
+          <p class="section-page-sub">Review submissions for applications where you are allowed to review.</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <a href="/dashboard/<%= guild.id %>#applications" class="btn btn-ghost">Back to Applications</a>
+          <select id="appReviewFormSelect" class="settings-select" style="min-width:260px">
+            <option value="">Select an application…</option>
+          </select>
+        </div>
+      </header>
+
+      <div class="app-review-grid">
+        <aside class="app-review-list" id="appReviewList">
+          <div class="commands-loading"><div class="spinner"></div>Loading…</div>
+        </aside>
+
+        <section class="app-review-detail" id="appReviewDetail">
+          <div class="commands-loading" style="color:var(--text-2)">Select a submission to review.</div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/applications-review.js?v=20260425"></script>
+</body>
+</html>

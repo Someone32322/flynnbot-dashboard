@@ -7,7 +7,10 @@ const { LoggingConfig } = require('../models/LoggingConfig');
 const { EmbedTemplate } = require('../models/EmbedTemplate');
 const { ReactionRole } = require('../models/ReactionRole');
 const { ScheduledMessage } = require('../models/ScheduledMessage');
+const { ApplicationForm } = require('../models/ApplicationForm');
+const { ApplicationSubmission } = require('../models/ApplicationSubmission');
 const discordApi = require('../lib/discord');
+const { canReviewSingleApplication } = require('../services/applicationAccess');
 
 // Dashboard-local command manifest so this app can run outside the monorepo.
 const COMMAND_MANIFEST = require(path.join(__dirname, '../commands/manifest.json'));
@@ -32,6 +35,69 @@ function requireGuildAdmin(req, res, next) {
   req.userGuild = guild;
   next();
 }
+
+function requireGuildMember(req, res, next) {
+  const { guildId } = req.params;
+  if (!/^\d+$/.test(guildId)) return res.status(400).json({ error: 'Invalid guild ID' });
+  const guild = req.user.guilds?.find((g) => g.id === guildId);
+  if (!guild) return res.status(403).json({ error: 'You are not a member of this guild' });
+  req.userGuild = guild;
+  next();
+}
+
+async function requireApplicationReviewer(req, res, next) {
+  try {
+    const { guildId, appId, applicationId } = req.params;
+    const targetAppId = appId || applicationId;
+    if (!targetAppId) return res.status(400).json({ error: 'Missing application ID' });
+
+    const app = await ApplicationForm.findOne({ _id: targetAppId, guildId }).lean();
+    if (!app) return res.status(404).json({ error: 'Application not found' });
+
+    const access = await canReviewSingleApplication({
+      guildId,
+      application: app,
+      user: req.user,
+    });
+
+    if (!access.allowed) {
+      return res.status(403).json({ error: 'Missing reviewer permission' });
+    }
+
+    req.targetApplication = app;
+    req.reviewerAccess = access;
+    next();
+  } catch (err) {
+    console.error('[API] requireApplicationReviewer', err);
+    res.status(500).json({ error: 'Failed to validate reviewer permissions' });
+  }
+}
+
+// ── GET /api/guild/:guildId/applications/reviewable ───────────
+router.get('/guild/:guildId/applications/reviewable', requireAuth, requireGuildMember, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const isAdmin = hasAdmin(req.userGuild.permissions);
+
+    let forms = await ApplicationForm.find({ guildId }).sort({ createdAt: -1 }).lean();
+    if (!isAdmin) {
+      const member = await discordApi.getGuildMember(guildId, req.user.id);
+      const memberRoles = new Set(member?.roles || []);
+      forms = forms.filter((form) => (form.reviewerRoleIds || []).some((roleId) => memberRoles.has(roleId)));
+    }
+
+    res.json(forms.map((f) => ({
+      _id: f._id,
+      name: f.name,
+      description: f.description,
+      reviewerRoleIds: f.reviewerRoleIds || [],
+      isActive: f.isActive,
+    })));
+  } catch (err) {
+    console.error('[API] GET applications/reviewable', err);
+    res.status(500).json({ error: 'Failed to fetch reviewable applications' });
+  }
+});
 
 // ── GET /api/guild/:guildId/commands ─────────────────────────
 // Returns every command in the manifest merged with the guild's saved settings.
@@ -1116,6 +1182,405 @@ function normalizeEmojiForReactionApi(emoji) {
   if (custom) return `${custom[1]}:${custom[2]}`;
   return raw;
 }
+
+function normalizeApplicationField(rawField, index) {
+  const safeType = ['text', 'textarea', 'select', 'number', 'boolean'].includes(rawField?.type)
+    ? rawField.type
+    : 'text';
+
+  const options = Array.isArray(rawField?.options)
+    ? rawField.options
+      .map((opt) => String(opt || '').trim())
+      .filter(Boolean)
+      .slice(0, 20)
+    : [];
+
+  return {
+    fieldId: rawField?.fieldId ? String(rawField.fieldId).slice(0, 40) : `f_${Date.now()}_${index}`,
+    label: String(rawField?.label || '').trim().slice(0, 120),
+    helpText: String(rawField?.helpText || '').trim().slice(0, 280),
+    type: safeType,
+    required: rawField?.required !== false,
+    placeholder: String(rawField?.placeholder || '').trim().slice(0, 120),
+    options,
+    minLength: typeof rawField?.minLength === 'number' ? Math.max(0, Math.min(4000, Math.floor(rawField.minLength))) : null,
+    maxLength: typeof rawField?.maxLength === 'number' ? Math.max(1, Math.min(4000, Math.floor(rawField.maxLength))) : null,
+    order: typeof rawField?.order === 'number' ? rawField.order : index,
+  };
+}
+
+function normalizeApplicationPayload(body, actor) {
+  const fields = Array.isArray(body?.fields) ? body.fields : [];
+  return {
+    name: String(body?.name || '').trim().slice(0, 80),
+    description: String(body?.description || '').trim().slice(0, 1200),
+    isActive: body?.isActive !== false,
+    recipient: {
+      type: body?.recipient?.type === 'user' ? 'user' : 'channel',
+      targetId: typeof body?.recipient?.targetId === 'string' && /^\d+$/.test(body.recipient.targetId)
+        ? body.recipient.targetId
+        : null,
+    },
+    reviewerRoleIds: Array.isArray(body?.reviewerRoleIds)
+      ? body.reviewerRoleIds.filter((id) => typeof id === 'string' && /^\d+$/.test(id)).slice(0, 20)
+      : [],
+    abuseProtection: {
+      oneSubmissionPerUser: body?.abuseProtection?.oneSubmissionPerUser !== false,
+      blockIfPendingExists: body?.abuseProtection?.blockIfPendingExists !== false,
+      cooldownMinutes: typeof body?.abuseProtection?.cooldownMinutes === 'number'
+        ? Math.max(0, Math.min(10080, Math.floor(body.abuseProtection.cooldownMinutes)))
+        : 60,
+      maxSubmissionsPerUser: typeof body?.abuseProtection?.maxSubmissionsPerUser === 'number'
+        ? Math.max(1, Math.min(1000, Math.floor(body.abuseProtection.maxSubmissionsPerUser)))
+        : 3,
+      autoCloseAt: body?.abuseProtection?.autoCloseAt ? new Date(body.abuseProtection.autoCloseAt) : null,
+    },
+    identity: {
+      requireOAuth: body?.identity?.requireOAuth !== false,
+      askUsernameAgain: body?.identity?.askUsernameAgain === true,
+      askUserIdAgain: body?.identity?.askUserIdAgain === true,
+    },
+    style: {
+      accent: String(body?.style?.accent || '#22d3ee').slice(0, 20),
+      gradientA: String(body?.style?.gradientA || '#0b1028').slice(0, 20),
+      gradientB: String(body?.style?.gradientB || '#172554').slice(0, 20),
+      animationPreset: ['pulse', 'wave', 'float'].includes(body?.style?.animationPreset)
+        ? body.style.animationPreset
+        : 'wave',
+      cardRadius: typeof body?.style?.cardRadius === 'number'
+        ? Math.max(8, Math.min(40, Math.floor(body.style.cardRadius)))
+        : 18,
+    },
+    submitButtonText: String(body?.submitButtonText || 'Submit Application').trim().slice(0, 60),
+    successMessage: String(body?.successMessage || 'Application submitted successfully.').trim().slice(0, 280),
+    fields: fields.map((field, idx) => normalizeApplicationField(field, idx)).filter((f) => f.label),
+    updatedBy: { id: actor?.id || null, username: actor?.username || null },
+  };
+}
+
+function formatAnswerForEmbed(type, value) {
+  if (type === 'boolean') return value === 'true' ? 'Yes' : 'No';
+  if (!value) return '—';
+  return String(value).slice(0, 1000);
+}
+
+function escapeMarkdown(value) {
+  return String(value || '').replace(/[\\`*_~|>]/g, '\\$&');
+}
+
+async function deliverApplicationResult({ form, submission }) {
+  if (!form?.recipient?.targetId) return null;
+
+  const embed = {
+    title: `New Application: ${form.name}`,
+    color: 0x22d3ee,
+    description: `A new application was submitted by **${escapeMarkdown(submission.applicantUsername)}** (<@${submission.applicantUserId}>).`,
+    fields: [
+      {
+        name: 'Applicant',
+        value: `User: <@${submission.applicantUserId}>\nID: ${submission.applicantUserId}`,
+        inline: false,
+      },
+      ...submission.answers.slice(0, 20).map((ans) => ({
+        name: ans.label,
+        value: formatAnswerForEmbed(ans.type, ans.value),
+        inline: false,
+      })),
+    ],
+    footer: { text: `Submission ID: ${submission._id}` },
+    timestamp: new Date().toISOString(),
+  };
+
+  if (form.recipient.type === 'user') {
+    const dm = await discordApi.createDmChannel(form.recipient.targetId);
+    const msg = await discordApi.postMessage(dm.id, { embeds: [embed] });
+    return { recipientType: 'user', recipientTargetId: form.recipient.targetId, messageId: msg?.id || null };
+  }
+
+  const msg = await discordApi.postMessage(form.recipient.targetId, { embeds: [embed] });
+  return { recipientType: 'channel', recipientTargetId: form.recipient.targetId, messageId: msg?.id || null };
+}
+
+// ── GET /api/guild/:guildId/applications ─────────────────────
+router.get('/guild/:guildId/applications', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const forms = await ApplicationForm.find({ guildId }).sort({ createdAt: -1 }).lean();
+
+    const counts = await ApplicationSubmission.aggregate([
+      { $match: { guildId } },
+      { $group: { _id: '$applicationId', total: { $sum: 1 }, pending: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } } } },
+    ]);
+    const countMap = new Map(counts.map((c) => [String(c._id), c]));
+
+    const result = forms.map((form) => ({
+      ...form,
+      stats: {
+        totalSubmissions: countMap.get(String(form._id))?.total || 0,
+        pendingSubmissions: countMap.get(String(form._id))?.pending || 0,
+      },
+      publicUrl: `/apply/${guildId}/${form._id}`,
+    }));
+
+    res.json(result);
+  } catch (err) {
+    console.error('[API] GET applications', err);
+    res.status(500).json({ error: 'Failed to fetch applications' });
+  }
+});
+
+// ── POST /api/guild/:guildId/applications ────────────────────
+router.post('/guild/:guildId/applications', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const payload = normalizeApplicationPayload(req.body, req.user);
+
+    if (!payload.name) return res.status(400).json({ error: 'Application name is required' });
+    if (!payload.fields.length) return res.status(400).json({ error: 'Add at least one application field' });
+    if (!payload.recipient.targetId) {
+      return res.status(400).json({ error: 'Select a destination channel or user to receive results' });
+    }
+
+    const form = await ApplicationForm.create({
+      guildId,
+      ...payload,
+      createdBy: { id: req.user.id, username: req.user.username },
+    });
+
+    res.status(201).json(form);
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(409).json({ error: 'An application with that name already exists' });
+    }
+    console.error('[API] POST applications', err);
+    res.status(500).json({ error: 'Failed to create application' });
+  }
+});
+
+// ── PUT /api/guild/:guildId/applications/:appId ──────────────
+router.put('/guild/:guildId/applications/:appId', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId, appId } = req.params;
+    const payload = normalizeApplicationPayload(req.body, req.user);
+
+    if (!payload.name) return res.status(400).json({ error: 'Application name is required' });
+    if (!payload.fields.length) return res.status(400).json({ error: 'Add at least one application field' });
+    if (!payload.recipient.targetId) {
+      return res.status(400).json({ error: 'Select a destination channel or user to receive results' });
+    }
+
+    const updated = await ApplicationForm.findOneAndUpdate(
+      { _id: appId, guildId },
+      { $set: payload },
+      { returnDocument: 'after' }
+    );
+    if (!updated) return res.status(404).json({ error: 'Application not found' });
+
+    res.json(updated);
+  } catch (err) {
+    if (err.code === 11000) {
+      return res.status(409).json({ error: 'An application with that name already exists' });
+    }
+    console.error('[API] PUT applications', err);
+    res.status(500).json({ error: 'Failed to update application' });
+  }
+});
+
+// ── DELETE /api/guild/:guildId/applications/:appId ───────────
+router.delete('/guild/:guildId/applications/:appId', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId, appId } = req.params;
+    const deleted = await ApplicationForm.findOneAndDelete({ _id: appId, guildId });
+    if (!deleted) return res.status(404).json({ error: 'Application not found' });
+
+    await ApplicationSubmission.deleteMany({ guildId, applicationId: appId });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[API] DELETE applications', err);
+    res.status(500).json({ error: 'Failed to delete application' });
+  }
+});
+
+// ── GET /api/applications/public/:guildId/:applicationId ─────
+router.get('/applications/public/:guildId/:applicationId', requireAuth, async (req, res) => {
+  try {
+    const { guildId, applicationId } = req.params;
+    const form = await ApplicationForm.findOne({ guildId, _id: applicationId }).lean();
+    if (!form) return res.status(404).json({ error: 'Application not found' });
+    if (!form.isActive) return res.status(403).json({ error: 'This application is closed' });
+
+    if (form.abuseProtection?.autoCloseAt && new Date(form.abuseProtection.autoCloseAt) <= new Date()) {
+      return res.status(403).json({ error: 'This application is closed' });
+    }
+
+    res.json({
+      _id: form._id,
+      guildId: form.guildId,
+      name: form.name,
+      description: form.description,
+      fields: form.fields || [],
+      identity: form.identity || {},
+      style: form.style || {},
+      submitButtonText: form.submitButtonText,
+      successMessage: form.successMessage,
+    });
+  } catch (err) {
+    console.error('[API] GET applications/public', err);
+    res.status(500).json({ error: 'Failed to load application' });
+  }
+});
+
+// ── POST /api/applications/public/:guildId/:applicationId/submit ──
+router.post('/applications/public/:guildId/:applicationId/submit', requireAuth, async (req, res) => {
+  try {
+    const { guildId, applicationId } = req.params;
+    const form = await ApplicationForm.findOne({ guildId, _id: applicationId });
+    if (!form) return res.status(404).json({ error: 'Application not found' });
+    if (!form.isActive) return res.status(403).json({ error: 'This application is closed' });
+
+    const now = new Date();
+    if (form.abuseProtection?.autoCloseAt && new Date(form.abuseProtection.autoCloseAt) <= now) {
+      return res.status(403).json({ error: 'This application is closed' });
+    }
+
+    const applicantUserId = String(req.user.id);
+    const applicantUsername = String(req.user.username || 'Unknown User');
+
+    const userCount = await ApplicationSubmission.countDocuments({
+      guildId,
+      applicationId,
+      applicantUserId,
+    });
+
+    if (form.abuseProtection?.oneSubmissionPerUser && userCount > 0) {
+      return res.status(409).json({ error: 'You have already submitted this application.' });
+    }
+
+    if (userCount >= (form.abuseProtection?.maxSubmissionsPerUser || 3)) {
+      return res.status(429).json({ error: 'You reached the maximum submission count for this application.' });
+    }
+
+    if (form.abuseProtection?.blockIfPendingExists) {
+      const pending = await ApplicationSubmission.findOne({ guildId, applicationId, applicantUserId, status: 'pending' }).lean();
+      if (pending) {
+        return res.status(409).json({ error: 'You already have a pending submission for this application.' });
+      }
+    }
+
+    const cooldownMinutes = form.abuseProtection?.cooldownMinutes || 0;
+    if (cooldownMinutes > 0) {
+      const latest = await ApplicationSubmission.findOne({ guildId, applicationId, applicantUserId })
+        .sort({ createdAt: -1 })
+        .lean();
+      if (latest?.createdAt) {
+        const waitUntil = new Date(new Date(latest.createdAt).getTime() + cooldownMinutes * 60 * 1000);
+        if (waitUntil > now) {
+          return res.status(429).json({ error: 'Please wait before submitting another application.' });
+        }
+      }
+    }
+
+    const bodyAnswers = req.body?.answers && typeof req.body.answers === 'object' ? req.body.answers : {};
+    const answers = (form.fields || []).map((field) => {
+      const raw = bodyAnswers[field.fieldId];
+      const value = raw == null ? '' : String(raw).trim();
+      return {
+        fieldId: field.fieldId,
+        label: field.label,
+        type: field.type,
+        value: value.slice(0, field.maxLength || 1000),
+      };
+    });
+
+    const missing = answers.find((ans) => {
+      const field = (form.fields || []).find((f) => f.fieldId === ans.fieldId);
+      if (!field?.required) return false;
+      return !ans.value;
+    });
+
+    if (missing) {
+      return res.status(400).json({ error: `Please complete required field: ${missing.label}` });
+    }
+
+    const submission = await ApplicationSubmission.create({
+      guildId,
+      applicationId,
+      applicantUserId,
+      applicantUsername,
+      applicantDisplayTag: `${applicantUsername}#${req.user.discriminator || '0000'}`,
+      answers,
+      status: 'pending',
+    });
+
+    try {
+      const delivery = await deliverApplicationResult({ form, submission });
+      if (delivery) {
+        submission.delivery = {
+          ...submission.delivery,
+          ...delivery,
+          deliveredAt: new Date(),
+        };
+        await submission.save();
+      }
+    } catch (deliveryError) {
+      console.error('[API] applications delivery warning', deliveryError);
+    }
+
+    res.status(201).json({ ok: true, message: form.successMessage || 'Application submitted successfully.' });
+  } catch (err) {
+    console.error('[API] POST applications/public submit', err);
+    res.status(500).json({ error: 'Failed to submit application' });
+  }
+});
+
+// ── GET /api/guild/:guildId/applications/:applicationId/submissions ──
+router.get('/guild/:guildId/applications/:applicationId/submissions', requireAuth, requireApplicationReviewer, async (req, res) => {
+  try {
+    const { guildId, applicationId } = req.params;
+    const status = typeof req.query.status === 'string' ? req.query.status : 'all';
+
+    const filter = { guildId, applicationId };
+    if (['pending', 'in_review', 'approved', 'rejected'].includes(status)) filter.status = status;
+
+    const submissions = await ApplicationSubmission.find(filter).sort({ createdAt: -1 }).lean();
+    res.json(submissions);
+  } catch (err) {
+    console.error('[API] GET application submissions', err);
+    res.status(500).json({ error: 'Failed to fetch submissions' });
+  }
+});
+
+// ── PATCH /api/guild/:guildId/applications/:applicationId/submissions/:submissionId/review ──
+router.patch('/guild/:guildId/applications/:applicationId/submissions/:submissionId/review', requireAuth, requireApplicationReviewer, async (req, res) => {
+  try {
+    const { guildId, applicationId, submissionId } = req.params;
+    const nextStatus = ['pending', 'in_review', 'approved', 'rejected'].includes(req.body?.status)
+      ? req.body.status
+      : null;
+    if (!nextStatus) return res.status(400).json({ error: 'Invalid status' });
+
+    const reviewNote = String(req.body?.reviewNote || '').slice(0, 2000);
+    const submission = await ApplicationSubmission.findOneAndUpdate(
+      { _id: submissionId, guildId, applicationId },
+      {
+        $set: {
+          status: nextStatus,
+          reviewNote,
+          reviewedByUserId: req.user.id,
+          reviewedByUsername: req.user.username,
+          reviewedAt: new Date(),
+        },
+      },
+      { returnDocument: 'after' }
+    );
+
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+    res.json(submission);
+  } catch (err) {
+    console.error('[API] PATCH application review', err);
+    res.status(500).json({ error: 'Failed to update submission review' });
+  }
+});
 
 // ── GET /api/guild/:guildId/modconfig ────────────────────────
 router.get('/guild/:guildId/modconfig', requireAuth, requireGuildAdmin, async (req, res) => {

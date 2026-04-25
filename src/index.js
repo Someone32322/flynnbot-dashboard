@@ -11,6 +11,7 @@ const { connectDb } = require('./lib/db');
 const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
 const apiRoutes = require('./routes/api');
+const { ApplicationForm } = require('./models/ApplicationForm');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -79,6 +80,38 @@ app.get('/', (req, res) => res.render('index'));
 // Legal
 app.get('/privacy', (req, res) => res.render('privacy'));
 app.get('/terms', (req, res) => res.render('terms'));
+
+// Public application page (requires OAuth identity)
+app.get('/apply/:guildId/:applicationId', async (req, res) => {
+  try {
+    const { guildId, applicationId } = req.params;
+    if (!/^\d+$/.test(guildId)) {
+      return res.status(400).render('error', { code: 400, message: 'Invalid guild ID.' });
+    }
+
+    if (!req.isAuthenticated()) {
+      return res.redirect(`/api/auth/login?returnTo=${encodeURIComponent(req.originalUrl)}`);
+    }
+
+    const appForm = await ApplicationForm.findOne({ guildId, _id: applicationId }).lean();
+    if (!appForm || !appForm.isActive) {
+      return res.status(404).render('error', { code: 404, message: 'Application not found or unavailable.' });
+    }
+
+    if (appForm.abuseProtection?.autoCloseAt && new Date(appForm.abuseProtection.autoCloseAt) <= new Date()) {
+      return res.status(403).render('error', { code: 403, message: 'This application is currently closed.' });
+    }
+
+    res.render('application', {
+      guildId,
+      applicationId,
+      formName: appForm.name,
+    });
+  } catch (err) {
+    console.error('[Dashboard] apply route', err);
+    res.status(500).render('error', { code: 500, message: 'Failed to load application page.' });
+  }
+});
 
 // Logging test harness (requires guildId query param)
 app.get('/logging-test', (req, res) => {

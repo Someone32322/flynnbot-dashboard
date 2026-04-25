@@ -44,6 +44,10 @@
             <span class="sidebar-nav-text">Commands</span>
             <span class="sidebar-nav-badge" id="sidebar-cmd-count"></span>
           </button>
+          <button class="sidebar-nav-item" data-section="applications">
+            <span class="sidebar-nav-icon">🧾</span>
+            <span class="sidebar-nav-text">Applications</span>
+          </button>
           <button class="sidebar-nav-item" data-section="logging">
             <span class="sidebar-nav-icon">📋</span>
             <span class="sidebar-nav-text">Logging</span>
@@ -121,6 +125,97 @@
             <div class="home-card-arrow">→</div>
           </div>
 
+        </div>
+      </section>
+
+      <!-- ── APPLICATIONS SECTION ── -->
+      <section class="dash-section" id="section-applications" data-section="applications" style="display:none">
+        <div class="section-header">
+          <div>
+            <h2 class="section-page-title">Applications</h2>
+            <p class="section-page-sub">Create fully customizable application forms, control abuse protections, and route submissions to a channel or specific reviewer.</p>
+          </div>
+          <button class="btn btn-primary" id="appNewBtn">+ New Application</button>
+        </div>
+
+        <div class="apps-toolbar">
+          <a class="btn btn-ghost" id="appReviewPageBtn" href="/dashboard/<%= guild.id %>/applications/review">Open Review Page</a>
+          <div id="appGlobalStatus" class="apps-global-status">Ready</div>
+        </div>
+
+        <div id="appsList" class="apps-list">
+          <div class="commands-loading"><div class="spinner"></div>Loading applications…</div>
+        </div>
+
+        <div id="appEditorBackdrop" class="modal-backdrop" aria-hidden="true">
+          <div class="modal app-editor-modal" role="dialog" aria-modal="true">
+            <button class="modal-close" id="appEditorClose" aria-label="Close">✕</button>
+            <h3 id="appEditorTitle">Create Application</h3>
+            <p class="app-editor-sub">Design your own onboarding flow with custom fields, style, and anti-abuse controls.</p>
+
+            <div class="app-editor-grid">
+              <label class="rr-label">Application Name <span class="required">*</span>
+                <input type="text" id="appName" maxlength="80" placeholder="e.g. Staff Application">
+              </label>
+
+              <label class="rr-label">Description
+                <textarea id="appDescription" rows="2" maxlength="1200" placeholder="What is this application for?"></textarea>
+              </label>
+
+              <div class="app-two-cols">
+                <label class="rr-label">Send Results To Type <span class="required">*</span>
+                  <select id="appRecipientType">
+                    <option value="channel">Channel</option>
+                    <option value="user">User</option>
+                  </select>
+                </label>
+                <label class="rr-label">Target ID <span class="required">*</span>
+                  <input type="text" id="appRecipientTargetId" maxlength="30" placeholder="Discord channel/user ID">
+                </label>
+              </div>
+
+              <label class="rr-label">Reviewer Role IDs (comma-separated)
+                <input type="text" id="appReviewerRoleIds" placeholder="123, 456, 789">
+              </label>
+
+              <div class="app-two-cols">
+                <label class="rr-label">Accent Color
+                  <input type="color" id="appStyleAccent" value="#22d3ee">
+                </label>
+                <label class="rr-label">Animation Preset
+                  <select id="appStyleAnim">
+                    <option value="wave">Wave</option>
+                    <option value="pulse">Pulse</option>
+                    <option value="float">Float</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="app-editor-switches">
+                <label><input type="checkbox" id="appIsActive" checked> Application Open</label>
+                <label><input type="checkbox" id="appOnePerUser" checked> One Submission Per User</label>
+                <label><input type="checkbox" id="appBlockPending" checked> Block New While Pending</label>
+              </div>
+
+              <div class="app-two-cols">
+                <label class="rr-label">Cooldown Minutes
+                  <input type="number" id="appCooldown" min="0" max="10080" value="60">
+                </label>
+                <label class="rr-label">Max Submissions Per User
+                  <input type="number" id="appMaxSubmissions" min="1" max="1000" value="3">
+                </label>
+              </div>
+
+              <label class="rr-label">Fields JSON <span class="required">*</span>
+                <textarea id="appFieldsJson" rows="10" class="app-json-input" spellcheck="false"></textarea>
+              </label>
+
+              <div class="app-editor-actions">
+                <button class="btn btn-secondary" id="appEditorCancel">Cancel</button>
+                <button class="btn btn-primary" id="appEditorSave">Save Application</button>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -497,5 +592,6 @@
   <script src="/js/logging.js?v=20260425"></script>
   <script src="/js/builder.js?v=20260425"></script>
   <script src="/js/reactionroles.js?v=20260425"></script>
+  <script src="/js/applications.js?v=20260425"></script>
 </body>
 </html>

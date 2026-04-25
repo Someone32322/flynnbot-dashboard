@@ -44,6 +44,10 @@ async function getGuildChannels(guildId) {
   return channels.filter((c) => [0, 5, 11, 15].includes(c.type));
 }
 
+async function getGuildMember(guildId, userId) {
+  return discordFetch(`/guilds/${guildId}/members/${userId}`);
+}
+
 // ── Guild commands ────────────────────────────────────────────
 async function getGuildCommands(guildId) {
   const appId = process.env.DISCORD_CLIENT_ID;
@@ -77,6 +81,7 @@ module.exports = {
   getGuild,
   getGuildRoles,
   getGuildChannels,
+  getGuildMember,
   getGuildCommands,
   registerGuildCommand,
   updateGuildCommand,
@@ -85,6 +90,7 @@ module.exports = {
   editMessage,
   deleteMessage,
   addReaction,
+  createDmChannel,
   sendWebhook,
 };
 
@@ -114,6 +120,13 @@ async function addReaction(channelId, messageId, emoji) {
   return discordFetch(`/channels/${channelId}/messages/${messageId}/reactions/${encoded}/@me`, {
     method: 'PUT',
     headers: { 'Content-Length': '0' },
+  });
+}
+
+async function createDmChannel(userId) {
+  return discordFetch('/users/@me/channels', {
+    method: 'POST',
+    body: JSON.stringify({ recipient_id: userId }),
   });
 }
 

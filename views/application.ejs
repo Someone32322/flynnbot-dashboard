@@ -1,0 +1,19 @@
+<%- include('partials/head', { title: formName }) %>
+<body>
+  <%- include('partials/nav') %>
+
+  <main class="app-public-shell" id="applicationShell" data-guild-id="<%= guildId %>" data-application-id="<%= applicationId %>">
+    <div class="app-public-wrap">
+      <header class="app-public-hero">
+        <h1 class="app-public-title" id="appPublicTitle">Loading application…</h1>
+        <p class="app-public-desc" id="appPublicDesc">Please wait while we load your form.</p>
+      </header>
+
+      <form id="appPublicForm" class="app-public-grid"></form>
+      <p id="appPublicStatus" class="app-public-status"></p>
+    </div>
+  </main>
+
+  <script src="/js/application-form.js?v=20260425"></script>
+</body>
+</html>
