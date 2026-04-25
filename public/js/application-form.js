@@ -43,6 +43,7 @@
     shell.style.setProperty('--app-gradient-a', formConfig.style?.gradientA || '#0b1028');
     shell.style.setProperty('--app-gradient-b', formConfig.style?.gradientB || '#172554');
     shell.style.setProperty('--app-radius', `${formConfig.style?.cardRadius || 18}px`);
+    shell.dataset.animPreset = formConfig.style?.animationPreset || 'wave';
 
     formEl.innerHTML = '';
 
@@ -50,6 +51,22 @@
       const card = document.createElement('section');
       card.className = 'app-public-card';
       card.style.animationDelay = `${idx * 0.03}s`;
+
+      if (field.type === 'section') {
+        card.classList.add('app-public-section', `app-public-section--${field.sectionStyle || 'accent'}`);
+        const title = document.createElement('h3');
+        title.className = 'app-public-section-title';
+        title.textContent = field.label || 'Section';
+        card.appendChild(title);
+        if (field.helpText) {
+          const sectionHelp = document.createElement('div');
+          sectionHelp.className = 'app-public-section-help';
+          sectionHelp.textContent = field.helpText;
+          card.appendChild(sectionHelp);
+        }
+        formEl.appendChild(card);
+        return;
+      }
 
       const label = document.createElement('label');
       label.className = 'app-public-label';
@@ -156,6 +173,7 @@
     try {
       const answers = {};
       (formConfig.fields || []).forEach((field) => {
+        if (field.type === 'section') return;
         const name = field.fieldId;
         if (field.type === 'boolean') {
           const checked = formEl.querySelector(`input[name="${cssEscape(name)}"]:checked`);

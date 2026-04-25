@@ -13,29 +13,58 @@
   const saveBtn = document.getElementById('appEditorSave');
   const titleEl = document.getElementById('appEditorTitle');
 
+  const addQuestionBtn = document.getElementById('appAddQuestionBtn');
+  const addSectionBtn = document.getElementById('appAddSectionBtn');
+  const fieldBuilderEl = document.getElementById('appFieldBuilder');
+  const fieldsJsonEl = document.getElementById('appFieldsJson');
+  const statusTemplatesEl = document.getElementById('appStatusTemplates');
+  const notifyEnabledEl = document.getElementById('appNotifyEnabled');
+
   if (!listEl || !newBtn || !reviewBtn || !backdrop) return;
 
   let applications = [];
   let editingId = null;
+  let embedTemplates = [];
+  let builderFields = [];
 
   const DEFAULT_FIELDS = [
     {
-      fieldId: 'why_join',
-      label: 'Why do you want to join?',
-      type: 'textarea',
-      required: true,
-      maxLength: 800,
-      placeholder: 'Tell us why you are a great fit.'
+      fieldId: createFieldId(),
+      type: 'section',
+      label: 'Basic Information',
+      helpText: 'Tell us about yourself',
+      required: false,
+      sectionStyle: 'accent',
+      options: [],
+      placeholder: '',
+      minLength: null,
+      maxLength: null,
     },
     {
-      fieldId: 'experience',
-      label: 'Relevant experience',
-      type: 'textarea',
+      fieldId: createFieldId(),
+      type: 'text',
+      label: 'Age',
+      helpText: 'How old are you?',
       required: true,
-      maxLength: 1000,
-      placeholder: 'Share any relevant experience.'
-    }
+      placeholder: '18',
+      options: [],
+      minLength: null,
+      maxLength: 3,
+    },
+    {
+      fieldId: createFieldId(),
+      type: 'textarea',
+      label: 'Why do you want to join?',
+      helpText: '',
+      required: true,
+      placeholder: 'Tell us why you are a great fit.',
+      options: [],
+      minLength: null,
+      maxLength: 800,
+    },
   ];
+
+  const STATUS_KEYS = ['in_review', 'approved', 'rejected'];
 
   document.addEventListener('DOMContentLoaded', () => {
     bindEvents();
@@ -50,9 +79,30 @@
 
   function bindEvents() {
     newBtn.addEventListener('click', () => openEditor(null));
-    closeBtn.addEventListener('click', closeEditor);
-    cancelBtn.addEventListener('click', closeEditor);
-    saveBtn.addEventListener('click', saveApplication);
+    closeBtn?.addEventListener('click', closeEditor);
+    cancelBtn?.addEventListener('click', closeEditor);
+    saveBtn?.addEventListener('click', saveApplication);
+    addQuestionBtn?.addEventListener('click', () => {
+      builderFields.push(createDefaultQuestion());
+      renderFieldBuilder();
+    });
+    addSectionBtn?.addEventListener('click', () => {
+      builderFields.push(createDefaultSection());
+      renderFieldBuilder();
+    });
+
+    fieldsJsonEl?.addEventListener('change', () => {
+      try {
+        const parsed = JSON.parse(fieldsJsonEl.value);
+        if (Array.isArray(parsed)) {
+          builderFields = parsed.map(normalizeFieldClient);
+          renderFieldBuilder();
+          setStatus('Synced fields from JSON.', 'ok');
+        }
+      } catch {
+        setStatus('Invalid JSON in advanced editor.', 'error');
+      }
+    });
 
     backdrop.addEventListener('click', (e) => {
       if (e.target === backdrop) closeEditor();
@@ -71,6 +121,15 @@
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
     return data;
+  }
+
+  async function ensureEmbedsLoaded() {
+    if (embedTemplates.length) return;
+    try {
+      embedTemplates = await apiFetch(`/guild/${GUILD_ID}/embeds`);
+    } catch {
+      embedTemplates = [];
+    }
   }
 
   async function loadApplications() {
@@ -132,9 +191,10 @@
     });
   }
 
-  function openEditor(app) {
+  async function openEditor(app) {
     editingId = app?._id || null;
     titleEl.textContent = editingId ? 'Edit Application' : 'Create Application';
+    await ensureEmbedsLoaded();
 
     document.getElementById('appName').value = app?.name || '';
     document.getElementById('appDescription').value = app?.description || '';
@@ -151,11 +211,163 @@
     document.getElementById('appCooldown').value = app?.abuseProtection?.cooldownMinutes ?? 60;
     document.getElementById('appMaxSubmissions').value = app?.abuseProtection?.maxSubmissionsPerUser ?? 3;
 
-    document.getElementById('appFieldsJson').value = JSON.stringify(app?.fields || DEFAULT_FIELDS, null, 2);
+    builderFields = (app?.fields?.length ? app.fields : DEFAULT_FIELDS).map(normalizeFieldClient);
+    renderFieldBuilder();
+
+    notifyEnabledEl.checked = app?.reviewNotifications?.enabled !== false;
+    renderStatusTemplates(app?.reviewNotifications?.templates || {});
+
+    fieldsJsonEl.value = JSON.stringify(builderFields, null, 2);
 
     backdrop.classList.add('open');
     backdrop.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
+  }
+
+  function renderFieldBuilder() {
+    if (!fieldBuilderEl) return;
+    if (!builderFields.length) {
+      fieldBuilderEl.innerHTML = '<div class="apps-empty">No fields yet. Add a section or question to get started.</div>';
+      fieldsJsonEl.value = '[]';
+      return;
+    }
+
+    fieldBuilderEl.innerHTML = builderFields.map((field, idx) => {
+      const isSection = field.type === 'section';
+      const options = isSection ? '' : `
+        <div class="app-field-row">
+          <label>Type
+            <select data-field-input="type" data-idx="${idx}">
+              ${['text', 'textarea', 'select', 'number', 'boolean'].map((type) => `<option value="${type}" ${type === field.type ? 'selected' : ''}>${type}</option>`).join('')}
+            </select>
+          </label>
+          <label>Required
+            <input type="checkbox" data-field-input="required" data-idx="${idx}" ${field.required ? 'checked' : ''}>
+          </label>
+          <label>Max Length
+            <input type="number" data-field-input="maxLength" data-idx="${idx}" value="${field.maxLength || ''}" min="1" max="4000">
+          </label>
+        </div>
+      `;
+
+      return `
+        <section class="app-field-card ${isSection ? 'is-section' : ''}" data-idx="${idx}">
+          <div class="app-field-head">
+            <strong>${isSection ? 'Section' : 'Question'} ${idx + 1}</strong>
+            <div>
+              <button class="btn btn-ghost btn-sm" type="button" data-move="up" data-idx="${idx}">↑</button>
+              <button class="btn btn-ghost btn-sm" type="button" data-move="down" data-idx="${idx}">↓</button>
+              <button class="btn btn-ghost btn-sm" type="button" data-remove="${idx}">Delete</button>
+            </div>
+          </div>
+
+          <label>Label
+            <input type="text" data-field-input="label" data-idx="${idx}" value="${escHtml(field.label)}" maxlength="120">
+          </label>
+          <label>Help Text
+            <input type="text" data-field-input="helpText" data-idx="${idx}" value="${escHtml(field.helpText || '')}" maxlength="280">
+          </label>
+
+          ${isSection ? `
+            <label>Section Style
+              <select data-field-input="sectionStyle" data-idx="${idx}">
+                ${['accent', 'glass', 'plain'].map((style) => `<option value="${style}" ${style === (field.sectionStyle || 'accent') ? 'selected' : ''}>${style}</option>`).join('')}
+              </select>
+            </label>
+          ` : options}
+
+          ${field.type === 'select' ? `<label>Options (comma separated)
+            <input type="text" data-field-input="options" data-idx="${idx}" value="${escHtml((field.options || []).join(', '))}">
+          </label>` : ''}
+        </section>
+      `;
+    }).join('');
+
+    fieldBuilderEl.querySelectorAll('[data-field-input]').forEach((el) => {
+      el.addEventListener('input', onFieldInputChanged);
+      el.addEventListener('change', onFieldInputChanged);
+    });
+
+    fieldBuilderEl.querySelectorAll('[data-remove]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const idx = Number(el.dataset.remove);
+        builderFields.splice(idx, 1);
+        renderFieldBuilder();
+      });
+    });
+
+    fieldBuilderEl.querySelectorAll('[data-move]').forEach((el) => {
+      el.addEventListener('click', () => {
+        const idx = Number(el.dataset.idx);
+        const dir = el.dataset.move;
+        const target = dir === 'up' ? idx - 1 : idx + 1;
+        if (target < 0 || target >= builderFields.length) return;
+        const current = builderFields[idx];
+        builderFields[idx] = builderFields[target];
+        builderFields[target] = current;
+        renderFieldBuilder();
+      });
+    });
+
+    fieldsJsonEl.value = JSON.stringify(builderFields, null, 2);
+  }
+
+  function onFieldInputChanged(e) {
+    const idx = Number(e.target.dataset.idx);
+    const key = e.target.dataset.fieldInput;
+    const field = builderFields[idx];
+    if (!field) return;
+
+    if (key === 'required') {
+      field.required = e.target.checked;
+    } else if (key === 'maxLength') {
+      const parsed = Number(e.target.value);
+      field.maxLength = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    } else if (key === 'options') {
+      field.options = e.target.value.split(',').map((v) => v.trim()).filter(Boolean);
+    } else {
+      field[key] = e.target.value;
+      if (key === 'type' && field.type === 'section') {
+        field.required = false;
+      }
+    }
+
+    fieldsJsonEl.value = JSON.stringify(builderFields, null, 2);
+  }
+
+  function renderStatusTemplates(existingTemplates) {
+    if (!statusTemplatesEl) return;
+
+    statusTemplatesEl.innerHTML = STATUS_KEYS.map((status) => {
+      const template = normalizeTemplate(existingTemplates[status], status);
+      return `
+        <section class="app-status-card" data-status="${status}">
+          <h5>${status.replace('_', ' ')}</h5>
+          <label>Mode
+            <select data-template-input="mode" data-status="${status}">
+              <option value="none" ${template.mode === 'none' ? 'selected' : ''}>No DM</option>
+              <option value="generic" ${template.mode === 'generic' ? 'selected' : ''}>Generic embed</option>
+              <option value="saved_embed" ${template.mode === 'saved_embed' ? 'selected' : ''}>Saved embed template</option>
+            </select>
+          </label>
+          <label>Saved Embed
+            <select data-template-input="savedEmbedId" data-status="${status}">
+              <option value="">None</option>
+              ${embedTemplates.map((emb) => `<option value="${emb._id}" ${String(emb._id) === String(template.savedEmbedId || '') ? 'selected' : ''}>${escHtml(emb.name)}</option>`).join('')}
+            </select>
+          </label>
+          <label>Generic Title
+            <input type="text" data-template-input="genericTitle" data-status="${status}" value="${escHtml(template.genericTitle || '')}" maxlength="120">
+          </label>
+          <label>Generic Description
+            <textarea data-template-input="genericDescription" data-status="${status}" rows="2" maxlength="2000">${escHtml(template.genericDescription || '')}</textarea>
+          </label>
+          <label>Generic Color
+            <input type="color" data-template-input="genericColor" data-status="${status}" value="${template.genericColor || '#22d3ee'}">
+          </label>
+        </section>
+      `;
+    }).join('');
   }
 
   function closeEditor() {
@@ -165,13 +377,26 @@
     editingId = null;
   }
 
+  function getTemplateValues() {
+    const templates = {};
+    STATUS_KEYS.forEach((status) => {
+      const read = (key) => statusTemplatesEl.querySelector(`[data-template-input="${key}"][data-status="${status}"]`);
+      templates[status] = {
+        mode: read('mode')?.value || 'generic',
+        savedEmbedId: read('savedEmbedId')?.value || null,
+        genericTitle: read('genericTitle')?.value?.trim() || '',
+        genericDescription: read('genericDescription')?.value?.trim() || '',
+        genericColor: read('genericColor')?.value || '#22d3ee',
+      };
+    });
+    return templates;
+  }
+
   function buildPayloadFromForm() {
     const reviewerRoleIds = document.getElementById('appReviewerRoleIds').value
       .split(',')
       .map((v) => v.trim())
       .filter((v) => /^\d+$/.test(v));
-
-    const fields = JSON.parse(document.getElementById('appFieldsJson').value);
 
     return {
       name: document.getElementById('appName').value.trim(),
@@ -192,7 +417,11 @@
         accent: document.getElementById('appStyleAccent').value,
         animationPreset: document.getElementById('appStyleAnim').value,
       },
-      fields,
+      fields: builderFields.map(normalizeFieldClient),
+      reviewNotifications: {
+        enabled: notifyEnabledEl.checked,
+        templates: getTemplateValues(),
+      },
     };
   }
 
@@ -207,8 +436,9 @@
       if (!payload.recipient.targetId || !/^\d+$/.test(payload.recipient.targetId)) {
         throw new Error('Target ID must be a valid Discord ID.');
       }
-      if (!Array.isArray(payload.fields) || !payload.fields.length) {
-        throw new Error('Provide at least one field in the JSON editor.');
+      const answerable = payload.fields.filter((f) => f.type !== 'section');
+      if (!answerable.length) {
+        throw new Error('Add at least one non-section question in the visual builder.');
       }
 
       if (editingId) {
@@ -245,6 +475,82 @@
     } catch (err) {
       setStatus(`Delete failed: ${err.message}`, 'error');
     }
+  }
+
+  function normalizeFieldClient(field) {
+    return {
+      fieldId: field.fieldId || createFieldId(),
+      type: ['text', 'textarea', 'select', 'number', 'boolean', 'section'].includes(field.type) ? field.type : 'text',
+      label: String(field.label || '').slice(0, 120),
+      helpText: String(field.helpText || '').slice(0, 280),
+      required: field.type === 'section' ? false : field.required !== false,
+      placeholder: String(field.placeholder || '').slice(0, 120),
+      options: Array.isArray(field.options) ? field.options.map((v) => String(v).trim()).filter(Boolean).slice(0, 20) : [],
+      minLength: typeof field.minLength === 'number' ? field.minLength : null,
+      maxLength: typeof field.maxLength === 'number' ? field.maxLength : null,
+      sectionStyle: ['plain', 'glass', 'accent'].includes(field.sectionStyle) ? field.sectionStyle : 'accent',
+    };
+  }
+
+  function normalizeTemplate(template, status) {
+    const defaults = {
+      in_review: {
+        mode: 'generic',
+        genericTitle: 'Application In Review',
+        genericDescription: 'Your application is now being reviewed.',
+        genericColor: '#f59e0b',
+      },
+      approved: {
+        mode: 'generic',
+        genericTitle: 'Application Approved',
+        genericDescription: 'Congratulations. Your application was approved.',
+        genericColor: '#22c55e',
+      },
+      rejected: {
+        mode: 'generic',
+        genericTitle: 'Application Rejected',
+        genericDescription: 'Your application was not accepted this time.',
+        genericColor: '#ef4444',
+      },
+    };
+    return {
+      ...defaults[status],
+      ...(template || {}),
+    };
+  }
+
+  function createFieldId() {
+    return `f_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`;
+  }
+
+  function createDefaultQuestion() {
+    return {
+      fieldId: createFieldId(),
+      type: 'text',
+      label: 'New question',
+      helpText: '',
+      required: true,
+      placeholder: '',
+      options: [],
+      minLength: null,
+      maxLength: null,
+      sectionStyle: 'accent',
+    };
+  }
+
+  function createDefaultSection() {
+    return {
+      fieldId: createFieldId(),
+      type: 'section',
+      label: 'New section',
+      helpText: 'Add section context here',
+      required: false,
+      placeholder: '',
+      options: [],
+      minLength: null,
+      maxLength: null,
+      sectionStyle: 'accent',
+    };
   }
 
   function setStatus(msg, type) {

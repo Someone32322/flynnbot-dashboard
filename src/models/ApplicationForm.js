@@ -7,15 +7,35 @@ const applicationFieldSchema = new mongoose.Schema(
     helpText: { type: String, default: '', maxlength: 280 },
     type: {
       type: String,
-      enum: ['text', 'textarea', 'select', 'number', 'boolean'],
+      enum: ['text', 'textarea', 'select', 'number', 'boolean', 'section'],
       default: 'text',
     },
     required: { type: Boolean, default: true },
     placeholder: { type: String, default: '', maxlength: 120 },
     options: { type: [String], default: [] },
+    sectionStyle: {
+      type: String,
+      enum: ['plain', 'glass', 'accent'],
+      default: 'accent',
+    },
     minLength: { type: Number, default: null },
     maxLength: { type: Number, default: null },
     order: { type: Number, default: 0 },
+  },
+  { _id: false }
+);
+
+const reviewNotificationTemplateSchema = new mongoose.Schema(
+  {
+    mode: {
+      type: String,
+      enum: ['none', 'generic', 'saved_embed'],
+      default: 'generic',
+    },
+    savedEmbedId: { type: String, default: null },
+    genericTitle: { type: String, default: '', maxlength: 120 },
+    genericDescription: { type: String, default: '', maxlength: 2000 },
+    genericColor: { type: String, default: '#22d3ee' },
   },
   { _id: false }
 );
@@ -67,6 +87,15 @@ const applicationFormSchema = new mongoose.Schema(
     submitButtonText: { type: String, default: 'Submit Application', maxlength: 60 },
     successMessage: { type: String, default: 'Application submitted successfully.', maxlength: 280 },
     fields: { type: [applicationFieldSchema], default: [] },
+    reviewNotifications: {
+      enabled: { type: Boolean, default: true },
+      templates: {
+        pending: { type: reviewNotificationTemplateSchema, default: () => ({ mode: 'none' }) },
+        in_review: { type: reviewNotificationTemplateSchema, default: () => ({ mode: 'generic', genericTitle: 'Application In Review', genericDescription: 'Your application is now being reviewed.', genericColor: '#f59e0b' }) },
+        approved: { type: reviewNotificationTemplateSchema, default: () => ({ mode: 'generic', genericTitle: 'Application Approved', genericDescription: 'Congratulations. Your application was approved.', genericColor: '#22c55e' }) },
+        rejected: { type: reviewNotificationTemplateSchema, default: () => ({ mode: 'generic', genericTitle: 'Application Rejected', genericDescription: 'Your application was not accepted this time.', genericColor: '#ef4444' }) },
+      },
+    },
 
     createdBy: {
       id: { type: String, default: null },

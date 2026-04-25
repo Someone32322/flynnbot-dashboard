@@ -1184,7 +1184,7 @@ function normalizeEmojiForReactionApi(emoji) {
 }
 
 function normalizeApplicationField(rawField, index) {
-  const safeType = ['text', 'textarea', 'select', 'number', 'boolean'].includes(rawField?.type)
+  const safeType = ['text', 'textarea', 'select', 'number', 'boolean', 'section'].includes(rawField?.type)
     ? rawField.type
     : 'text';
 
@@ -1200,13 +1200,56 @@ function normalizeApplicationField(rawField, index) {
     label: String(rawField?.label || '').trim().slice(0, 120),
     helpText: String(rawField?.helpText || '').trim().slice(0, 280),
     type: safeType,
-    required: rawField?.required !== false,
+    required: safeType === 'section' ? false : rawField?.required !== false,
     placeholder: String(rawField?.placeholder || '').trim().slice(0, 120),
     options,
+    sectionStyle: ['plain', 'glass', 'accent'].includes(rawField?.sectionStyle) ? rawField.sectionStyle : 'accent',
     minLength: typeof rawField?.minLength === 'number' ? Math.max(0, Math.min(4000, Math.floor(rawField.minLength))) : null,
     maxLength: typeof rawField?.maxLength === 'number' ? Math.max(1, Math.min(4000, Math.floor(rawField.maxLength))) : null,
     order: typeof rawField?.order === 'number' ? rawField.order : index,
   };
+}
+
+function normalizeReviewTemplate(raw, fallback = {}) {
+  const mode = ['none', 'generic', 'saved_embed'].includes(raw?.mode) ? raw.mode : (fallback.mode || 'generic');
+  const savedEmbedId = typeof raw?.savedEmbedId === 'string' && raw.savedEmbedId.trim().length ? raw.savedEmbedId.trim() : null;
+  const genericTitle = String(raw?.genericTitle || fallback.genericTitle || '').slice(0, 120);
+  const genericDescription = String(raw?.genericDescription || fallback.genericDescription || '').slice(0, 2000);
+  const genericColor = String(raw?.genericColor || fallback.genericColor || '#22d3ee').slice(0, 20);
+  return { mode, savedEmbedId, genericTitle, genericDescription, genericColor };
+}
+
+function normalizeReviewNotifications(raw) {
+  return {
+    enabled: raw?.enabled !== false,
+    templates: {
+      pending: normalizeReviewTemplate(raw?.templates?.pending, { mode: 'none' }),
+      in_review: normalizeReviewTemplate(raw?.templates?.in_review, {
+        mode: 'generic',
+        genericTitle: 'Application In Review',
+        genericDescription: 'Your application is now being reviewed.',
+        genericColor: '#f59e0b',
+      }),
+      approved: normalizeReviewTemplate(raw?.templates?.approved, {
+        mode: 'generic',
+        genericTitle: 'Application Approved',
+        genericDescription: 'Congratulations. Your application was approved.',
+        genericColor: '#22c55e',
+      }),
+      rejected: normalizeReviewTemplate(raw?.templates?.rejected, {
+        mode: 'generic',
+        genericTitle: 'Application Rejected',
+        genericDescription: 'Your application was not accepted this time.',
+        genericColor: '#ef4444',
+      }),
+    },
+  };
+}
+
+function parseColorInt(color, fallback = 0x22d3ee) {
+  const safe = String(color || '').trim().replace('#', '');
+  if (!/^[0-9a-fA-F]{6}$/.test(safe)) return fallback;
+  return Number.parseInt(safe, 16);
 }
 
 function normalizeApplicationPayload(body, actor) {
@@ -1254,6 +1297,7 @@ function normalizeApplicationPayload(body, actor) {
     submitButtonText: String(body?.submitButtonText || 'Submit Application').trim().slice(0, 60),
     successMessage: String(body?.successMessage || 'Application submitted successfully.').trim().slice(0, 280),
     fields: fields.map((field, idx) => normalizeApplicationField(field, idx)).filter((f) => f.label),
+    reviewNotifications: normalizeReviewNotifications(body?.reviewNotifications),
     updatedBy: { id: actor?.id || null, username: actor?.username || null },
   };
 }
@@ -1301,6 +1345,56 @@ async function deliverApplicationResult({ form, submission }) {
   return { recipientType: 'channel', recipientTargetId: form.recipient.targetId, messageId: msg?.id || null };
 }
 
+async function deliverApplicantReviewStatus({ form, submission, previousStatus }) {
+  if (!form?.reviewNotifications?.enabled) return;
+  if (submission.status === previousStatus) return;
+
+  const template = form.reviewNotifications.templates?.[submission.status];
+  if (!template || template.mode === 'none') return;
+
+  let embed;
+  if (template.mode === 'saved_embed' && template.savedEmbedId) {
+    const saved = await EmbedTemplate.findOne({ _id: template.savedEmbedId, guildId: form.guildId }).lean();
+    if (saved) {
+      embed = {
+        title: saved.title || undefined,
+        description: saved.description || undefined,
+        color: typeof saved.color === 'number' ? saved.color : 0x22d3ee,
+        footer: saved.footer ? { text: saved.footer } : undefined,
+        image: saved.imageUrl ? { url: saved.imageUrl } : undefined,
+        thumbnail: saved.thumbnailUrl ? { url: saved.thumbnailUrl } : undefined,
+        author: saved.author ? { name: saved.author } : undefined,
+        fields: Array.isArray(saved.fields)
+          ? saved.fields.slice(0, 25).map((f) => ({ name: f.name, value: f.value, inline: !!f.inline }))
+          : undefined,
+      };
+    }
+  }
+
+  if (!embed) {
+    embed = {
+      title: template.genericTitle || `Application ${submission.status.replace('_', ' ')}`,
+      description: template.genericDescription || `Your application status changed to **${submission.status.replace('_', ' ')}**.`,
+      color: parseColorInt(template.genericColor),
+    };
+  }
+
+  if (!embed.fields) embed.fields = [];
+  embed.fields.push({ name: 'Application', value: form.name, inline: true });
+  embed.fields.push({ name: 'New Status', value: submission.status.replace('_', ' '), inline: true });
+  if (submission.reviewNote) {
+    embed.fields.push({ name: 'Review Note', value: String(submission.reviewNote).slice(0, 1000), inline: false });
+  }
+  embed.timestamp = new Date().toISOString();
+
+  try {
+    const dm = await discordApi.createDmChannel(submission.applicantUserId);
+    await discordApi.postMessage(dm.id, { embeds: [embed] });
+  } catch (err) {
+    console.error('[API] review notification delivery warning', err?.message || err);
+  }
+}
+
 // ── GET /api/guild/:guildId/applications ─────────────────────
 router.get('/guild/:guildId/applications', requireAuth, requireGuildAdmin, async (req, res) => {
   try {
@@ -1336,7 +1430,8 @@ router.post('/guild/:guildId/applications', requireAuth, requireGuildAdmin, asyn
     const payload = normalizeApplicationPayload(req.body, req.user);
 
     if (!payload.name) return res.status(400).json({ error: 'Application name is required' });
-    if (!payload.fields.length) return res.status(400).json({ error: 'Add at least one application field' });
+    const answerableFields = payload.fields.filter((f) => f.type !== 'section');
+    if (!answerableFields.length) return res.status(400).json({ error: 'Add at least one answerable application field' });
     if (!payload.recipient.targetId) {
       return res.status(400).json({ error: 'Select a destination channel or user to receive results' });
     }
@@ -1364,7 +1459,8 @@ router.put('/guild/:guildId/applications/:appId', requireAuth, requireGuildAdmin
     const payload = normalizeApplicationPayload(req.body, req.user);
 
     if (!payload.name) return res.status(400).json({ error: 'Application name is required' });
-    if (!payload.fields.length) return res.status(400).json({ error: 'Add at least one application field' });
+    const answerableFields = payload.fields.filter((f) => f.type !== 'section');
+    if (!answerableFields.length) return res.status(400).json({ error: 'Add at least one answerable application field' });
     if (!payload.recipient.targetId) {
       return res.status(400).json({ error: 'Select a destination channel or user to receive results' });
     }
@@ -1481,7 +1577,8 @@ router.post('/applications/public/:guildId/:applicationId/submit', requireAuth, 
     }
 
     const bodyAnswers = req.body?.answers && typeof req.body.answers === 'object' ? req.body.answers : {};
-    const answers = (form.fields || []).map((field) => {
+    const answerableFields = (form.fields || []).filter((field) => field.type !== 'section');
+    const answers = answerableFields.map((field) => {
       const raw = bodyAnswers[field.fieldId];
       const value = raw == null ? '' : String(raw).trim();
       return {
@@ -1493,7 +1590,7 @@ router.post('/applications/public/:guildId/:applicationId/submit', requireAuth, 
     });
 
     const missing = answers.find((ans) => {
-      const field = (form.fields || []).find((f) => f.fieldId === ans.fieldId);
+      const field = answerableFields.find((f) => f.fieldId === ans.fieldId);
       if (!field?.required) return false;
       return !ans.value;
     });
@@ -1560,22 +1657,31 @@ router.patch('/guild/:guildId/applications/:applicationId/submissions/:submissio
     if (!nextStatus) return res.status(400).json({ error: 'Invalid status' });
 
     const reviewNote = String(req.body?.reviewNote || '').slice(0, 2000);
-    const submission = await ApplicationSubmission.findOneAndUpdate(
-      { _id: submissionId, guildId, applicationId },
-      {
-        $set: {
-          status: nextStatus,
-          reviewNote,
-          reviewedByUserId: req.user.id,
-          reviewedByUsername: req.user.username,
-          reviewedAt: new Date(),
-        },
-      },
-      { returnDocument: 'after' }
-    );
+    const existingSubmission = await ApplicationSubmission.findOne({ _id: submissionId, guildId, applicationId });
+    if (!existingSubmission) return res.status(404).json({ error: 'Submission not found' });
 
-    if (!submission) return res.status(404).json({ error: 'Submission not found' });
-    res.json(submission);
+    const previousStatus = existingSubmission.status;
+    existingSubmission.status = nextStatus;
+    existingSubmission.reviewNote = reviewNote;
+    existingSubmission.reviewedByUserId = req.user.id;
+    existingSubmission.reviewedByUsername = req.user.username;
+    existingSubmission.reviewedAt = new Date();
+    await existingSubmission.save();
+
+    try {
+      const form = await ApplicationForm.findOne({ _id: applicationId, guildId }).lean();
+      if (form) {
+        await deliverApplicantReviewStatus({
+          form,
+          submission: existingSubmission,
+          previousStatus,
+        });
+      }
+    } catch (notifyErr) {
+      console.error('[API] application review notify warning', notifyErr?.message || notifyErr);
+    }
+
+    res.json(existingSubmission);
   } catch (err) {
     console.error('[API] PATCH application review', err);
     res.status(500).json({ error: 'Failed to update submission review' });

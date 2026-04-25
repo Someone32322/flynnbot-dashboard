@@ -206,9 +206,33 @@
                 </label>
               </div>
 
-              <label class="rr-label">Fields JSON <span class="required">*</span>
-                <textarea id="appFieldsJson" rows="10" class="app-json-input" spellcheck="false"></textarea>
-              </label>
+              <div class="app-builder-section">
+                <div class="app-builder-header">
+                  <h4>Form Builder</h4>
+                  <div class="app-builder-actions">
+                    <button class="btn btn-ghost btn-sm" id="appAddSectionBtn" type="button">+ Section</button>
+                    <button class="btn btn-secondary btn-sm" id="appAddQuestionBtn" type="button">+ Question</button>
+                  </div>
+                </div>
+                <div id="appFieldBuilder" class="app-field-builder"></div>
+                <p class="app-builder-tip">Tip: build like Google Forms. Add section blocks to split your form, then add questions under each section.</p>
+              </div>
+
+              <div class="app-builder-section">
+                <div class="app-builder-header">
+                  <h4>Status Update Messages</h4>
+                  <label class="app-notify-toggle"><input type="checkbox" id="appNotifyEnabled" checked> Notify applicant on status updates</label>
+                </div>
+                <p class="app-builder-tip">For each status, choose no DM, generic embed, or a saved embed template from the Messages/Embeds area.</p>
+                <div id="appStatusTemplates" class="app-status-templates"></div>
+              </div>
+
+              <details class="app-advanced-json">
+                <summary>Advanced JSON (optional)</summary>
+                <label class="rr-label">Fields JSON
+                  <textarea id="appFieldsJson" rows="8" class="app-json-input" spellcheck="false"></textarea>
+                </label>
+              </details>
 
               <div class="app-editor-actions">
                 <button class="btn btn-secondary" id="appEditorCancel">Cancel</button>
