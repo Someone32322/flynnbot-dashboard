@@ -441,15 +441,42 @@
 
 .app-status-card {
   border: 1px solid rgba(14, 165, 233, 0.28);
+  border-left: 3px solid var(--status-accent, #22d3ee);
   border-radius: 12px;
-  padding: 10px;
+  padding: 12px;
   display: grid;
   gap: 8px;
   background: rgba(5, 13, 32, 0.84);
+  transition: border-color 0.2s;
+}
+
+.app-status-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .app-status-card h5 {
-  text-transform: capitalize;
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--status-accent, #22d3ee);
+}
+
+.app-status-badge {
+  font-size: 0.7rem;
+  color: var(--text-3, #94a3b8);
+  background: rgba(148, 163, 184, 0.1);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 20px;
+  padding: 2px 8px;
+}
+
+.app-status-mode-section {
+  display: grid;
+  gap: 8px;
+  animation: appReveal 0.18s ease;
 }
 
 .app-notify-toggle {

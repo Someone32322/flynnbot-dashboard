@@ -64,7 +64,21 @@
     },
   ];
 
-  const STATUS_KEYS = ['in_review', 'approved', 'rejected'];
+  const STATUS_KEYS = ['pending', 'in_review', 'approved', 'rejected'];
+
+  const STATUS_LABELS = {
+    pending: '📬 On Submit',
+    in_review: '🔍 In Review',
+    approved: '✅ Approved',
+    rejected: '❌ Rejected',
+  };
+
+  const STATUS_COLORS = {
+    pending: '#22d3ee',
+    in_review: '#f59e0b',
+    approved: '#22c55e',
+    rejected: '#ef4444',
+  };
 
   document.addEventListener('DOMContentLoaded', () => {
     bindEvents();
@@ -340,34 +354,57 @@
 
     statusTemplatesEl.innerHTML = STATUS_KEYS.map((status) => {
       const template = normalizeTemplate(existingTemplates[status], status);
+      const accentColor = STATUS_COLORS[status] || '#22d3ee';
       return `
-        <section class="app-status-card" data-status="${status}">
-          <h5>${status.replace('_', ' ')}</h5>
-          <label>Mode
-            <select data-template-input="mode" data-status="${status}">
+        <section class="app-status-card" data-status="${status}" style="--status-accent:${accentColor}">
+          <div class="app-status-card-head">
+            <h5>${STATUS_LABELS[status] || status.replace('_', ' ')}</h5>
+            ${status === 'pending' ? '<span class="app-status-badge">DM sent when applicant submits</span>' : ''}
+          </div>
+          <label>DM Mode
+            <select class="app-status-mode-select" data-template-input="mode" data-status="${status}">
               <option value="none" ${template.mode === 'none' ? 'selected' : ''}>No DM</option>
               <option value="generic" ${template.mode === 'generic' ? 'selected' : ''}>Generic embed</option>
               <option value="saved_embed" ${template.mode === 'saved_embed' ? 'selected' : ''}>Saved embed template</option>
             </select>
           </label>
-          <label>Saved Embed
-            <select data-template-input="savedEmbedId" data-status="${status}">
-              <option value="">None</option>
-              ${embedTemplates.map((emb) => `<option value="${emb._id}" ${String(emb._id) === String(template.savedEmbedId || '') ? 'selected' : ''}>${escHtml(emb.name)}</option>`).join('')}
-            </select>
-          </label>
-          <label>Generic Title
-            <input type="text" data-template-input="genericTitle" data-status="${status}" value="${escHtml(template.genericTitle || '')}" maxlength="120">
-          </label>
-          <label>Generic Description
-            <textarea data-template-input="genericDescription" data-status="${status}" rows="2" maxlength="2000">${escHtml(template.genericDescription || '')}</textarea>
-          </label>
-          <label>Generic Color
-            <input type="color" data-template-input="genericColor" data-status="${status}" value="${template.genericColor || '#22d3ee'}">
-          </label>
+          <div class="app-status-mode-fields" data-mode-for="${status}">
+            <div class="app-status-mode-section app-mode-saved" ${template.mode !== 'saved_embed' ? 'style="display:none"' : ''}>
+              <label>Saved Embed Template
+                <select data-template-input="savedEmbedId" data-status="${status}">
+                  <option value="">— Select a saved embed —</option>
+                  ${embedTemplates.map((emb) => `<option value="${emb._id}" ${String(emb._id) === String(template.savedEmbedId || '') ? 'selected' : ''}>${escHtml(emb.name)}</option>`).join('')}
+                </select>
+              </label>
+            </div>
+            <div class="app-status-mode-section app-mode-generic" ${template.mode !== 'generic' ? 'style="display:none"' : ''}>
+              <label>Title
+                <input type="text" data-template-input="genericTitle" data-status="${status}" value="${escHtml(template.genericTitle || '')}" maxlength="120" placeholder="e.g. Application Received">
+              </label>
+              <label>Description
+                <textarea data-template-input="genericDescription" data-status="${status}" rows="3" maxlength="2000" placeholder="Message body sent to the applicant…">${escHtml(template.genericDescription || '')}</textarea>
+              </label>
+              <label>Embed Color
+                <input type="color" data-template-input="genericColor" data-status="${status}" value="${template.genericColor || accentColor}">
+              </label>
+            </div>
+          </div>
         </section>
       `;
     }).join('');
+
+    // Wire up mode selects to show/hide the relevant sub-fields
+    statusTemplatesEl.querySelectorAll('.app-status-mode-select').forEach((sel) => {
+      sel.addEventListener('change', () => {
+        const status = sel.dataset.status;
+        const modeFields = statusTemplatesEl.querySelector(`[data-mode-for="${status}"]`);
+        if (!modeFields) return;
+        const savedSection = modeFields.querySelector('.app-mode-saved');
+        const genericSection = modeFields.querySelector('.app-mode-generic');
+        if (savedSection) savedSection.style.display = sel.value === 'saved_embed' ? '' : 'none';
+        if (genericSection) genericSection.style.display = sel.value === 'generic' ? '' : 'none';
+      });
+    });
   }
 
   function closeEditor() {
@@ -494,6 +531,12 @@
 
   function normalizeTemplate(template, status) {
     const defaults = {
+      pending: {
+        mode: 'none',
+        genericTitle: 'Application Received',
+        genericDescription: 'Thank you for applying! Your application has been received and is pending review.',
+        genericColor: '#22d3ee',
+      },
       in_review: {
         mode: 'generic',
         genericTitle: 'Application In Review',

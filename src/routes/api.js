@@ -1352,6 +1352,8 @@ async function deliverApplicantReviewStatus({ form, submission, previousStatus }
   const template = form.reviewNotifications.templates?.[submission.status];
   if (!template || template.mode === 'none') return;
 
+  const isSubmitEvent = previousStatus === null; // true when called from the submit endpoint
+
   let embed;
   if (template.mode === 'saved_embed' && template.savedEmbedId) {
     const saved = await EmbedTemplate.findOne({ _id: template.savedEmbedId, guildId: form.guildId }).lean();
@@ -1373,17 +1375,21 @@ async function deliverApplicantReviewStatus({ form, submission, previousStatus }
 
   if (!embed) {
     embed = {
-      title: template.genericTitle || `Application ${submission.status.replace('_', ' ')}`,
-      description: template.genericDescription || `Your application status changed to **${submission.status.replace('_', ' ')}**.`,
+      title: template.genericTitle || (isSubmitEvent ? 'Application Received' : `Application ${submission.status.replace('_', ' ')}`),
+      description: template.genericDescription || (isSubmitEvent
+        ? `Your application **${form.name}** was received and is pending review.`
+        : `Your application status changed to **${submission.status.replace('_', ' ')}**.`),
       color: parseColorInt(template.genericColor),
     };
   }
 
   if (!embed.fields) embed.fields = [];
   embed.fields.push({ name: 'Application', value: form.name, inline: true });
-  embed.fields.push({ name: 'New Status', value: submission.status.replace('_', ' '), inline: true });
-  if (submission.reviewNote) {
-    embed.fields.push({ name: 'Review Note', value: String(submission.reviewNote).slice(0, 1000), inline: false });
+  if (!isSubmitEvent) {
+    embed.fields.push({ name: 'New Status', value: submission.status.replace('_', ' '), inline: true });
+    if (submission.reviewNote) {
+      embed.fields.push({ name: 'Review Note', value: String(submission.reviewNote).slice(0, 1000), inline: false });
+    }
   }
   embed.timestamp = new Date().toISOString();
 
@@ -1621,6 +1627,14 @@ router.post('/applications/public/:guildId/:applicationId/submit', requireAuth, 
       }
     } catch (deliveryError) {
       console.error('[API] applications delivery warning', deliveryError);
+    }
+
+    // Send "on submit" DM to applicant if configured
+    try {
+      const formObj = form.toObject ? form.toObject() : form;
+      await deliverApplicantReviewStatus({ form: formObj, submission, previousStatus: null });
+    } catch (notifyErr) {
+      console.error('[API] application submit notify warning', notifyErr?.message || notifyErr);
     }
 
     res.status(201).json({ ok: true, message: form.successMessage || 'Application submitted successfully.' });
