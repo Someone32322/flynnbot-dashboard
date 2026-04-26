@@ -5,7 +5,7 @@
 (function () {
   'use strict';
 
-  const SAPPHIRE = 0x0f52ba;
+  const FLYNNCOLOUR = 0x0f52ba;
   const STYLE_COLORS = { primary: '#5865f2', secondary: '#4e5058', success: '#248046', danger: '#da373c' };
 
   // ── State ────────────────────────────────────────────────────
@@ -23,7 +23,7 @@
   }
 
   function hexFromInt(n) {
-    return '#' + Math.abs(n ?? SAPPHIRE).toString(16).padStart(6, '0');
+    return '#' + Math.abs(n ?? FLYNNCOLOUR).toString(16).padStart(6, '0');
   }
 
   function intFromHex(hex) {
@@ -351,7 +351,7 @@
               <div class="rr-option-row-fields">
                 <label class="rr-label">
                   Embed Color
-                  <input type="color" class="rr-opt-embed-color" value="${hexFromInt(opt?.embedColor ?? SAPPHIRE)}" />
+                  <input type="color" class="rr-opt-embed-color" value="${hexFromInt(opt?.embedColor ?? FLYNNCOLOUR)}" />
                 </label>
                 <label class="rr-label">
                   Embed Footer

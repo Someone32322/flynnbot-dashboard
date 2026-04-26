@@ -6,7 +6,7 @@
 (function () {
   'use strict';
 
-  const SAPPHIRE = 0x0f52ba;
+  const FLYNNCOLOUR = 0x0f52ba;
 
   // ── State ────────────────────────────────────────────────────
   let guildId = null;
@@ -20,7 +20,7 @@
   }
 
   function hexFromInt(n) {
-    return '#' + Math.abs(n ?? SAPPHIRE).toString(16).padStart(6, '0');
+    return '#' + Math.abs(n ?? FLYNNCOLOUR).toString(16).padStart(6, '0');
   }
 
   function intFromHex(hex) {
