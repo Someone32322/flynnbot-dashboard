@@ -2,79 +2,83 @@
 <body>
   <%- include('partials/nav') %>
 
-  <!-- ====== HERO ====== -->
-  <section class="hero">
-    <div class="hero-bg">
-      <div class="orb orb-1"></div>
-      <div class="orb orb-2"></div>
-      <div class="orb orb-3"></div>
-      <div class="hero-grid"></div>
-      <div class="hero-fade"></div>
-    </div>
+  <section class="landing-hero" id="home">
+    <div class="landing-backdrop"></div>
+    <div class="landing-hero-shell">
+      <div class="landing-left">
+        <div class="landing-brand-row">
+          <div class="landing-brand-icon">⬢</div>
+          <h1 class="landing-title">Flynn</h1>
+        </div>
 
-    <div class="hero-content">
-      <div class="hero-badge">
-        <span class="hero-badge-dot"></span>
-        Advanced Discord Bot
+        <p class="landing-line">Multi-purpose Discord Bot.</p>
+        <p class="landing-line">Fully customizable.</p>
+        <p class="landing-line">Completely free.</p>
+
+        <div class="landing-cta-row">
+          <a
+            href="https://discord.com/oauth2/authorize?client_id=<%= clientId %>&permissions=8&scope=bot+applications.commands"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-primary btn-lg"
+          >
+            Add to Discord
+          </a>
+          <a href="#about" class="btn btn-ghost btn-lg">Explore features</a>
+        </div>
       </div>
 
-      <h1 class="hero-title">
-        <span class="gradient-text">Powerful moderation</span><br>
-        for your community.
-      </h1>
-
-      <p class="hero-subtitle">
-        FlynnBot delivers professional-grade moderation tools, full case management,
-        and detailed audit logging — all in one seamless package.
-      </p>
-
-      <div class="hero-actions">
-        <a
-          href="https://discord.com/oauth2/authorize?client_id=<%= clientId %>&permissions=8&scope=bot+applications.commands"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="btn btn-primary btn-lg"
-        >
-          <span class="btn-icon">+</span> Add to Discord
-        </a>
-        <a href="<%= user ? '/dashboard' : '/api/auth/login' %>" class="btn btn-ghost btn-lg">
-          Dashboard <span class="btn-arrow">→</span>
-        </a>
+      <div class="landing-right" aria-hidden="true">
+        <div class="hex-cluster">
+          <span class="hex hex-lg h1"></span>
+          <span class="hex hex-md h2"></span>
+          <span class="hex hex-md h3"></span>
+          <span class="hex hex-sm h4"></span>
+          <span class="hex hex-xs h5"></span>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ====== FEATURES ====== -->
-  <section class="features">
+  <section class="features" id="about">
     <div class="features-header">
-      <span class="section-label animate-in">Features</span>
-      <h2 class="section-title animate-in">Everything your server needs</h2>
-      <p class="section-subtitle animate-in">
-        Comprehensive tools built for community managers who demand the best.
-      </p>
+      <span class="section-label animate-in">About</span>
+      <h2 class="section-title animate-in">Built for modern communities</h2>
+      <p class="section-subtitle animate-in">A polished moderation and engagement stack with clean UX and reliable automation.</p>
     </div>
 
     <div class="features-grid">
       <div class="feature-card animate-in">
         <div class="feature-icon">🛡️</div>
         <h3>Advanced Moderation</h3>
-        <p>Ban, kick, warn, timeout, and mute members with detailed case tracking and full audit trails.</p>
+        <p>Ban, kick, warn, timeout, and voice moderation with full case history.</p>
+      </div>
+      <div class="feature-card animate-in">
+        <div class="feature-icon">⭐</div>
+        <h3>Leveling System</h3>
+        <p>Dashboard-first XP controls, role rewards, rank cards, and leaderboards.</p>
       </div>
       <div class="feature-card animate-in">
         <div class="feature-icon">📋</div>
-        <h3>Case Management</h3>
-        <p>Every action generates a unique case ID with full history, editable reasons, and timestamps.</p>
-      </div>
-      <div class="feature-card animate-in">
-        <div class="feature-icon">📊</div>
         <h3>Audit Logging</h3>
-        <p>Detailed logs with moderator attribution, target information, and formatted embeds for every action.</p>
+        <p>Track moderation and server actions with clean, configurable logging streams.</p>
       </div>
       <div class="feature-card animate-in">
-        <div class="feature-icon">📨</div>
-        <h3>DM Notifications</h3>
-        <p>Keep users informed with professional direct message notifications for all moderation actions.</p>
+        <div class="feature-icon">🎨</div>
+        <h3>Custom Messages</h3>
+        <p>Build rich embeds, interactive messages, and reaction-role experiences.</p>
       </div>
+    </div>
+  </section>
+
+  <section class="landing-status" id="status">
+    <div class="status-card">
+      <h3>Service Status</h3>
+      <p>Operational. Core bot systems and dashboard endpoints are online.</p>
+    </div>
+    <div class="status-card" id="branding">
+      <h3>Custom Branding</h3>
+      <p>Theme your server experience with consistent Sapphire-style visuals and message templates.</p>
     </div>
   </section>
 

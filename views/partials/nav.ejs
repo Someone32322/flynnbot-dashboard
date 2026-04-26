@@ -1,8 +1,20 @@
+<%
+  const isHome = locals && locals.title === 'Home';
+%>
 <nav class="nav" id="nav">
   <a href="/" class="nav-logo">
-    <div class="nav-logo-icon">⚡</div>
-    FlynnBot
+    <div class="nav-logo-icon">⬢</div>
+    Flynn
   </a>
+
+  <% if (isHome) { %>
+    <div class="nav-links" aria-label="Main navigation links">
+      <a href="/" class="nav-link active">Home</a>
+      <a href="#about" class="nav-link">About</a>
+      <a href="#status" class="nav-link">Status</a>
+      <a href="#branding" class="nav-link">Custom Branding</a>
+    </div>
+  <% } %>
 
   <div class="nav-actions">
     <% if (user) { %>
@@ -17,6 +29,8 @@
         <span class="user-name"><%= user.username %></span>
       </div>
       <a href="/api/auth/logout" class="btn btn-ghost">Logout</a>
+    <% } else if (isHome) { %>
+      <a href="<%= user ? '/dashboard' : '/api/auth/login' %>" class="btn btn-primary nav-open-dashboard">Open dashboard</a>
     <% } else { %>
       <a href="https://discord.com/oauth2/authorize?client_id=<%= clientId %>&permissions=8&scope=bot+applications.commands" target="_blank" rel="noopener noreferrer" class="btn btn-ghost">Add to Discord</a>
       <a href="/api/auth/login" class="btn btn-primary">Login</a>
