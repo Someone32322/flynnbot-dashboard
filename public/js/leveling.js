@@ -15,6 +15,7 @@
   let lbTotalPages = 1;
   let dirty = false;
   let initialized = false;
+  let dataLoaded = false;
 
   // ── Element helpers ───────────────────────────────────────
   const $ = (id) => document.getElementById(id);
@@ -44,7 +45,12 @@
     $('lvResetBtn')?.addEventListener('click', confirmReset);
 
     // Wire add-reward modal
-    $('lvAddRewardBtn')?.addEventListener('click', openRewardModal);
+    $('lvAddRewardBtn')?.addEventListener('click', () => {
+      openRewardModal().catch((err) => {
+        console.error('[leveling] openRewardModal', err);
+        alert('Could not open reward modal. Please try again.');
+      });
+    });
     $('lvRewardClose')?.addEventListener('click', closeRewardModal);
     $('lvRewardCancel')?.addEventListener('click', closeRewardModal);
     $('lvRewardConfirm')?.addEventListener('click', addRewardFromModal);
@@ -59,6 +65,17 @@
       if (!el) return;
       el.addEventListener('change', markDirty);
       if (el.tagName === 'TEXTAREA') el.addEventListener('input', markDirty);
+    });
+
+    // Fallback delegated handler in case the button is replaced/re-rendered
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('#lvAddRewardBtn');
+      if (!btn) return;
+      e.preventDefault();
+      openRewardModal().catch((err) => {
+        console.error('[leveling] delegated openRewardModal', err);
+        alert('Could not open reward modal. Please try again.');
+      });
     });
 
     // Watch for section activation
@@ -77,6 +94,13 @@
       initialized = true;
       loadAll();
     }
+
+    // Also load when navigation announces section activation
+    document.addEventListener('sectionActivated', (e) => {
+      if (e.detail?.section !== 'levels') return;
+      if (!initialized) initialized = true;
+      if (!dataLoaded) loadAll();
+    });
   }
 
   // ── Load everything ───────────────────────────────────────
@@ -100,8 +124,31 @@
 
       populateRoleSelector();
       loadLeaderboard(1);
+      dataLoaded = true;
     } catch (err) {
       console.error('[leveling] loadAll', err);
+    }
+  }
+
+  async function ensureCoreData() {
+    if (!guildId) return;
+    if (roles.length && channels.length) return;
+    try {
+      const [rolesRes, chRes] = await Promise.allSettled([
+        fetch(`/api/guild/${guildId}/roles`),
+        fetch(`/api/guild/${guildId}/channels`),
+      ]);
+
+      if (rolesRes.status === 'fulfilled' && rolesRes.value.ok) {
+        roles = await rolesRes.value.json();
+      }
+      if (chRes.status === 'fulfilled' && chRes.value.ok) {
+        channels = await chRes.value.json();
+      }
+      populateRoleSelector();
+      populateLevelUpChannelSelector($('lvLevelUpChannel')?.value || '');
+    } catch (err) {
+      console.error('[leveling] ensureCoreData', err);
     }
   }
 
@@ -220,9 +267,15 @@
     });
   }
 
-  function openRewardModal() {
+  async function openRewardModal() {
+    await ensureCoreData();
+    if (!roles.length) {
+      alert('No roles were found for this server yet. Please check bot permissions and try again.');
+      return;
+    }
     const bd = $('lvRewardBackdrop');
     if (bd) { bd.style.display = 'flex'; bd.removeAttribute('aria-hidden'); }
+    if ($('lvRewardRole')?.options?.length <= 1) populateRoleSelector();
     $('lvRewardLevel')?.focus();
   }
 
