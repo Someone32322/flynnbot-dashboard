@@ -68,6 +68,10 @@
   border-color: rgba(59, 130, 246, 0.6);
 }
 
+.sidebar-guild-default {
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, rgba(29, 78, 216, 0.08) 100%);
+}
+
 .sidebar-guild-glow {
   position: absolute;
   inset: -8px;

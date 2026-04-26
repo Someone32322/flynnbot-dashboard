@@ -98,6 +98,13 @@ img { max-width: 100%; display: block; }
   flex-shrink: 0;
 }
 
+.nav-logo-icon-image {
+  display: block;
+  object-fit: cover;
+  background: none;
+  box-shadow: 0 0 20px var(--accent-dim);
+}
+
 .nav-actions {
   display: flex;
   align-items: center;
@@ -581,6 +588,11 @@ img { max-width: 100%; display: block; }
 .server-card:hover .server-icon {
   transform: scale(1.05);
   box-shadow: 0 6px 28px rgba(59, 130, 246, 0.3);
+}
+
+.server-icon-default {
+  border: 2px solid rgba(59, 130, 246, 0.4);
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.24) 0%, rgba(29, 78, 216, 0.1) 100%);
 }
 
 .server-icon-placeholder {
@@ -1328,6 +1340,12 @@ img { max-width: 100%; display: block; }
   color: #baf0ff;
   background: linear-gradient(145deg, #1395ff, #0f66ff);
   box-shadow: 0 10px 38px rgba(10, 116, 255, 0.45);
+}
+
+.landing-brand-icon-image {
+  display: block;
+  object-fit: cover;
+  background: none;
 }
 
 .landing-title {

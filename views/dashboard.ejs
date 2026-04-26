@@ -49,7 +49,7 @@
               <% if (iconUrl) { %>
                 <img src="<%= iconUrl %>" alt="<%= guild.name %>" class="server-icon" loading="lazy">
               <% } else { %>
-                <div class="server-icon-placeholder"><%= guild.name.charAt(0).toUpperCase() %></div>
+                <img src="/images/flynn.png" alt="Flynn default icon" class="server-icon server-icon-default" loading="lazy">
               <% } %>
               <div class="server-card-info">
                 <div class="server-name"><%= guild.name %></div>
