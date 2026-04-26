@@ -1,0 +1,197 @@
+<!-- 
+  BRANDING EXAMPLES
+  This file shows how to implement the branding components
+  throughout the dashboard. Copy/paste patterns as needed.
+-->
+
+<!-- ========================================
+     1. LOGO IN HEADER
+     ======================================== -->
+<a href="/" class="brand-logo">
+  <img src="/images/branding/logo-dark.png" alt="Brand Logo" class="brand-logo-image">
+  <span>FlynnBot Dashboard</span>
+</a>
+
+
+<!-- ========================================
+     2. SIDEBAR MASCOT (sticky bottom-left)
+     ======================================== -->
+<div class="sidebar-mascot">
+  <img src="/images/branding/mascot-small.png" alt="Mascot">
+</div>
+
+
+<!-- ========================================
+     3. EMPTY STATE - No Data
+     ======================================== -->
+<div class="empty-state-mascot">
+  <img src="/images/branding/mascot-full.png" alt="No data">
+  <h3>No submissions yet</h3>
+  <p>Submissions will appear here once users apply.</p>
+</div>
+
+<!-- Using JS helper: -->
+<script>
+  const container = document.getElementById('myContainer');
+  container.appendChild(createEmptyState(
+    'No submissions yet',
+    'Submissions will appear here once users apply.'
+  ));
+</script>
+
+
+<!-- ========================================
+     4. LOADING STATE - With Spinner
+     ======================================== -->
+<div class="mascot-loader">
+  <img src="/images/branding/mascot-small.png" alt="Loading mascot">
+  <div class="mascot-loader-text">Loading applications...</div>
+</div>
+
+<!-- Using JS helper: -->
+<script>
+  const container = document.getElementById('myContainer');
+  container.appendChild(createMascotLoader('Loading applications...'));
+</script>
+
+
+<!-- ========================================
+     5. ERROR STATE - With Mascot
+     ======================================== -->
+<div class="error-mascot">
+  <img src="/images/branding/mascot-error.png" alt="Error mascot" style="width:100px;height:100px">
+  <div class="error-mascot-content">
+    <h4>Failed to Load</h4>
+    <p>Something went wrong. Please try again.</p>
+  </div>
+</div>
+
+<!-- Using JS helper: -->
+<script>
+  const container = document.getElementById('myContainer');
+  container.appendChild(createErrorState(
+    'Failed to Load',
+    'Something went wrong. Please try again.'
+  ));
+</script>
+
+
+<!-- ========================================
+     6. CARD WITH BRANDING ACCENT
+     (Subtle mascot watermark in background)
+     ======================================== -->
+<div class="card card-branding">
+  <h3>Your Content Here</h3>
+  <p>The mascot appears faintly in the background</p>
+</div>
+
+
+<!-- ========================================
+     7. FULL IMPLEMENTATION EXAMPLE
+     (Complete page section)
+     ======================================== -->
+<section class="dashboard-section">
+  <header>
+    <div class="brand-logo">
+      <img src="/images/branding/logo-dark.png" alt="Brand" class="brand-logo-image">
+      <h1>Applications</h1>
+    </div>
+  </header>
+
+  <div id="applicationsContainer">
+    <!-- This will be populated with data or empty state -->
+  </div>
+
+  <script>
+    // Simulate loading
+    const container = document.getElementById('applicationsContainer');
+    container.innerHTML = '';
+    container.appendChild(createMascotLoader('Fetching applications...'));
+
+    // After 2 seconds, show empty state (simulated)
+    setTimeout(() => {
+      container.innerHTML = '';
+      if (Math.random() > 0.5) {
+        container.appendChild(createEmptyState(
+          'No applications yet',
+          'Create your first application to get started.'
+        ));
+      } else {
+        container.appendChild(createErrorState(
+          'Failed to load applications',
+          'Please refresh the page or contact support.'
+        ));
+      }
+    }, 2000);
+  </script>
+</section>
+
+
+<!-- ========================================
+     8. RESPONSIVE LAYOUT WITH SIDEBAR
+     ======================================== -->
+<body>
+  <nav class="nav">
+    <a href="/" class="brand-logo">
+      <img src="/images/branding/logo-dark.png" alt="Logo" class="brand-logo-image">
+      FlynnBot
+    </a>
+  </nav>
+
+  <main>
+    <!-- Main content here -->
+  </main>
+
+  <!-- Mascot in corner (via CSS class) -->
+  <div class="sidebar-mascot">
+    <img src="/images/branding/mascot-small.png" alt="Mascot">
+  </div>
+</body>
+
+
+<!-- ========================================
+     CSS HELPER CLASSES
+     ======================================== -->
+<!--
+
+.brand-logo
+  - Use for logo + text in headers
+  - Auto scales and adds glow effect
+  - Responsive on mobile
+
+.brand-logo-image
+  - Image for .brand-logo
+  - Includes drop shadow and glow
+
+.sidebar-mascot
+  - Fixed position bottom-left
+  - Opacity 0.7, opacity 1 on hover
+  - Auto-scales on mobile
+  - z-index: 5 (below modals)
+
+.empty-state-mascot
+  - Centered layout with image + text
+  - Use for empty lists/sections
+  - Mobile responsive
+
+.mascot-loader
+  - Animated bouncing mascot
+  - Use while loading data
+  - Includes loading text
+
+.error-mascot
+  - Red-tinted box with error mascot
+  - Shows error message
+  - Flex layout (stacks on mobile)
+
+.card-branding
+  - Adds subtle mascot watermark
+  - Use on info cards
+  - Background opacity 0.08
+
+@keyframes mascotBounce
+  - Animates mascot up/down
+  - 1s duration, easing
+  - Use with .mascot-loader img
+
+-->

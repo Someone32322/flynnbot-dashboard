@@ -1,0 +1,35 @@
+# 🎨 Quick Branding Reference
+
+## Image Files Needed
+
+```
+📁 public/images/branding/
+├── favicon.ico           [32-64px]
+├── logo-dark.png         [48x48px minimum]
+├── mascot-full.png       [256x256px minimum]
+├── mascot-small.png      [128x128px minimum]
+└── mascot-error.png      [256x256px minimum]
+```
+
+## Format
+- **Type**: PNG with transparency
+- **Color Space**: RGB or RGBA
+- **Optimization**: Compressed (TinyPNG)
+
+## Where They Appear
+
+| Image | Use | Location |
+|-------|-----|----------|
+| `favicon.ico` | Browser tab icon | `<link rel="icon">` |
+| `logo-dark.png` | Header branding | Navigation bar |
+| `mascot-full.png` | Empty/hero states | Dashboard sections |
+| `mascot-small.png` | Loaders & sidebar | Animations, bottom-left |
+| `mascot-error.png` | Error states | Error messages |
+
+## Branding Auto-Loads
+Simply drop PNG files here → They automatically integrate via `branding-config.js`
+
+## More Info
+- See `BRANDING-SETUP.md` for full checklist
+- See `BRANDING-GUIDE.md` for technical docs
+- See `BRANDING-EXAMPLES.html` for code examples
