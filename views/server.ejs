@@ -29,6 +29,16 @@
         <div class="sidebar-guild-badge">Administrator</div>
       </div>
 
+      <div class="sidebar-search-wrap">
+        <input
+          type="text"
+          id="sectionQuickSearch"
+          class="sidebar-search"
+          placeholder="Search sections..."
+          aria-label="Search dashboard sections"
+        >
+      </div>
+
       <nav class="sidebar-nav" aria-label="Server navigation">
         <div class="sidebar-nav-group">
           <div class="sidebar-nav-label">Overview</div>
@@ -80,6 +90,31 @@
 
     <!-- ===== MAIN CONTENT ===== -->
     <main class="dash-main" id="dashMain">
+
+      <header class="dash-command-bar">
+        <div class="dash-command-meta">
+          <div class="dash-command-guild">
+            <% if (iconUrl) { %>
+              <img src="<%= iconUrl %>" alt="<%= guild.name %>" class="dash-command-guild-icon">
+            <% } else { %>
+              <img src="/images/flynn.png" alt="Flynn default icon" class="dash-command-guild-icon">
+            <% } %>
+            <div>
+              <div class="dash-command-label">Active Server</div>
+              <div class="dash-command-name"><%= guild.name %></div>
+            </div>
+          </div>
+          <div class="dash-command-helper">Tip: use quick switch to jump between modules instantly.</div>
+        </div>
+        <div class="dash-quick-nav" aria-label="Quick section navigation">
+          <button class="quick-nav-btn" type="button" data-section="commands">Commands</button>
+          <button class="quick-nav-btn" type="button" data-section="applications">Applications</button>
+          <button class="quick-nav-btn" type="button" data-section="embeds">Messages</button>
+          <button class="quick-nav-btn" type="button" data-section="reaction-roles">Reaction Roles</button>
+          <button class="quick-nav-btn" type="button" data-section="levels">Leveling</button>
+          <button class="quick-nav-btn" type="button" data-section="logging">Logging</button>
+        </div>
+      </header>
 
       <!-- ── HOME SECTION ── -->
       <section class="dash-section" id="section-home" data-section="home">
@@ -141,6 +176,65 @@
             <div class="home-card-arrow">→</div>
           </div>
 
+          <div class="home-card animate-in" data-goto="applications">
+            <div class="home-card-icon-wrap" style="background:linear-gradient(135deg,rgba(14,165,233,.22),rgba(34,211,238,.1));border-color:rgba(34,211,238,.25)">
+              <div class="home-card-icon">🧾</div>
+            </div>
+            <div class="home-card-body">
+              <div class="home-card-title">Applications</div>
+              <div class="home-card-desc">Build custom forms, automate review flow, and notify applicants with branded DM templates.</div>
+              <div class="home-card-stats">Submission workflow ready</div>
+            </div>
+            <div class="home-card-arrow">→</div>
+          </div>
+
+          <div class="home-card animate-in" data-goto="embeds">
+            <div class="home-card-icon-wrap" style="background:linear-gradient(135deg,rgba(167,139,250,.24),rgba(139,92,246,.1));border-color:rgba(167,139,250,.25)">
+              <div class="home-card-icon">📨</div>
+            </div>
+            <div class="home-card-body">
+              <div class="home-card-title">Message Builder</div>
+              <div class="home-card-desc">Create polished embeds, schedule announcements, add components, and preview exactly as users will see it.</div>
+              <div class="home-card-stats">Live preview enabled</div>
+            </div>
+            <div class="home-card-arrow">→</div>
+          </div>
+
+          <div class="home-card animate-in" data-goto="reaction-roles">
+            <div class="home-card-icon-wrap" style="background:linear-gradient(135deg,rgba(251,146,60,.24),rgba(245,158,11,.1));border-color:rgba(251,146,60,.26)">
+              <div class="home-card-icon">🎭</div>
+            </div>
+            <div class="home-card-body">
+              <div class="home-card-title">Reaction Roles</div>
+              <div class="home-card-desc">Offer self-serve roles with buttons, dropdowns, or emoji and fine-tune access for each audience.</div>
+              <div class="home-card-stats">Self-assignment ready</div>
+            </div>
+            <div class="home-card-arrow">→</div>
+          </div>
+
+        </div>
+
+        <div class="workspace-prefs animate-in">
+          <div class="workspace-prefs-head">
+            <h3>Workspace Preferences</h3>
+            <p>Customize how your dashboard feels without affecting bot behavior.</p>
+          </div>
+          <div class="workspace-prefs-grid">
+            <label class="workspace-pref-item">
+              <input type="checkbox" id="prefCompactMode">
+              <span>
+                <strong>Compact Layout</strong>
+                <small>Fit more controls on screen with tighter spacing.</small>
+              </span>
+            </label>
+            <label class="workspace-pref-item">
+              <input type="checkbox" id="prefReducedMotion">
+              <span>
+                <strong>Reduce Motion</strong>
+                <small>Use minimal animation for distraction-free admin work.</small>
+              </span>
+            </label>
+          </div>
         </div>
       </section>
 
@@ -755,6 +849,14 @@
             </div>
 
           </section>
+
+  <nav class="mobile-bottom-nav" aria-label="Mobile quick navigation">
+    <button class="mobile-nav-item" type="button" data-section="home">Home</button>
+    <button class="mobile-nav-item" type="button" data-section="commands">Commands</button>
+    <button class="mobile-nav-item" type="button" data-section="applications">Apps</button>
+    <button class="mobile-nav-item" type="button" data-section="embeds">Messages</button>
+    <button class="mobile-nav-item" type="button" data-section="levels">Levels</button>
+  </nav>
 
   <!-- INFO MODAL -->
   <div id="infoModalBackdrop" class="modal-backdrop" aria-hidden="true">

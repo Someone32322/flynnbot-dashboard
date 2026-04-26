@@ -25,6 +25,8 @@
   /* ------------------------------------------------------------------ */
   document.addEventListener('DOMContentLoaded', () => {
     initSectionNav();
+    initSectionQuickSearch();
+    initWorkspacePreferences();
     loadCommands();
     bindCategoryTabs();
     bindSearch();
@@ -610,6 +612,10 @@
       card.addEventListener('click', () => switchSection(card.dataset.goto));
     });
 
+    document.querySelectorAll('[data-section].quick-nav-btn, [data-section].mobile-nav-item').forEach((btn) => {
+      btn.addEventListener('click', () => switchSection(btn.dataset.section));
+    });
+
     switchSection(initial, false);
   }
 
@@ -631,12 +637,60 @@
       item.classList.toggle('active', item.dataset.section === name);
     });
 
+    document.querySelectorAll('.quick-nav-btn[data-section], .mobile-nav-item[data-section]').forEach((item) => {
+      item.classList.toggle('active', item.dataset.section === name);
+    });
+
     history.replaceState(null, '', `#${name}`);
     const dashMain = document.getElementById('dashMain');
     if (dashMain) dashMain.scrollTo({ top: 0, behavior: 'smooth' });
 
     // Notify other modules that a section was activated
     document.dispatchEvent(new CustomEvent('sectionActivated', { detail: { section: name } }));
+  }
+
+  function initSectionQuickSearch() {
+    const input = document.getElementById('sectionQuickSearch');
+    if (!input) return;
+
+    const navItems = Array.from(document.querySelectorAll('.sidebar-nav-item[data-section]'));
+    input.addEventListener('input', () => {
+      const term = input.value.trim().toLowerCase();
+      navItems.forEach((item) => {
+        const text = item.textContent.toLowerCase();
+        item.style.display = !term || text.includes(term) ? '' : 'none';
+      });
+    });
+  }
+
+  function initWorkspacePreferences() {
+    const compactToggle = document.getElementById('prefCompactMode');
+    const motionToggle = document.getElementById('prefReducedMotion');
+    if (!compactToggle && !motionToggle) return;
+
+    const compactStored = localStorage.getItem('dashboard.compact') === '1';
+    const motionStored = localStorage.getItem('dashboard.reducedMotion') === '1';
+
+    document.body.classList.toggle('dash-compact', compactStored);
+    document.body.classList.toggle('dash-reduced-motion', motionStored);
+
+    if (compactToggle) {
+      compactToggle.checked = compactStored;
+      compactToggle.addEventListener('change', () => {
+        const on = compactToggle.checked;
+        document.body.classList.toggle('dash-compact', on);
+        localStorage.setItem('dashboard.compact', on ? '1' : '0');
+      });
+    }
+
+    if (motionToggle) {
+      motionToggle.checked = motionStored;
+      motionToggle.addEventListener('change', () => {
+        const on = motionToggle.checked;
+        document.body.classList.toggle('dash-reduced-motion', on);
+        localStorage.setItem('dashboard.reducedMotion', on ? '1' : '0');
+      });
+    }
   }
 
   /* ------------------------------------------------------------------ */
