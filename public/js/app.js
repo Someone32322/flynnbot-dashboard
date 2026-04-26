@@ -1,5 +1,5 @@
 /* =============================================
-   NAVBAR — glass effect on scroll
+   NAVBAR — glass effect + active link on scroll
    ============================================= */
 (function () {
   const nav = document.getElementById('nav');
@@ -7,6 +7,16 @@
 
   function updateNav() {
     nav.classList.toggle('scrolled', window.scrollY > 20);
+    // Active nav link highlighting
+    const links = nav.querySelectorAll('.nav-link[href^="#"]');
+    if (!links.length) return;
+    let active = null;
+    links.forEach((link) => {
+      const target = document.querySelector(link.getAttribute('href'));
+      if (target && window.scrollY >= target.offsetTop - 100) active = link;
+    });
+    links.forEach((l) => l.classList.remove('active'));
+    if (active) active.classList.add('active');
   }
   window.addEventListener('scroll', updateNav, { passive: true });
   updateNav();
