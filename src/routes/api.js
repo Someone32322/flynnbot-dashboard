@@ -11,6 +11,13 @@ const { ApplicationForm } = require('../models/ApplicationForm');
 const { ApplicationSubmission } = require('../models/ApplicationSubmission');
 const { LevelConfig } = require('../models/LevelConfig');
 const { LevelProfile } = require('../models/LevelProfile');
+const EconomyConfig = require('../models/EconomyConfig');
+const EconomyProfile = require('../models/EconomyProfile');
+const AIConfig = require('../models/AIConfig');
+const CustomCommand = require('../models/CustomCommand');
+const ThemeConfig = require('../models/ThemeConfig');
+const ModerationCase = require('../models/ModerationCase');
+const ResponseConfig = require('../models/ResponseConfig');
 const discordApi = require('../lib/discord');
 const { canReviewSingleApplication } = require('../services/applicationAccess');
 
@@ -1944,6 +1951,499 @@ router.post('/guild/:guildId/levels/reset', requireAuth, requireGuildAdmin, asyn
   } catch (err) {
     console.error('[API] POST levels/reset', err);
     res.status(500).json({ error: 'Failed to reset leaderboard' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ECONOMY ROUTES
+// ═══════════════════════════════════════════════════════════════
+
+// ── GET /api/guild/:guildId/economy ──────────────────────────
+router.get('/guild/:guildId/economy', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const cfg = await EconomyConfig.findOneAndUpdate(
+      { guildId: req.params.guildId },
+      { $setOnInsert: { guildId: req.params.guildId } },
+      { upsert: true, new: true }
+    ).lean();
+    res.json(cfg);
+  } catch (err) {
+    console.error('[API] GET economy config', err);
+    res.status(500).json({ error: 'Failed to fetch economy config' });
+  }
+});
+
+// ── PATCH /api/guild/:guildId/economy ────────────────────────
+router.patch('/guild/:guildId/economy', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const allowed = [
+      'enabled', 'currencyName', 'currencySymbol', 'startingBalance',
+      'dailyAmount', 'dailyCooldown', 'weeklyAmount', 'weeklyCooldown',
+      'workCooldown', 'workMin', 'workMax',
+      'crimeCooldown', 'crimeMin', 'crimeMax', 'crimeSuccessRate',
+      'begCooldown', 'begMin', 'begMax',
+      'robCooldown', 'robMin', 'robMax', 'robSuccessRate',
+      'fishCooldown', 'huntCooldown',
+      'minBet', 'maxBet', 'defaultBankCap', 'allowedChannels',
+    ];
+    const update = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) update[key] = req.body[key];
+    }
+    const cfg = await EconomyConfig.findOneAndUpdate(
+      { guildId: req.params.guildId },
+      { $set: update },
+      { upsert: true, new: true }
+    ).lean();
+    res.json(cfg);
+  } catch (err) {
+    console.error('[API] PATCH economy config', err);
+    res.status(500).json({ error: 'Failed to save economy config' });
+  }
+});
+
+// ── GET /api/guild/:guildId/economy/leaderboard ──────────────
+router.get('/guild/:guildId/economy/leaderboard', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = 20;
+    const skip = (page - 1) * limit;
+    const [profiles, total] = await Promise.all([
+      EconomyProfile.find({ guildId: req.params.guildId })
+        .sort({ netWorth: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      EconomyProfile.countDocuments({ guildId: req.params.guildId }),
+    ]);
+    res.json({ profiles, page, totalPages: Math.ceil(total / limit) });
+  } catch (err) {
+    console.error('[API] GET economy leaderboard', err);
+    res.status(500).json({ error: 'Failed to fetch leaderboard' });
+  }
+});
+
+// ── POST /api/guild/:guildId/economy/reset ───────────────────
+router.post('/guild/:guildId/economy/reset', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (userId) {
+      await EconomyProfile.deleteOne({ guildId: req.params.guildId, userId });
+      return res.json({ ok: true, message: 'User profile reset.' });
+    }
+    const result = await EconomyProfile.deleteMany({ guildId: req.params.guildId });
+    res.json({ ok: true, deleted: result.deletedCount });
+  } catch (err) {
+    console.error('[API] POST economy/reset', err);
+    res.status(500).json({ error: 'Failed to reset economy' });
+  }
+});
+
+// ── GET /api/guild/:guildId/economy/shop ─────────────────────
+router.get('/guild/:guildId/economy/shop', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const cfg = await EconomyConfig.findOne({ guildId: req.params.guildId }).lean();
+    res.json(cfg?.shop || []);
+  } catch (err) {
+    console.error('[API] GET economy shop', err);
+    res.status(500).json({ error: 'Failed to fetch shop' });
+  }
+});
+
+// ── POST /api/guild/:guildId/economy/shop ────────────────────
+router.post('/guild/:guildId/economy/shop', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { name, description, price, emoji, type, roleId, usable, useEffect, useValue, stock } = req.body;
+    if (!name || price == null) return res.status(400).json({ error: 'name and price are required' });
+    const itemId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const item = {
+      itemId, name, description: description || '', price: Number(price),
+      emoji: emoji || '🛒', type: type || 'item',
+      roleId: roleId || null, usable: !!usable,
+      useEffect: useEffect || null, useValue: Number(useValue) || 0,
+      stock: stock != null ? Number(stock) : -1, soldCount: 0, active: true,
+    };
+    const cfg = await EconomyConfig.findOneAndUpdate(
+      { guildId: req.params.guildId },
+      { $push: { shop: item } },
+      { upsert: true, new: true }
+    ).lean();
+    res.json({ ok: true, shop: cfg.shop });
+  } catch (err) {
+    console.error('[API] POST economy shop', err);
+    res.status(500).json({ error: 'Failed to add shop item' });
+  }
+});
+
+// ── PATCH /api/guild/:guildId/economy/shop/:itemId ───────────
+router.patch('/guild/:guildId/economy/shop/:itemId', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const allowed = ['name', 'description', 'price', 'emoji', 'type', 'roleId', 'usable', 'useEffect', 'useValue', 'stock', 'active'];
+    const setFields = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) setFields[`shop.$.${key}`] = req.body[key];
+    }
+    const cfg = await EconomyConfig.findOneAndUpdate(
+      { guildId: req.params.guildId, 'shop.itemId': req.params.itemId },
+      { $set: setFields },
+      { new: true }
+    ).lean();
+    if (!cfg) return res.status(404).json({ error: 'Item not found' });
+    res.json({ ok: true, shop: cfg.shop });
+  } catch (err) {
+    console.error('[API] PATCH economy shop item', err);
+    res.status(500).json({ error: 'Failed to update shop item' });
+  }
+});
+
+// ── DELETE /api/guild/:guildId/economy/shop/:itemId ──────────
+router.delete('/guild/:guildId/economy/shop/:itemId', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const cfg = await EconomyConfig.findOneAndUpdate(
+      { guildId: req.params.guildId },
+      { $pull: { shop: { itemId: req.params.itemId } } },
+      { new: true }
+    ).lean();
+    if (!cfg) return res.status(404).json({ error: 'Config not found' });
+    res.json({ ok: true, shop: cfg.shop });
+  } catch (err) {
+    console.error('[API] DELETE economy shop item', err);
+    res.status(500).json({ error: 'Failed to delete shop item' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// AI ROUTES
+// ═══════════════════════════════════════════════════════════════
+
+// ── GET /api/guild/:guildId/ai ────────────────────────────────
+router.get('/guild/:guildId/ai', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const cfg = await AIConfig.findOneAndUpdate(
+      { guildId: req.params.guildId },
+      { $setOnInsert: { guildId: req.params.guildId } },
+      { upsert: true, new: true }
+    ).lean();
+    res.json(cfg);
+  } catch (err) {
+    console.error('[API] GET ai config', err);
+    res.status(500).json({ error: 'Failed to fetch AI config' });
+  }
+});
+
+// ── PATCH /api/guild/:guildId/ai ──────────────────────────────
+router.patch('/guild/:guildId/ai', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const allowed = ['enabled', 'allowedChannels', 'systemPrompt', 'model', 'temperature', 'maxTokens', 'requireMention'];
+    const update = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) update[key] = req.body[key];
+    }
+    // Sanitize systemPrompt
+    if (update.systemPrompt) update.systemPrompt = String(update.systemPrompt).slice(0, 2000);
+    const cfg = await AIConfig.findOneAndUpdate(
+      { guildId: req.params.guildId },
+      { $set: update },
+      { upsert: true, new: true }
+    ).lean();
+    res.json(cfg);
+  } catch (err) {
+    console.error('[API] PATCH ai config', err);
+    res.status(500).json({ error: 'Failed to save AI config' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CUSTOM COMMANDS ROUTES
+// ═══════════════════════════════════════════════════════════════
+
+// ── GET /api/guild/:guildId/custom-commands ───────────────────
+router.get('/guild/:guildId/custom-commands', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const cmds = await CustomCommand.find({ guildId: req.params.guildId }).sort({ name: 1 }).lean();
+    res.json(cmds);
+  } catch (err) {
+    console.error('[API] GET custom-commands', err);
+    res.status(500).json({ error: 'Failed to fetch custom commands' });
+  }
+});
+
+// ── POST /api/guild/:guildId/custom-commands ──────────────────
+router.post('/guild/:guildId/custom-commands', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { name, trigger, triggerType, response, type, embedColor, embedTitle, embedDescription,
+      allowedRoles, allowedChannels, cooldownSeconds, deleteUserMessage, caseSensitive } = req.body;
+    if (!name?.trim() || !trigger?.trim() || !response?.trim()) {
+      return res.status(400).json({ error: 'name, trigger, and response are required' });
+    }
+    const existing = await CustomCommand.findOne({ guildId: req.params.guildId, name: name.trim() });
+    if (existing) return res.status(409).json({ error: 'A command with that name already exists' });
+
+    const cmd = await CustomCommand.create({
+      guildId: req.params.guildId,
+      name: name.trim().slice(0, 50),
+      trigger: trigger.trim().slice(0, 100),
+      triggerType: triggerType || 'exact',
+      response: response.trim().slice(0, 2000),
+      type: type || 'text',
+      embedColor: embedColor || '#0f52ba',
+      embedTitle: (embedTitle || '').slice(0, 256),
+      embedDescription: (embedDescription || '').slice(0, 2000),
+      allowedRoles: allowedRoles || [],
+      allowedChannels: allowedChannels || [],
+      cooldownSeconds: Number(cooldownSeconds) || 0,
+      deleteUserMessage: !!deleteUserMessage,
+      caseSensitive: !!caseSensitive,
+      enabled: true,
+    });
+    res.json(cmd);
+  } catch (err) {
+    console.error('[API] POST custom-commands', err);
+    res.status(500).json({ error: 'Failed to create custom command' });
+  }
+});
+
+// ── PATCH /api/guild/:guildId/custom-commands/:id ────────────
+router.patch('/guild/:guildId/custom-commands/:id', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const allowed = ['name', 'trigger', 'triggerType', 'response', 'type', 'embedColor',
+      'embedTitle', 'embedDescription', 'enabled', 'allowedRoles', 'allowedChannels',
+      'cooldownSeconds', 'deleteUserMessage', 'caseSensitive'];
+    const update = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) update[key] = req.body[key];
+    }
+    const cmd = await CustomCommand.findOneAndUpdate(
+      { _id: req.params.id, guildId: req.params.guildId },
+      { $set: update },
+      { new: true }
+    ).lean();
+    if (!cmd) return res.status(404).json({ error: 'Command not found' });
+    res.json(cmd);
+  } catch (err) {
+    console.error('[API] PATCH custom-command', err);
+    res.status(500).json({ error: 'Failed to update custom command' });
+  }
+});
+
+// ── DELETE /api/guild/:guildId/custom-commands/:id ───────────
+router.delete('/guild/:guildId/custom-commands/:id', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const cmd = await CustomCommand.findOneAndDelete({ _id: req.params.id, guildId: req.params.guildId });
+    if (!cmd) return res.status(404).json({ error: 'Command not found' });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[API] DELETE custom-command', err);
+    res.status(500).json({ error: 'Failed to delete custom command' });
+  }
+});
+
+// ── THEME CONFIG ─────────────────────────────────────────────
+
+// GET /api/guild/:guildId/theme
+router.get('/guild/:guildId/theme', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const theme = await ThemeConfig.findOneAndUpdate(
+      { guildId },
+      { $setOnInsert: { guildId } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    res.json(theme);
+  } catch (err) {
+    console.error('[API] GET theme', err);
+    res.status(500).json({ error: 'Failed to load theme config' });
+  }
+});
+
+// PATCH /api/guild/:guildId/theme
+router.patch('/guild/:guildId/theme', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const allowed = ['embedColor', 'embedFooterText', 'embedFooterIconUrl', 'embedAuthorName', 'embedAuthorIconUrl', 'thumbnailUrl', 'useServerIcon', 'showTimestamp'];
+    const update = {};
+    for (const key of allowed) {
+      if (key in req.body) update[key] = req.body[key];
+    }
+    const theme = await ThemeConfig.findOneAndUpdate(
+      { guildId },
+      { $set: update },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    res.json(theme);
+  } catch (err) {
+    console.error('[API] PATCH theme', err);
+    res.status(500).json({ error: 'Failed to update theme config' });
+  }
+});
+
+// ── CASE SYSTEM ──────────────────────────────────────────────
+
+// GET /api/guild/:guildId/cases?page=1&type=&userId=&moderatorId=
+router.get('/guild/:guildId/cases', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = 20;
+    const query = { guildId };
+    if (req.query.type && req.query.type !== 'all') query.type = req.query.type;
+    if (req.query.userId) query.targetUserId = req.query.userId;
+    if (req.query.moderatorId) query.moderatorId = req.query.moderatorId;
+    const [cases, total] = await Promise.all([
+      ModerationCase.find(query).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+      ModerationCase.countDocuments(query),
+    ]);
+    res.json({ cases, total, page, pages: Math.ceil(total / limit) });
+  } catch (err) {
+    console.error('[API] GET cases', err);
+    res.status(500).json({ error: 'Failed to load cases' });
+  }
+});
+
+// GET /api/guild/:guildId/cases/:id
+router.get('/guild/:guildId/cases/:id', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const c = await ModerationCase.findOne({ _id: req.params.id, guildId: req.params.guildId }).lean();
+    if (!c) return res.status(404).json({ error: 'Case not found' });
+    res.json(c);
+  } catch (err) {
+    console.error('[API] GET case detail', err);
+    res.status(500).json({ error: 'Failed to load case' });
+  }
+});
+
+// POST /api/guild/:guildId/cases — create warning
+router.post('/guild/:guildId/cases', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const { targetUserId, targetTag, reason } = req.body;
+    if (!targetUserId) return res.status(400).json({ error: 'targetUserId is required' });
+    // Generate next case number
+    const last = await ModerationCase.findOne({ guildId }).sort({ createdAt: -1 }).lean();
+    const lastNum = last ? (parseInt(last.caseNumber) || 0) : 0;
+    const caseNumber = String(lastNum + 1);
+    const moderatorId = req.user.id;
+    const moderatorTag = req.user.username || req.user.id;
+    const c = await ModerationCase.create({
+      guildId, caseNumber, type: 'warn',
+      targetUserId, targetTag: targetTag || null,
+      moderatorId, moderatorTag,
+      reason: reason || 'No reason provided.',
+    });
+    res.status(201).json(c);
+  } catch (err) {
+    console.error('[API] POST case', err);
+    res.status(500).json({ error: 'Failed to create case' });
+  }
+});
+
+// PATCH /api/guild/:guildId/cases/:id — edit reason / notes
+router.patch('/guild/:guildId/cases/:id', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId, id } = req.params;
+    const allowed = ['reason', 'notes'];
+    const update = {};
+    for (const k of allowed) { if (k in req.body) update[k] = req.body[k]; }
+    const c = await ModerationCase.findOneAndUpdate(
+      { _id: id, guildId }, { $set: update }, { new: true }
+    );
+    if (!c) return res.status(404).json({ error: 'Case not found' });
+    res.json(c);
+  } catch (err) {
+    console.error('[API] PATCH case', err);
+    res.status(500).json({ error: 'Failed to update case' });
+  }
+});
+
+// DELETE /api/guild/:guildId/cases/:id
+router.delete('/guild/:guildId/cases/:id', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const c = await ModerationCase.findOneAndDelete({ _id: req.params.id, guildId: req.params.guildId });
+    if (!c) return res.status(404).json({ error: 'Case not found' });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[API] DELETE case', err);
+    res.status(500).json({ error: 'Failed to delete case' });
+  }
+});
+
+// ── CUSTOM RESPONSES ─────────────────────────────────────────
+
+// Supported command names for response overrides
+const RESPONSE_COMMANDS = ['daily', 'weekly', 'work', 'crime', 'beg', 'rob', 'balance', 'level', 'rep', 'fish', 'hunt', 'slots', 'coinflip'];
+
+// GET /api/guild/:guildId/responses
+router.get('/guild/:guildId/responses', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const cfg = await ResponseConfig.findOneAndUpdate(
+      { guildId },
+      { $setOnInsert: { guildId } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    res.json({ ...cfg.toObject(), availableCommands: RESPONSE_COMMANDS });
+  } catch (err) {
+    console.error('[API] GET responses', err);
+    res.status(500).json({ error: 'Failed to load response config' });
+  }
+});
+
+// PATCH /api/guild/:guildId/responses — toggle enabled
+router.patch('/guild/:guildId/responses', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const update = {};
+    if (typeof req.body.enabled === 'boolean') update.enabled = req.body.enabled;
+    const cfg = await ResponseConfig.findOneAndUpdate(
+      { guildId },
+      { $set: update },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    res.json(cfg);
+  } catch (err) {
+    console.error('[API] PATCH responses', err);
+    res.status(500).json({ error: 'Failed to update response config' });
+  }
+});
+
+// PUT /api/guild/:guildId/responses/:commandName — upsert override
+router.put('/guild/:guildId/responses/:commandName', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId, commandName } = req.params;
+    if (!RESPONSE_COMMANDS.includes(commandName)) return res.status(400).json({ error: 'Unknown command name' });
+    const template = String(req.body.template || '').trim().slice(0, 2000);
+    if (!template) return res.status(400).json({ error: 'template is required' });
+    await ResponseConfig.updateOne(
+      { guildId },
+      { $pull: { overrides: { commandName } } },
+      { upsert: true }
+    );
+    const cfg = await ResponseConfig.findOneAndUpdate(
+      { guildId },
+      { $push: { overrides: { commandName, template } } },
+      { new: true }
+    );
+    res.json(cfg);
+  } catch (err) {
+    console.error('[API] PUT response override', err);
+    res.status(500).json({ error: 'Failed to save override' });
+  }
+});
+
+// DELETE /api/guild/:guildId/responses/:commandName — remove override
+router.delete('/guild/:guildId/responses/:commandName', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId, commandName } = req.params;
+    const cfg = await ResponseConfig.findOneAndUpdate(
+      { guildId },
+      { $pull: { overrides: { commandName } } },
+      { new: true }
+    );
+    if (!cfg) return res.status(404).json({ error: 'Config not found' });
+    res.json(cfg);
+  } catch (err) {
+    console.error('[API] DELETE response override', err);
+    res.status(500).json({ error: 'Failed to delete override' });
   }
 });
 

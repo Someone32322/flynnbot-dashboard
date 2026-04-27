@@ -1,0 +1,52 @@
+const mongoose = require('mongoose');
+
+const shopItemSchema = new mongoose.Schema({
+  itemId: { type: String, required: true },
+  name: { type: String, required: true },
+  description: { type: String, default: '' },
+  price: { type: Number, required: true, min: 0 },
+  emoji: { type: String, default: '🛒' },
+  type: { type: String, enum: ['item', 'role', 'custom'], default: 'item' },
+  roleId: { type: String, default: null },
+  usable: { type: Boolean, default: false },
+  useEffect: { type: String, default: null },
+  useValue: { type: Number, default: 0 },
+  stock: { type: Number, default: -1 },
+  soldCount: { type: Number, default: 0 },
+  active: { type: Boolean, default: true },
+}, { _id: false });
+
+const economyConfigSchema = new mongoose.Schema({
+  guildId: { type: String, required: true, unique: true },
+  enabled: { type: Boolean, default: false },
+  currencyName: { type: String, default: 'coins' },
+  currencySymbol: { type: String, default: '🪙' },
+  startingBalance: { type: Number, default: 100 },
+  dailyAmount: { type: Number, default: 200 },
+  dailyCooldown: { type: Number, default: 86400000 },
+  weeklyAmount: { type: Number, default: 1000 },
+  weeklyCooldown: { type: Number, default: 604800000 },
+  workCooldown: { type: Number, default: 3600000 },
+  workMin: { type: Number, default: 50 },
+  workMax: { type: Number, default: 200 },
+  crimeCooldown: { type: Number, default: 7200000 },
+  crimeMin: { type: Number, default: 100 },
+  crimeMax: { type: Number, default: 500 },
+  crimeSuccessRate: { type: Number, default: 60 },
+  begCooldown: { type: Number, default: 1800000 },
+  begMin: { type: Number, default: 10 },
+  begMax: { type: Number, default: 50 },
+  robCooldown: { type: Number, default: 3600000 },
+  robMin: { type: Number, default: 10 },
+  robMax: { type: Number, default: 40 },
+  robSuccessRate: { type: Number, default: 40 },
+  fishCooldown: { type: Number, default: 3600000 },
+  huntCooldown: { type: Number, default: 3600000 },
+  minBet: { type: Number, default: 10 },
+  maxBet: { type: Number, default: 10000 },
+  defaultBankCap: { type: Number, default: 5000 },
+  allowedChannels: { type: [String], default: [] },
+  shop: { type: [shopItemSchema], default: [] },
+}, { timestamps: true });
+
+module.exports = mongoose.models.EconomyConfig || mongoose.model('EconomyConfig', economyConfigSchema);

@@ -236,7 +236,6 @@ const EVENT_MAP = Object.fromEntries(ALL_EVENTS.map(e => [e.key, e]));
 let _loggingInitDone = false;
 let _channelOptions = [];
 let _bulkSelectMode = false;
-let _testButtonsEnabled = true;
 
 function getLoggingContainer() {
   return document.getElementById('loggingContent') || document.getElementById('logging-container');
@@ -331,7 +330,6 @@ function renderLogging(guildId) {
           <select class="logging-channel-select" id="loggingBulkChannel">${bulkChannelOptions}</select>
         </label>
         <button class="btn btn-sm btn-primary" id="loggingBulkApplyBtn" type="button" disabled>Apply to Selected</button>
-        <button class="btn btn-sm" id="loggingToggleTestBtn" type="button">Test Buttons: On</button>
       </div>
     </div>
     <div class="logging-categories">${categoryHtml}</div>
@@ -342,8 +340,6 @@ function renderLogging(guildId) {
   const clearSelectedBtn = container.querySelector('#loggingClearSelectedBtn');
   const bulkApplyBtn = container.querySelector('#loggingBulkApplyBtn');
   const bulkChannelSelect = container.querySelector('#loggingBulkChannel');
-  const toggleTestBtn = container.querySelector('#loggingToggleTestBtn');
-
   bulkModeBtn?.addEventListener('click', () => {
     _bulkSelectMode = !_bulkSelectMode;
     container.classList.toggle('bulk-select-enabled', _bulkSelectMode);
@@ -385,11 +381,6 @@ function renderLogging(guildId) {
     updateBulkSelectionState(container);
   });
 
-  toggleTestBtn?.addEventListener('click', () => {
-    _testButtonsEnabled = !_testButtonsEnabled;
-    updateTestButtonsState(container);
-  });
-
   container.querySelectorAll('.logging-channel-select').forEach((selectEl) => {
     if (!selectEl.dataset.eventKey) return;
     selectEl.addEventListener('change', () => {
@@ -402,38 +393,10 @@ function renderLogging(guildId) {
     checkEl.addEventListener('change', () => updateBulkSelectionState(container));
   });
 
-  container.querySelectorAll('.logging-test-btn').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      if (!_testButtonsEnabled) return;
-      const key = btn.dataset.eventKey;
-      const channelSelect = container.querySelector(`.logging-channel-select[data-event-key="${CSS.escape(key)}"]`);
-      const selectedChannelId = channelSelect?.value || null;
-      btn.disabled = true;
-      const oldText = btn.textContent;
-      btn.textContent = 'Testing...';
-      try {
-        const resp = await fetch(`/api/guild/${guildId}/logging/test`, {
-          method: 'POST',
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventKey: key, channelId: selectedChannelId }),
-        });
-        btn.textContent = resp.ok ? 'Sent' : 'Failed';
-      } catch {
-        btn.textContent = 'Failed';
-      } finally {
-        setTimeout(() => {
-          btn.textContent = oldText;
-          btn.disabled = false;
-        }, 1200);
-      }
-    });
-  });
-
   const saveRow = getLoggingSaveRow();
   if (saveRow) saveRow.style.display = 'flex';
 
   updateBulkSelectionState(container);
-  updateTestButtonsState(container);
 }
 
 function formatCategoryLabel(rawLabel) {
@@ -454,7 +417,7 @@ function renderEventRow(event) {
       <span class="logging-event-label" title="${escapeHtml(event.description || event.name)}">${escapeHtml(event.name)}</span>
       <div class="logging-row-actions">
         <select class="logging-channel-select" data-event-key="${escapeHtml(event.key)}">${options}</select>
-        <button class="btn btn-sm logging-test-btn" data-event-key="${escapeHtml(event.key)}">Test</button>
+
       </div>
     </div>
   `;
@@ -489,16 +452,7 @@ function updateBulkSelectionState(container) {
   if (bulkApplyBtn) bulkApplyBtn.disabled = !_bulkSelectMode || selectedKeys.length === 0;
 }
 
-function updateTestButtonsState(container) {
-  const toggleBtn = container.querySelector('#loggingToggleTestBtn');
-  if (toggleBtn) {
-    toggleBtn.textContent = `Test Buttons: ${_testButtonsEnabled ? 'On' : 'Off'}`;
-  }
-  container.classList.toggle('logging-tests-disabled', !_testButtonsEnabled);
-  container.querySelectorAll('.logging-test-btn').forEach((btn) => {
-    btn.disabled = !_testButtonsEnabled;
-  });
-}
+
 
 function escapeHtml(value) {
   return String(value ?? '')

@@ -77,6 +77,30 @@
             <span class="sidebar-nav-icon">⭐</span>
             <span class="sidebar-nav-text">Leveling</span>
           </button>
+          <button class="sidebar-nav-item" data-section="economy">
+            <span class="sidebar-nav-icon">🪙</span>
+            <span class="sidebar-nav-text">Economy</span>
+          </button>
+          <button class="sidebar-nav-item" data-section="ai">
+            <span class="sidebar-nav-icon">🤖</span>
+            <span class="sidebar-nav-text">AI Chat</span>
+          </button>
+          <button class="sidebar-nav-item" data-section="custom-commands">
+            <span class="sidebar-nav-icon">⚡</span>
+            <span class="sidebar-nav-text">Custom Commands</span>
+          </button>
+          <button class="sidebar-nav-item" data-section="theme">
+            <span class="sidebar-nav-icon">🎨</span>
+            <span class="sidebar-nav-text">Theme</span>
+          </button>
+          <button class="sidebar-nav-item" data-section="cases">
+            <span class="sidebar-nav-icon">📋</span>
+            <span class="sidebar-nav-text">Cases</span>
+          </button>
+          <button class="sidebar-nav-item" data-section="responses">
+            <span class="sidebar-nav-icon">💬</span>
+            <span class="sidebar-nav-text">Responses</span>
+          </button>
         </div>
       </nav>
 
@@ -112,6 +136,7 @@
           <button class="quick-nav-btn" type="button" data-section="embeds">Messages</button>
           <button class="quick-nav-btn" type="button" data-section="reaction-roles">Reaction Roles</button>
           <button class="quick-nav-btn" type="button" data-section="levels">Leveling</button>
+          <button class="quick-nav-btn" type="button" data-section="economy">Economy</button>
           <button class="quick-nav-btn" type="button" data-section="logging">Logging</button>
         </div>
       </header>
@@ -852,6 +877,73 @@
 
           </section>
 
+      <!-- ── AI SECTION ── -->
+      <section class="dash-section" id="section-ai" data-section="ai">
+        <div class="section-header">
+          <h2 class="section-title">🤖 AI Chat</h2>
+          <p class="section-subtitle">Configure the AI chat assistant powered by Groq (free tier).</p>
+        </div>
+        <div id="aiContent">
+          <div class="commands-loading"><div class="spinner"></div> Loading AI config…</div>
+        </div>
+      </section>
+
+      <!-- ── CUSTOM COMMANDS SECTION ── -->
+      <section class="dash-section" id="section-custom-commands" data-section="custom-commands">
+        <div class="section-header">
+          <h2 class="section-title">⚡ Custom Commands</h2>
+          <p class="section-subtitle">Create auto-responses triggered by messages in your server.</p>
+        </div>
+        <div id="customCommandsContent">
+          <div class="commands-loading"><div class="spinner"></div> Loading custom commands…</div>
+        </div>
+      </section>
+
+      <!-- ── CASES SECTION ── -->
+      <section class="dash-section" id="section-cases" data-section="cases">
+        <div class="section-header">
+          <h2 class="section-title">📋 Moderation Cases</h2>
+          <p class="section-subtitle">View and manage moderation cases for your server.</p>
+        </div>
+        <div id="casesContent">
+          <div class="commands-loading"><div class="spinner"></div> Loading cases…</div>
+        </div>
+      </section>
+
+      <!-- ── RESPONSES SECTION ── -->
+      <section class="dash-section" id="section-responses" data-section="responses">
+        <div class="section-header">
+          <h2 class="section-title">💬 Custom Responses</h2>
+          <p class="section-subtitle">Override the bot's default command reply text for your server.</p>
+        </div>
+        <div id="responsesContent">
+          <div class="commands-loading"><div class="spinner"></div> Loading responses…</div>
+        </div>
+      </section>
+
+      <!-- ── THEME SECTION ── -->
+      <section class="dash-section" id="section-theme" data-section="theme">
+        <div class="section-header">
+          <h2 class="section-title">🎨 Theme</h2>
+          <p class="section-subtitle">Customise how the bot's embeds look in your server.</p>
+        </div>
+        <div id="themeContent">
+          <div class="commands-loading"><div class="spinner"></div> Loading theme config…</div>
+        </div>
+      </section>
+
+      <!-- ── ECONOMY SECTION ── -->
+      <section class="dash-section" id="section-economy" data-section="economy">
+        <div class="section-header">
+          <h2 class="section-title">🪙 Economy</h2>
+          <p class="section-subtitle">Configure the server economy system, shop, and leaderboard.</p>
+        </div>
+
+        <div id="economyContent">
+          <div class="commands-loading"><div class="spinner"></div> Loading economy config…</div>
+        </div>
+      </section>
+
   <nav class="mobile-bottom-nav" aria-label="Mobile quick navigation">
     <button class="mobile-nav-item" type="button" data-section="home">Home</button>
     <button class="mobile-nav-item" type="button" data-section="commands">Commands</button>
@@ -888,5 +980,11 @@
   <script src="/js/reactionroles.js?v=20260425"></script>
   <script src="/js/applications.js?v=20260425"></script>
   <script src="/js/leveling.js?v=20260426"></script>
+  <script src="/js/economy.js?v=20260426"></script>
+  <script src="/js/ai.js?v=20260426"></script>
+  <script src="/js/custom-commands.js?v=20260426"></script>
+  <script src="/js/theme.js?v=20260426"></script>
+  <script src="/js/cases.js?v=20260426"></script>
+  <script src="/js/responses.js?v=20260426"></script>
 </body>
 </html>
