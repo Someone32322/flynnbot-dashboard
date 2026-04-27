@@ -46,7 +46,7 @@ function renderCustomCommands(container, guildId) {
         <div class="ec-grid-2">
           <label class="ec-field"><span>Name (unique) <span class="required">*</span></span><input type="text" id="ccName" class="ec-input" maxlength="50" /></label>
           <label class="ec-field"><span>Trigger Type</span>
-            <select id="ccTriggerType" class="ec-input">
+            <select id="ccTriggerType" class="ec-input" data-cs>
               <option value="exact">Exact match</option>
               <option value="contains">Contains</option>
               <option value="startsWith">Starts with</option>
@@ -55,7 +55,7 @@ function renderCustomCommands(container, guildId) {
           </label>
           <label class="ec-field" style="grid-column:1/-1"><span>Trigger <span class="required">*</span></span><input type="text" id="ccTrigger" class="ec-input" maxlength="100" placeholder="e.g. !hello or trigger phrase" /></label>
           <label class="ec-field"><span>Response Type</span>
-            <select id="ccType" class="ec-input">
+            <select id="ccType" class="ec-input" data-cs>
               <option value="text">Text</option>
               <option value="embed">Embed</option>
             </select>
@@ -169,6 +169,8 @@ function openCCModal(guildId, id) {
   toggleEmbedFields();
   document.getElementById('ccModal').dataset.editId = id || '';
   document.getElementById('ccModal').style.display = 'flex';
+  const modal = document.getElementById('ccModal');
+  if (typeof initAllCustomSelects === 'function') initAllCustomSelects(modal);
 }
 
 function closeCCModal() {

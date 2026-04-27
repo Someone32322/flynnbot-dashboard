@@ -33,6 +33,27 @@
     bindModalClose();
     bindPanelClose();
     document.addEventListener('click', handleOutsideClick);
+
+    // Reset all commands button
+    document.getElementById('resetAllCommandsBtn')?.addEventListener('click', async () => {
+      if (!confirm('This will disable ALL commands and remove them from Discord. Are you sure?')) return;
+      const btn = document.getElementById('resetAllCommandsBtn');
+      btn.disabled = true;
+      btn.textContent = 'Resetting…';
+      try {
+        await apiFetch(`/guild/${GUILD_ID}/commands/reset-all`, { method: 'POST' });
+        allCommands.forEach((cmd) => { cmd.settings.enabled = false; });
+        renderCommands();
+        updateSidebarBadge();
+        updateHomeStats();
+        toast('All commands reset — none are enabled.', 'success');
+      } catch (err) {
+        toast(`Reset failed: ${err.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Reset All';
+      }
+    });
   });
 
   /* ------------------------------------------------------------------ */
@@ -274,7 +295,7 @@
       <div class="settings-field">
         <label class="settings-label" for="sp-ephemeral">Reply Visibility</label>
         <div class="settings-hint">Control whether replies are visible only to the user or to the channel.</div>
-        <select class="settings-select" id="sp-ephemeral">
+        <select class="settings-select" id="sp-ephemeral" data-cs>
           <option value="default" ${s.ephemeralMode === 'default' ? 'selected' : ''}>Default (bot decides)</option>
           <option value="all"     ${s.ephemeralMode === 'all'     ? 'selected' : ''}>Always Ephemeral (private)</option>
           <option value="off"     ${s.ephemeralMode === 'off'     ? 'selected' : ''}>Always Public</option>
@@ -355,6 +376,7 @@
 
     bindChipsUI('roles',    guildRoles,    s.allowedRoles,    body);
     bindChipsUI('channels', guildChannels, s.allowedChannels, body);
+    if (typeof initAllCustomSelects === 'function') initAllCustomSelects(body);
 
     document.getElementById('sp-save').addEventListener('click', () => saveSettings(cmd, body));
     document.getElementById('sp-cancel').addEventListener('click', closePanel);

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-26T05:27:07.330Z",
+  "generatedAt": "2026-04-27T10:55:50.171Z",
   "source": "C:\\Users\\lone8\\Downloads\\flynnbot 2.0\\apps\\bot\\src\\commands",
   "meta": {
     "ping": {
@@ -409,9 +409,423 @@
       "description": "Show the XP leaderboard for this server.",
       "usage": "/leaderboard [limit] [page]",
       "aliases": []
+    },
+    "balance": {
+      "category": "Economy",
+      "description": "Check your wallet and bank balance.",
+      "usage": "/balance [user]",
+      "aliases": [
+        "bal"
+      ]
+    },
+    "daily": {
+      "category": "Economy",
+      "description": "Collect your daily coins reward.",
+      "usage": "/daily",
+      "aliases": []
+    },
+    "weekly": {
+      "category": "Economy",
+      "description": "Collect your weekly coins reward.",
+      "usage": "/weekly",
+      "aliases": []
+    },
+    "work": {
+      "category": "Economy",
+      "description": "Work a job to earn coins.",
+      "usage": "/work",
+      "aliases": []
+    },
+    "crime": {
+      "category": "Economy",
+      "description": "Attempt a crime for a risky payout.",
+      "usage": "/crime",
+      "aliases": []
+    },
+    "beg": {
+      "category": "Economy",
+      "description": "Beg for a small amount of coins.",
+      "usage": "/beg",
+      "aliases": []
+    },
+    "rob": {
+      "category": "Economy",
+      "description": "Attempt to rob another user's wallet.",
+      "usage": "/rob <user>",
+      "aliases": []
+    },
+    "deposit": {
+      "category": "Economy",
+      "description": "Deposit coins from your wallet to your bank.",
+      "usage": "/deposit <amount|all>",
+      "aliases": [
+        "dep"
+      ]
+    },
+    "withdraw": {
+      "category": "Economy",
+      "description": "Withdraw coins from your bank to your wallet.",
+      "usage": "/withdraw <amount|all>",
+      "aliases": [
+        "with"
+      ]
+    },
+    "give": {
+      "category": "Economy",
+      "description": "Give coins to another user.",
+      "usage": "/give <user> <amount>",
+      "aliases": []
+    },
+    "shop": {
+      "category": "Economy",
+      "description": "View the server shop.",
+      "usage": "/shop",
+      "aliases": []
+    },
+    "buy": {
+      "category": "Economy",
+      "description": "Buy an item from the server shop.",
+      "usage": "/buy <item> [quantity]",
+      "aliases": []
+    },
+    "sell": {
+      "category": "Economy",
+      "description": "Sell an item from your inventory.",
+      "usage": "/sell <item> [quantity]",
+      "aliases": []
+    },
+    "inventory": {
+      "category": "Economy",
+      "description": "View your inventory.",
+      "usage": "/inventory [user]",
+      "aliases": [
+        "inv"
+      ]
+    },
+    "use": {
+      "category": "Economy",
+      "description": "Use an item from your inventory.",
+      "usage": "/use <item>",
+      "aliases": []
+    },
+    "slots": {
+      "category": "Economy",
+      "description": "Spin the slot machine.",
+      "usage": "/slots <bet>",
+      "aliases": []
+    },
+    "coinflip": {
+      "category": "Economy",
+      "description": "Flip a coin and bet on the outcome.",
+      "usage": "/coinflip <bet> [side]",
+      "aliases": [
+        "cf"
+      ]
+    },
+    "blackjack": {
+      "category": "Economy",
+      "description": "Play a round of blackjack.",
+      "usage": "/blackjack <bet>",
+      "aliases": [
+        "bj"
+      ]
+    },
+    "fish": {
+      "category": "Economy",
+      "description": "Go fishing for collectibles.",
+      "usage": "/fish",
+      "aliases": []
+    },
+    "hunt": {
+      "category": "Economy",
+      "description": "Go hunting for wild animals.",
+      "usage": "/hunt",
+      "aliases": []
+    },
+    "economy": {
+      "category": "Economy",
+      "description": "Economy leaderboard and personal stats.",
+      "usage": "/economy leaderboard [page] | /economy stats [user]",
+      "aliases": []
     }
   },
   "commandData": {
+    "balance": {
+      "options": [
+        {
+          "name": "user",
+          "description": "View another user's balance",
+          "required": false,
+          "type": 6
+        }
+      ],
+      "name": "balance",
+      "description": "Check your wallet and bank balance.",
+      "type": 1
+    },
+    "beg": {
+      "options": [],
+      "name": "beg",
+      "description": "Beg for a small amount of coins.",
+      "type": 1
+    },
+    "blackjack": {
+      "options": [
+        {
+          "type": 3,
+          "name": "bet",
+          "description": "Amount to bet (number, \"all\", or \"half\")",
+          "required": true
+        }
+      ],
+      "name": "blackjack",
+      "description": "Play a round of blackjack against the dealer.",
+      "type": 1
+    },
+    "buy": {
+      "options": [
+        {
+          "type": 3,
+          "name": "item",
+          "description": "Item name to buy",
+          "required": true
+        },
+        {
+          "max_value": 99,
+          "min_value": 1,
+          "type": 4,
+          "name": "quantity",
+          "description": "How many to buy",
+          "required": false
+        }
+      ],
+      "name": "buy",
+      "description": "Buy an item from the server shop.",
+      "type": 1
+    },
+    "coinflip": {
+      "options": [
+        {
+          "type": 3,
+          "name": "bet",
+          "description": "Amount to bet (number, \"all\", or \"half\")",
+          "required": true
+        },
+        {
+          "type": 3,
+          "choices": [
+            {
+              "name": "Heads",
+              "value": "heads"
+            },
+            {
+              "name": "Tails",
+              "value": "tails"
+            }
+          ],
+          "name": "side",
+          "description": "heads or tails",
+          "required": false
+        }
+      ],
+      "name": "coinflip",
+      "description": "Flip a coin and bet on the outcome.",
+      "type": 1
+    },
+    "crime": {
+      "options": [],
+      "name": "crime",
+      "description": "Attempt a crime for a risky reward.",
+      "type": 1
+    },
+    "daily": {
+      "options": [],
+      "name": "daily",
+      "description": "Collect your daily reward.",
+      "type": 1
+    },
+    "deposit": {
+      "options": [
+        {
+          "type": 3,
+          "name": "amount",
+          "description": "Amount to deposit (or \"all\")",
+          "required": true
+        }
+      ],
+      "name": "deposit",
+      "description": "Deposit coins from your wallet to your bank.",
+      "type": 1
+    },
+    "economy": {
+      "options": [
+        {
+          "type": 1,
+          "name": "leaderboard",
+          "description": "View the economy leaderboard.",
+          "options": [
+            {
+              "min_value": 1,
+              "type": 4,
+              "name": "page",
+              "description": "Page number",
+              "required": false
+            }
+          ]
+        },
+        {
+          "type": 1,
+          "name": "stats",
+          "description": "View your economy statistics.",
+          "options": [
+            {
+              "name": "user",
+              "description": "View another user",
+              "required": false,
+              "type": 6
+            }
+          ]
+        }
+      ],
+      "name": "economy",
+      "description": "Economy leaderboard and stats.",
+      "type": 1
+    },
+    "fish": {
+      "options": [],
+      "name": "fish",
+      "description": "Go fishing and catch something valuable.",
+      "type": 1
+    },
+    "give": {
+      "options": [
+        {
+          "name": "user",
+          "description": "Who to give coins to",
+          "required": true,
+          "type": 6
+        },
+        {
+          "min_value": 1,
+          "type": 4,
+          "name": "amount",
+          "description": "Amount to give",
+          "required": true
+        }
+      ],
+      "name": "give",
+      "description": "Give coins from your wallet to another user.",
+      "type": 1
+    },
+    "hunt": {
+      "options": [],
+      "name": "hunt",
+      "description": "Go hunting and catch wild animals.",
+      "type": 1
+    },
+    "inventory": {
+      "options": [
+        {
+          "name": "user",
+          "description": "View another user's inventory",
+          "required": false,
+          "type": 6
+        }
+      ],
+      "name": "inventory",
+      "description": "View your inventory.",
+      "type": 1
+    },
+    "rob": {
+      "options": [
+        {
+          "name": "user",
+          "description": "Who to rob",
+          "required": true,
+          "type": 6
+        }
+      ],
+      "name": "rob",
+      "description": "Attempt to rob another user's wallet.",
+      "type": 1
+    },
+    "sell": {
+      "options": [
+        {
+          "type": 3,
+          "name": "item",
+          "description": "Item name to sell",
+          "required": true
+        },
+        {
+          "min_value": 1,
+          "type": 4,
+          "name": "quantity",
+          "description": "How many to sell",
+          "required": false
+        }
+      ],
+      "name": "sell",
+      "description": "Sell an item from your inventory.",
+      "type": 1
+    },
+    "shop": {
+      "options": [],
+      "name": "shop",
+      "description": "View the server shop.",
+      "type": 1
+    },
+    "slots": {
+      "options": [
+        {
+          "type": 3,
+          "name": "bet",
+          "description": "Amount to bet (number, \"all\", or \"half\")",
+          "required": true
+        }
+      ],
+      "name": "slots",
+      "description": "Spin the slot machine and win big — or lose it all.",
+      "type": 1
+    },
+    "use": {
+      "options": [
+        {
+          "type": 3,
+          "name": "item",
+          "description": "Item name to use",
+          "required": true
+        }
+      ],
+      "name": "use",
+      "description": "Use an item from your inventory.",
+      "type": 1
+    },
+    "weekly": {
+      "options": [],
+      "name": "weekly",
+      "description": "Collect your weekly reward.",
+      "type": 1
+    },
+    "withdraw": {
+      "options": [
+        {
+          "type": 3,
+          "name": "amount",
+          "description": "Amount to withdraw (or \"all\")",
+          "required": true
+        }
+      ],
+      "name": "withdraw",
+      "description": "Withdraw coins from your bank to your wallet.",
+      "type": 1
+    },
+    "work": {
+      "options": [],
+      "name": "work",
+      "description": "Work a job to earn coins.",
+      "type": 1
+    },
     "help": {
       "options": [
         {

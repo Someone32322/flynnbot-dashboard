@@ -63,7 +63,7 @@ function renderAI(container, guildId) {
       <div class="ec-card-body ec-grid-2">
         <label class="ec-field">
           <span>Model</span>
-          <select id="aiModel" class="ec-input">
+          <select id="aiModel" class="ec-input" data-cs>
             <option value="llama3-8b-8192" ${cfg.model === 'llama3-8b-8192' ? 'selected' : ''}>Llama 3 8B (fast, free)</option>
             <option value="llama3-70b-8192" ${cfg.model === 'llama3-70b-8192' ? 'selected' : ''}>Llama 3 70B (smart, free)</option>
             <option value="mixtral-8x7b-32768" ${cfg.model === 'mixtral-8x7b-32768' ? 'selected' : ''}>Mixtral 8x7B (balanced)</option>
@@ -104,7 +104,7 @@ function renderAI(container, guildId) {
           ${renderAIChannelTags(cfg.allowedChannels || [])}
         </div>
         <div style="display:flex;gap:0.5rem;margin-top:0.75rem">
-          <select id="aiChannelAdd" class="ec-input" style="max-width:260px">
+          <select id="aiChannelAdd" class="ec-input" data-cs style="max-width:260px">
             <option value="">Select a channel to add…</option>
             ${channelOptions}
           </select>
@@ -119,6 +119,7 @@ function renderAI(container, guildId) {
   `;
 
   document.getElementById('aiSaveBtn')?.addEventListener('click', () => saveAI(guildId));
+  if (typeof initAllCustomSelects === 'function') initAllCustomSelects(container);
   document.getElementById('aiAddChannelBtn')?.addEventListener('click', () => {
     const sel = document.getElementById('aiChannelAdd');
     const id = sel?.value;

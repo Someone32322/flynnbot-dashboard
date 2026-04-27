@@ -307,6 +307,34 @@ router.patch('/guild/:guildId/commands/:name', requireAuth, requireGuildAdmin, a
   }
 });
 
+// ── POST /api/guild/:guildId/commands/reset-all ──────────────
+// Disables ALL commands: deletes all guild commands from Discord and clears commandSettings.
+router.post('/guild/:guildId/commands/reset-all', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+
+    // Fetch all currently registered guild commands from Discord and delete them
+    try {
+      const guildCmds = await discordApi.getGuildCommands(guildId);
+      await Promise.all(guildCmds.map((cmd) => discordApi.deleteGuildCommand(guildId, cmd.id).catch(() => {})));
+    } catch (_) {
+      // Non-fatal — continue clearing DB
+    }
+
+    // Clear all commandSettings in DB
+    await GuildConfig.findOneAndUpdate(
+      { guildId },
+      { $set: { commandSettings: {} } },
+      { upsert: true }
+    );
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[API] reset-all commands', err);
+    res.status(500).json({ error: err.message || 'Failed to reset commands' });
+  }
+});
+
 // ── GET /api/guild/:guildId/roles ─────────────────────────────
 router.get('/guild/:guildId/roles', requireAuth, requireGuildAdmin, async (req, res) => {
   try {

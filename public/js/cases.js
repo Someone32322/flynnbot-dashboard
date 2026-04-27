@@ -44,7 +44,7 @@ function renderCases(container, guildId) {
       <div class="ec-card-body">
         <div class="ec-grid-2" style="margin-bottom:0.75rem">
           <label class="ec-field"><span>Filter by type</span>
-            <select id="casesFilterType" class="ec-input">
+            <select id="casesFilterType" class="ec-input" data-cs>
               <option value="all" ${_casesFilters.type === 'all' ? 'selected' : ''}>All</option>
               <option value="warn" ${_casesFilters.type === 'warn' ? 'selected' : ''}>Warn</option>
               <option value="mute" ${_casesFilters.type === 'mute' ? 'selected' : ''}>Mute</option>
@@ -100,6 +100,7 @@ function renderCases(container, guildId) {
   `;
 
   document.getElementById('caseAddBtn')?.addEventListener('click', () => openCaseModal(guildId));
+  if (typeof initAllCustomSelects === 'function') initAllCustomSelects(container);
   document.getElementById('caseModalCancel')?.addEventListener('click', () => document.getElementById('caseModal').style.display = 'none');
   document.getElementById('caseModalConfirm')?.addEventListener('click', () => submitCaseModal(guildId));
   document.getElementById('caseEditCancel')?.addEventListener('click', () => document.getElementById('caseEditModal').style.display = 'none');

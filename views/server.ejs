@@ -392,14 +392,17 @@
             <h2 class="section-page-title">Commands</h2>
             <p class="section-page-sub">Enable commands and configure them per-server. Only enabled commands appear in Discord.</p>
           </div>
-          <input type="text" id="commandSearch" class="commands-search" placeholder="Search commands…" aria-label="Search commands">
+          <div class="commands-header-actions">
+            <input type="text" id="commandSearch" class="commands-search" placeholder="Search commands…" aria-label="Search commands">
+            <button class="btn btn-danger btn-sm" id="resetAllCommandsBtn" title="Disable all commands and remove them from Discord">Reset All</button>
+          </div>
         </div>
 
         <div class="category-tabs" id="categoryTabs">
           <button class="cat-tab active" data-cat="all">All</button>
           <button class="cat-tab" data-cat="Moderation">Moderation</button>
+          <button class="cat-tab" data-cat="Economy">Economy</button>
           <button class="cat-tab" data-cat="Levels">Levels</button>
-          <button class="cat-tab" data-cat="Admin">Admin</button>
           <button class="cat-tab" data-cat="General">General</button>
           <button class="cat-tab" data-cat="Info">Info</button>
           <button class="cat-tab" data-cat="Message">Message</button>
@@ -878,7 +881,7 @@
           </section>
 
       <!-- ── AI SECTION ── -->
-      <section class="dash-section" id="section-ai" data-section="ai">
+      <section class="dash-section" id="section-ai" data-section="ai" style="display:none">
         <div class="section-header">
           <h2 class="section-title">🤖 AI Chat</h2>
           <p class="section-subtitle">Configure the AI chat assistant powered by Groq (free tier).</p>
@@ -889,7 +892,7 @@
       </section>
 
       <!-- ── CUSTOM COMMANDS SECTION ── -->
-      <section class="dash-section" id="section-custom-commands" data-section="custom-commands">
+      <section class="dash-section" id="section-custom-commands" data-section="custom-commands" style="display:none">
         <div class="section-header">
           <h2 class="section-title">⚡ Custom Commands</h2>
           <p class="section-subtitle">Create auto-responses triggered by messages in your server.</p>
@@ -900,7 +903,7 @@
       </section>
 
       <!-- ── CASES SECTION ── -->
-      <section class="dash-section" id="section-cases" data-section="cases">
+      <section class="dash-section" id="section-cases" data-section="cases" style="display:none">
         <div class="section-header">
           <h2 class="section-title">📋 Moderation Cases</h2>
           <p class="section-subtitle">View and manage moderation cases for your server.</p>
@@ -911,7 +914,7 @@
       </section>
 
       <!-- ── RESPONSES SECTION ── -->
-      <section class="dash-section" id="section-responses" data-section="responses">
+      <section class="dash-section" id="section-responses" data-section="responses" style="display:none">
         <div class="section-header">
           <h2 class="section-title">💬 Custom Responses</h2>
           <p class="section-subtitle">Override the bot's default command reply text for your server.</p>
@@ -922,7 +925,7 @@
       </section>
 
       <!-- ── THEME SECTION ── -->
-      <section class="dash-section" id="section-theme" data-section="theme">
+      <section class="dash-section" id="section-theme" data-section="theme" style="display:none">
         <div class="section-header">
           <h2 class="section-title">🎨 Theme</h2>
           <p class="section-subtitle">Customise how the bot's embeds look in your server.</p>
@@ -933,7 +936,7 @@
       </section>
 
       <!-- ── ECONOMY SECTION ── -->
-      <section class="dash-section" id="section-economy" data-section="economy">
+      <section class="dash-section" id="section-economy" data-section="economy" style="display:none">
         <div class="section-header">
           <h2 class="section-title">🪙 Economy</h2>
           <p class="section-subtitle">Configure the server economy system, shop, and leaderboard.</p>
@@ -973,6 +976,7 @@
   </aside>
 
   <div id="pageData" data-guild-id="<%= guild.id %>" style="display:none"></div>
+  <script src="/js/custom-select.js?v=20260427"></script>
   <script src="/js/app.js?v=20260425"></script>
   <script src="/js/server.js?v=20260425"></script>
   <script src="/js/logging.js?v=20260425"></script>

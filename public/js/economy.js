@@ -142,7 +142,7 @@ function renderEconomy(container, guildId) {
           <label class="ec-field"><span>Price <span class="required">*</span></span><input type="number" id="ecItemPrice" class="ec-input" min="1" /></label>
           <label class="ec-field"><span>Emoji</span><input type="text" id="ecItemEmoji" class="ec-input" value="🛒" maxlength="10" /></label>
           <label class="ec-field"><span>Type</span>
-            <select id="ecItemType" class="ec-input">
+            <select id="ecItemType" class="ec-input" data-cs>
               <option value="item">Item</option>
               <option value="role">Role</option>
               <option value="custom">Custom</option>
@@ -232,6 +232,7 @@ function openItemModal(guildId, itemId) {
   document.getElementById('ecItemDesc').value = item?.description || '';
   modal.dataset.editId = itemId || '';
   modal.style.display = 'flex';
+  if (typeof initAllCustomSelects === 'function') initAllCustomSelects(modal);
 }
 
 function closeItemModal() {

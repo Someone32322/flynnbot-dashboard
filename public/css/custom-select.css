@@ -1,0 +1,188 @@
+/* ============================================================
+   CUSTOM SELECT COMPONENT
+   ============================================================ */
+
+.cs-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+/* ── Trigger button ──────────────────────────────────────── */
+.cs-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(9, 18, 44, 0.75);
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  border-radius: 10px;
+  color: var(--text, #f1f5f9);
+  font-size: 0.875rem;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+  text-align: left;
+  min-height: 42px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.cs-trigger:hover {
+  border-color: rgba(59, 130, 246, 0.45);
+  background: rgba(13, 26, 62, 0.9);
+}
+
+.cs-open .cs-trigger {
+  border-color: var(--accent, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  background: rgba(13, 26, 62, 0.95);
+}
+
+.cs-trigger-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-trigger-arrow {
+  flex-shrink: 0;
+  color: var(--text-3, #64748b);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.18s;
+  display: flex;
+  align-items: center;
+}
+
+.cs-open .cs-trigger-arrow {
+  transform: rotate(180deg);
+  color: var(--accent, #3b82f6);
+}
+
+/* ── Popup ───────────────────────────────────────────────── */
+.cs-popup {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 9000;
+  background: rgba(8, 15, 38, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 12px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.55),
+    0 2px 8px rgba(59, 130, 246, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  max-height: 280px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 130, 246, 0.2) transparent;
+
+  /* Hidden by default */
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  pointer-events: none;
+  transition: opacity 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cs-popup-up {
+  top: auto;
+  bottom: calc(100% + 6px);
+  transform: translateY(6px) scale(0.98);
+}
+
+.cs-open .cs-popup {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.cs-open .cs-popup-up {
+  transform: translateY(0) scale(1);
+}
+
+/* ── Option items ────────────────────────────────────────── */
+.cs-option {
+  display: flex;
+  align-items: center;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-2, #94a3b8);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  gap: 8px;
+}
+
+.cs-option:hover,
+.cs-option.focused {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--text, #f1f5f9);
+}
+
+.cs-option.selected {
+  background: rgba(59, 130, 246, 0.14);
+  color: #93c5fd;
+  font-weight: 600;
+}
+
+.cs-option.selected::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent, #3b82f6);
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.6);
+}
+
+.cs-option-header {
+  padding: 6px 12px 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-3, #64748b);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+  margin-bottom: 4px;
+  pointer-events: none;
+}
+
+/* ── Disabled state ──────────────────────────────────────── */
+.cs-disabled .cs-trigger {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Scrollbar ───────────────────────────────────────────── */
+.cs-popup::-webkit-scrollbar {
+  width: 4px;
+}
+.cs-popup::-webkit-scrollbar-track {
+  background: transparent;
+}
+.cs-popup::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.2);
+  border-radius: 4px;
+}
+
+/* ── Used inside form labels ─────────────────────────────── */
+.rr-label .cs-wrapper,
+.ec-form-group .cs-wrapper,
+label .cs-wrapper {
+  display: block;
+  margin-top: 6px;
+}
