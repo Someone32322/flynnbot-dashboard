@@ -425,8 +425,92 @@
             <p class="section-page-sub">Choose a channel for each event type. Select <strong>Not logging</strong> to disable an event.</p>
           </div>
         </div>
+        <!-- Main tabs: Events | Settings -->
+        <div class="logging-main-tabs" id="loggingMainTabs">
+          <button class="logging-main-tab active" data-log-tab="events">Events</button>
+          <button class="logging-main-tab" data-log-tab="settings">Settings</button>
+        </div>
         <div id="loggingContent">
           <div class="commands-loading"><div class="spinner"></div>Loading logging config…</div>
+        </div>
+        <!-- Settings panel (hidden by default) -->
+        <div id="loggingSettingsPanel" style="display:none">
+          <div class="logging-settings-grid">
+            <div class="logging-setting-row">
+              <div class="logging-setting-info">
+                <span class="logging-setting-label">Use webhooks</span>
+                <span class="logging-setting-hint">Send log messages via Discord webhooks instead of the bot</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="logSettingWebhooks" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="logging-setting-row">
+              <div class="logging-setting-info">
+                <span class="logging-setting-label">Ignore embeds</span>
+                <span class="logging-setting-hint">Don't log messages that only contain embeds</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="logSettingIgnoreEmbeds" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="logging-setting-row">
+              <div class="logging-setting-info">
+                <span class="logging-setting-label">Apply ignore to users in voice</span>
+                <span class="logging-setting-hint">Also ignore events from users who are in voice channels</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="logSettingIgnoreVoice" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="logging-setting-row">
+              <div class="logging-setting-info">
+                <span class="logging-setting-label">Log deleted polls with Message Delete</span>
+                <span class="logging-setting-hint">Include poll messages when logging message deletions</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="logSettingDeletedPolls" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="logging-setting-row">
+              <div class="logging-setting-info">
+                <span class="logging-setting-label">Log deleted sticky messages</span>
+                <span class="logging-setting-hint">Include sticky messages when logging message deletions</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="logSettingDeletedSticky" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="logging-setting-row">
+              <div class="logging-setting-info">
+                <span class="logging-setting-label">Log deleted forwarded messages</span>
+                <span class="logging-setting-hint">Include forwarded messages when logging message deletions</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="logSettingDeletedForwarded" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="logging-setting-row">
+              <div class="logging-setting-info">
+                <span class="logging-setting-label">Log unrecognizable message deletions</span>
+                <span class="logging-setting-hint">Log message delete events for messages not in the bot's cache</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="logSettingUnrecognized" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+          <div class="logging-save-row" style="margin-top:1rem">
+            <button class="btn btn-primary" id="logSettingsSaveBtn">Save Settings</button>
+            <span class="save-status" id="logSettingsSaveStatus"></span>
+          </div>
         </div>
         <div class="logging-save-row" id="loggingSaveRow" style="display:none">
           <button class="btn btn-primary" id="loggingSaveBtn">Save Logging Config</button>
@@ -621,119 +705,14 @@
         <div class="section-header">
           <div>
             <h2 class="section-page-title">Reaction Roles</h2>
-            <p class="section-page-sub">Create interactive role assignment via buttons, dropdowns, or emoji reactions.</p>
+            <p class="section-page-sub">Allow users to assign themselves roles through message reactions.</p>
           </div>
-          <button class="btn btn-primary" id="rrNewBtn">+ New Group</button>
+          <button class="btn btn-primary" id="rrAddBtn">+ Add message</button>
         </div>
         <div id="rrList">
           <div class="commands-loading"><div class="spinner"></div>Loading…</div>
         </div>
-
-        <div id="rrCreateChoiceBackdrop" class="modal-backdrop" aria-hidden="true">
-          <div class="modal" role="dialog" aria-modal="true" style="max-width:540px">
-            <button class="modal-close" id="rrCreateChoiceCancel" aria-label="Close">✕</button>
-            <h3 style="margin-bottom:0.65rem">Create Reaction Role Group</h3>
-            <p style="font-size:0.86rem;color:var(--text-2);line-height:1.45;margin-bottom:1rem">
-              Choose how this group should be posted. Existing-message mode is emoji-only.
-            </p>
-            <div style="display:grid;gap:0.75rem">
-              <button class="btn btn-secondary" id="rrCreateChoiceNew" type="button">Create New Bot Message (Buttons/Dropdown/Emoji)</button>
-              <button class="btn btn-primary" id="rrCreateChoiceExisting" type="button">Use Existing Message Link (Emoji Only)</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Reaction Role Editor Modal -->
-        <div id="rrEditorBackdrop" class="modal-backdrop" aria-hidden="true">
-          <div class="modal rr-editor-modal" role="dialog" aria-modal="true">
-            <button class="modal-close" id="rrEditorClose" aria-label="Close">✕</button>
-            <h3 id="rrEditorTitle">New Reaction Role Group</h3>
-            <p id="rrCreateModeHint" class="rr-hint" style="display:none;margin-top:0.2rem"></p>
-
-            <div class="rr-editor-form">
-
-              <div class="rr-form-row">
-                <label class="rr-label">Name <span class="required">*</span>
-                  <input type="text" id="rrName" placeholder="e.g. Game Roles" maxlength="60" />
-                </label>
-                <label class="rr-label">Type <span class="required">*</span>
-                  <select id="rrType">
-                    <option value="button">Buttons</option>
-                    <option value="dropdown">Dropdown Menu</option>
-                    <option value="emoji">Emoji Reactions</option>
-                  </select>
-                </label>
-              </div>
-
-              <!-- Button / Dropdown config -->
-              <div id="rrBotMessageConfig">
-                <div class="rr-form-row">
-                  <label class="rr-label">Post to Channel <span class="required">*</span>
-                    <select id="rrChannel">
-                      <option value="">Select a channel…</option>
-                    </select>
-                  </label>
-                </div>
-                <div class="rr-form-row">
-                  <label class="rr-label">Embed Title
-                    <input type="text" id="rrEmbedTitle" placeholder="Reaction Roles" maxlength="256" />
-                  </label>
-                </div>
-                <div class="rr-form-row">
-                  <label class="rr-label">Embed Description
-                    <textarea id="rrEmbedDesc" rows="3" placeholder="Click a button or select an option below." maxlength="4096"></textarea>
-                  </label>
-                </div>
-                <div class="rr-form-row">
-                  <label class="rr-label">Embed Color
-                    <input type="color" id="rrEmbedColor" value="#0f52ba" />
-                  </label>
-                </div>
-              </div>
-
-              <!-- Emoji reaction config -->
-              <div id="rrEmojiConfig" style="display:none">
-                <div class="rr-form-row">
-                  <label class="rr-label">Message URL <span class="required">*</span>
-                    <input type="text" id="rrMessageUrl" placeholder="https://discord.com/channels/…/…/…" />
-                  </label>
-                </div>
-                <p class="rr-hint">Paste the Discord message link. Right-click any message → Copy Message Link.</p>
-              </div>
-
-              <!-- Options -->
-              <div class="rr-options-section">
-                <div class="rr-options-header">
-                  <strong>Options</strong>
-                  <button type="button" class="btn btn-sm" id="rrAddOption">+ Add Option</button>
-                </div>
-                <div id="rrOptionsList"></div>
-              </div>
-
-              <!-- Message preview -->
-              <div class="rr-preview-section" id="rrPreviewSection">
-                <div class="rr-preview-label">Message Preview</div>
-                <div id="rrPreview" class="rr-preview-box">
-                  <div class="rr-preview-embed">
-                    <div class="rr-preview-bar" id="rrPreviewBar"></div>
-                    <div class="rr-preview-body">
-                      <div class="rr-preview-title" id="rrPreviewTitle"></div>
-                      <div class="rr-preview-desc" id="rrPreviewDesc"></div>
-                      <div class="rr-preview-components" id="rrPreviewComponents"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-
-            <div class="rr-editor-actions">
-              <button class="btn btn-secondary" id="rrEditorCancel">Cancel</button>
-              <button class="btn btn-primary" id="rrEditorSave">Save Draft</button>
-              <button class="btn btn-success" id="rrEditorPost">Post to Discord</button>
-            </div>
-          </div>
-        </div>
+        <!-- Wizard modal is created dynamically by reactionroles.js -->
       </section>
 
       <!-- ── LEVELING SECTION ── -->
@@ -902,14 +881,145 @@
         </div>
       </section>
 
-      <!-- ── CASES SECTION ── -->
+      <!-- ── CASES / MODERATION SECTION ── -->
       <section class="dash-section" id="section-cases" data-section="cases" style="display:none">
         <div class="section-header">
-          <h2 class="section-title">📋 Moderation Cases</h2>
-          <p class="section-subtitle">View and manage moderation cases for your server.</p>
+          <div>
+            <h2 class="section-page-title">Moderation</h2>
+            <p class="section-page-sub">Manage cases, punishments, appeals, and server safety settings.</p>
+          </div>
         </div>
-        <div id="casesContent">
-          <div class="commands-loading"><div class="spinner"></div> Loading cases…</div>
+        <!-- Dashboard view (default) -->
+        <div id="modDashboard">
+          <!-- Top row: Cases + User reports -->
+          <div class="mod-top-row">
+            <div class="mod-top-card" id="modCasesCard">
+              <div class="mod-top-card-icon">📋</div>
+              <div class="mod-top-card-body">
+                <div class="mod-top-card-title">Cases</div>
+                <div class="mod-top-card-sub">Moderation case history</div>
+              </div>
+              <button class="btn btn-sm btn-primary" id="modViewCasesBtn">View cases</button>
+            </div>
+            <div class="mod-top-card">
+              <div class="mod-top-card-icon">🚩</div>
+              <div class="mod-top-card-body">
+                <div class="mod-top-card-title">User reports</div>
+                <div class="mod-top-card-sub">User-submitted reports</div>
+              </div>
+              <button class="btn btn-sm" disabled title="Coming soon">View reports</button>
+            </div>
+          </div>
+          <!-- Settings rows -->
+          <div class="mod-settings-list">
+            <div class="mod-settings-row" tabindex="0">
+              <div class="mod-settings-row-left">
+                <span class="mod-settings-icon">📜</span>
+                <div>
+                  <div class="mod-settings-label">Appeals</div>
+                  <div class="mod-settings-hint">Configure the ban/mute appeal process</div>
+                </div>
+              </div>
+              <span class="mod-settings-chevron">›</span>
+            </div>
+            <div class="mod-settings-row" tabindex="0">
+              <div class="mod-settings-row-left">
+                <span class="mod-settings-icon">💬</span>
+                <div>
+                  <div class="mod-settings-label">Message Histories</div>
+                  <div class="mod-settings-hint">Save and review message edit/delete history</div>
+                </div>
+              </div>
+              <span class="mod-settings-chevron">›</span>
+            </div>
+            <div class="mod-settings-row" tabindex="0">
+              <div class="mod-settings-row-left">
+                <span class="mod-settings-icon">⚙️</span>
+                <div>
+                  <div class="mod-settings-label">Punish settings</div>
+                  <div class="mod-settings-hint">Default durations, DM settings, and action confirmations</div>
+                </div>
+              </div>
+              <span class="mod-settings-chevron">›</span>
+            </div>
+            <div class="mod-settings-row" tabindex="0">
+              <div class="mod-settings-row-left">
+                <span class="mod-settings-icon">🛡️</span>
+                <div>
+                  <div class="mod-settings-label">Immune roles</div>
+                  <div class="mod-settings-hint">Roles that cannot be moderated</div>
+                </div>
+              </div>
+              <span class="mod-settings-chevron">›</span>
+            </div>
+            <div class="mod-settings-row" tabindex="0">
+              <div class="mod-settings-row-left">
+                <span class="mod-settings-icon">🔔</span>
+                <div>
+                  <div class="mod-settings-label">User notifications</div>
+                  <div class="mod-settings-hint">Configure DM notifications sent to users when punished</div>
+                </div>
+              </div>
+              <span class="mod-settings-chevron">›</span>
+            </div>
+            <div class="mod-settings-row" tabindex="0">
+              <div class="mod-settings-row-left">
+                <span class="mod-settings-icon">📝</span>
+                <div>
+                  <div class="mod-settings-label">Predefined reasons</div>
+                  <div class="mod-settings-hint">Quick-select reasons for moderation actions</div>
+                </div>
+              </div>
+              <span class="mod-settings-chevron">›</span>
+            </div>
+            <div class="mod-settings-row" tabindex="0">
+              <div class="mod-settings-row-left">
+                <span class="mod-settings-icon">🔒</span>
+                <div>
+                  <div class="mod-settings-label">Channel locking</div>
+                  <div class="mod-settings-hint">Configure which channels can be locked down</div>
+                </div>
+              </div>
+              <span class="mod-settings-chevron">›</span>
+            </div>
+            <div class="mod-settings-row" tabindex="0">
+              <div class="mod-settings-row-left">
+                <span class="mod-settings-icon">🔏</span>
+                <div>
+                  <div class="mod-settings-label">Privacy</div>
+                  <div class="mod-settings-hint">Control what information is logged and visible</div>
+                </div>
+              </div>
+              <span class="mod-settings-chevron">›</span>
+            </div>
+            <div class="mod-settings-row" tabindex="0">
+              <div class="mod-settings-row-left">
+                <span class="mod-settings-icon">📌</span>
+                <div>
+                  <div class="mod-settings-label">Purge pinned messages</div>
+                  <div class="mod-settings-hint">Allow /purge to delete pinned messages</div>
+                </div>
+              </div>
+              <span class="mod-settings-chevron">›</span>
+            </div>
+          </div>
+        </div>
+        <!-- Cases list view (shown when View cases is clicked) -->
+        <div id="modCasesView" style="display:none">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem">
+            <button class="btn btn-ghost btn-sm" id="modCasesBack">← Back</button>
+            <h3 style="margin:0;font-size:1rem;font-weight:700">Cases</h3>
+          </div>
+          <div id="casesContent">
+            <div class="commands-loading"><div class="spinner"></div> Loading cases…</div>
+          </div>
+        </div>
+        <!-- Case detail view -->
+        <div id="modCaseDetail" style="display:none">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem">
+            <button class="btn btn-ghost btn-sm" id="modCaseDetailBack">← Back to cases</button>
+          </div>
+          <div id="modCaseDetailContent"></div>
         </div>
       </section>
 
@@ -990,5 +1100,15 @@
   <script src="/js/theme.js?v=20260426"></script>
   <script src="/js/cases.js?v=20260426"></script>
   <script src="/js/responses.js?v=20260426"></script>
+  <script src="/js/savebar.js?v=20260426"></script>
+
+  <!-- Global Discord-style unsaved changes bar -->
+  <div id="globalSaveBar" class="global-save-bar" aria-hidden="true">
+    <span class="global-save-bar-text">Careful — you have unsaved changes!</span>
+    <div class="global-save-bar-actions">
+      <button class="btn btn-ghost btn-sm" id="globalSaveBarReset">Reset</button>
+      <button class="btn btn-primary btn-sm" id="globalSaveBarSave">Save changes</button>
+    </div>
+  </div>
 </body>
 </html>

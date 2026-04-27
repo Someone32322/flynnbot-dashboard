@@ -31,6 +31,8 @@ const moderationCaseSchema = new mongoose.Schema(
     removedByTag:  { type: String, default: null },
     removedReason: { type: String, default: null },
     dmDelivered:   { type: Boolean, default: false },
+    dmMessageId:   { type: String, default: null },
+    dmChannelId:   { type: String, default: null },
     metadata:      { type: mongoose.Schema.Types.Mixed, default: {} },
     proof:         { type: [proofSchema], default: [] },
     notes:         { type: String, default: '' },

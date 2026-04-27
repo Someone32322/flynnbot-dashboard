@@ -48,6 +48,10 @@ async function getGuildMember(guildId, userId) {
   return discordFetch(`/guilds/${guildId}/members/${userId}`);
 }
 
+async function getGuildEmojis(guildId) {
+  return discordFetch(`/guilds/${guildId}/emojis`);
+}
+
 // ── Guild commands ────────────────────────────────────────────
 async function getGuildCommands(guildId) {
   const appId = process.env.DISCORD_CLIENT_ID;
@@ -82,6 +86,7 @@ module.exports = {
   getGuildRoles,
   getGuildChannels,
   getGuildMember,
+  getGuildEmojis,
   getGuildCommands,
   registerGuildCommand,
   updateGuildCommand,

@@ -693,3 +693,45 @@ body {
   .category-tabs { width: 100%; }
   .ec-grid-2 { grid-template-columns: 1fr; }
 }
+
+/* ── Discord-style Global Save Bar ─────────────────────────── */
+.global-save-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  background: #18191c;
+  border-top: 2px solid rgba(99, 102, 241, 0.5);
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.5);
+  transform: translateY(100%);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 1rem;
+}
+
+.global-save-bar.visible {
+  transform: translateY(0);
+}
+
+.global-save-bar-text {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  white-space: nowrap;
+}
+
+.global-save-bar-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+@media (max-width: 540px) {
+  .global-save-bar { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .global-save-bar-text { font-size: 0.8rem; }
+}

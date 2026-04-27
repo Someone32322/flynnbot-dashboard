@@ -351,6 +351,17 @@ router.get('/guild/:guildId/roles', requireAuth, requireGuildAdmin, async (req, 
   }
 });
 
+// ── GET /api/guild/:guildId/emojis ────────────────────────────
+router.get('/guild/:guildId/emojis', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const emojis = await discordApi.getGuildEmojis(req.params.guildId);
+    res.json(emojis.map(e => ({ id: e.id, name: e.name, animated: e.animated || false })));
+  } catch (err) {
+    console.error('[API] GET emojis', err);
+    res.status(500).json({ error: 'Failed to fetch emojis' });
+  }
+});
+
 // ── GET /api/guild/:guildId/channels ──────────────────────────
 router.get('/guild/:guildId/channels', requireAuth, requireGuildAdmin, async (req, res) => {
   try {
@@ -401,6 +412,46 @@ router.patch('/guild/:guildId/logging', requireAuth, requireGuildAdmin, async (r
   } catch (err) {
     console.error('[API] PATCH logging', err);
     res.status(500).json({ error: 'Failed to update logging config' });
+  }
+});
+
+// ── GET /api/guild/:guildId/logging/settings ─────────────────
+router.get('/guild/:guildId/logging/settings', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const cfg = await LoggingConfig.findOne({ guildId: req.params.guildId }).lean();
+    res.json({
+      useWebhooks: cfg?.useWebhooks ?? false,
+      ignoreEmbeds: cfg?.ignoreEmbeds ?? false,
+      ignoreVoice: cfg?.ignoreVoice ?? false,
+      logDeletedPolls: cfg?.logDeletedPolls ?? true,
+      logDeletedSticky: cfg?.logDeletedSticky ?? true,
+      logDeletedForwarded: cfg?.logDeletedForwarded ?? true,
+      logUnrecognized: cfg?.logUnrecognized ?? false,
+    });
+  } catch (err) {
+    console.error('[API] GET logging/settings', err);
+    res.status(500).json({ error: 'Failed to fetch logging settings' });
+  }
+});
+
+// ── PATCH /api/guild/:guildId/logging/settings ───────────────
+router.patch('/guild/:guildId/logging/settings', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const allowed = ['useWebhooks', 'ignoreEmbeds', 'ignoreVoice', 'logDeletedPolls', 'logDeletedSticky', 'logDeletedForwarded', 'logUnrecognized'];
+    const update = {};
+    for (const key of allowed) {
+      if (typeof req.body[key] === 'boolean') update[key] = req.body[key];
+    }
+    await LoggingConfig.findOneAndUpdate(
+      { guildId },
+      { $set: update },
+      { upsert: true, new: true }
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[API] PATCH logging/settings', err);
+    res.status(500).json({ error: 'Failed to save logging settings' });
   }
 });
 
@@ -2365,18 +2416,65 @@ router.post('/guild/:guildId/cases', requireAuth, requireGuildAdmin, async (req,
   }
 });
 
-// PATCH /api/guild/:guildId/cases/:id — edit reason / notes
+// PATCH /api/guild/:guildId/cases/:id — edit reason / notes (+ DM update)
 router.patch('/guild/:guildId/cases/:id', requireAuth, requireGuildAdmin, async (req, res) => {
   try {
     const { guildId, id } = req.params;
     const allowed = ['reason', 'notes'];
     const update = {};
     for (const k of allowed) { if (k in req.body) update[k] = req.body[k]; }
+
     const c = await ModerationCase.findOneAndUpdate(
       { _id: id, guildId }, { $set: update }, { new: true }
     );
     if (!c) return res.status(404).json({ error: 'Case not found' });
-    res.json(c);
+
+    let dmUpdated = false;
+    let dmSent = false;
+
+    // If reason was changed and user was DM'd, try to update or resend
+    if ('reason' in update && c.targetUserId) {
+      const newReason = update.reason || 'No reason provided.';
+      const dmContent = `Your case reason has been updated:\n**Reason:** ${newReason}`;
+
+      if (c.dmDelivered && c.dmMessageId && c.dmChannelId) {
+        // Try to edit the original DM
+        try {
+          await discordApi.editMessage(c.dmChannelId, c.dmMessageId, { content: dmContent });
+          dmUpdated = true;
+        } catch (_) {
+          // Editing failed (e.g. DM in a server, too old) — send a new DM
+          try {
+            const dmChannel = await discordApi.createDmChannel(c.targetUserId);
+            if (dmChannel?.id) {
+              const msg = await discordApi.postMessage(dmChannel.id, { content: dmContent });
+              if (msg?.id) {
+                await ModerationCase.findByIdAndUpdate(id, {
+                  $set: { dmChannelId: dmChannel.id, dmMessageId: msg.id }
+                });
+              }
+              dmSent = true;
+            }
+          } catch (_2) { /* ignore - user may have DMs disabled */ }
+        }
+      } else if (c.dmDelivered && !c.dmMessageId) {
+        // dmDelivered but no stored message ID — send a new DM update notification
+        try {
+          const dmChannel = await discordApi.createDmChannel(c.targetUserId);
+          if (dmChannel?.id) {
+            const msg = await discordApi.postMessage(dmChannel.id, { content: dmContent });
+            if (msg?.id) {
+              await ModerationCase.findByIdAndUpdate(id, {
+                $set: { dmChannelId: dmChannel.id, dmMessageId: msg.id }
+              });
+            }
+            dmSent = true;
+          }
+        } catch (_) { /* ignore */ }
+      }
+    }
+
+    res.json({ ...c.toObject(), dmUpdated, dmSent });
   } catch (err) {
     console.error('[API] PATCH case', err);
     res.status(500).json({ error: 'Failed to update case' });

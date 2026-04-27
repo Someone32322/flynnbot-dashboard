@@ -271,7 +271,82 @@ async function initLogging() {
   if (saveBtn) {
     saveBtn.addEventListener('click', () => saveLogging(guildId));
   }
+
+  // Wire up main tab switcher (Events | Settings)
+  document.querySelectorAll('.logging-main-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.logging-main-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const isSettings = tab.dataset.logTab === 'settings';
+      const eventsContent = document.getElementById('loggingContent');
+      const eventsRow = document.getElementById('loggingSaveRow');
+      const settingsPanel = document.getElementById('loggingSettingsPanel');
+      if (eventsContent) eventsContent.style.display = isSettings ? 'none' : '';
+      if (eventsRow) eventsRow.style.display = isSettings ? 'none' : (eventsRow._wasVisible ? 'flex' : 'none');
+      if (settingsPanel) settingsPanel.style.display = isSettings ? '' : 'none';
+      if (isSettings) loadLoggingSettings(guildId);
+    });
+  });
+
+  // Settings save
+  document.getElementById('logSettingsSaveBtn')?.addEventListener('click', () => saveLoggingSettings(guildId));
+
   _loggingInitDone = true;
+}
+
+async function loadLoggingSettings(guildId) {
+  try {
+    const r = await fetch(`/api/guild/${guildId}/logging/settings`);
+    if (!r.ok) return;
+    const s = await r.json();
+    const map = {
+      logSettingWebhooks: 'useWebhooks',
+      logSettingIgnoreEmbeds: 'ignoreEmbeds',
+      logSettingIgnoreVoice: 'ignoreVoice',
+      logSettingDeletedPolls: 'logDeletedPolls',
+      logSettingDeletedSticky: 'logDeletedSticky',
+      logSettingDeletedForwarded: 'logDeletedForwarded',
+      logSettingUnrecognized: 'logUnrecognized',
+    };
+    Object.entries(map).forEach(([id, key]) => {
+      const el = document.getElementById(id);
+      if (el) el.checked = !!s[key];
+    });
+  } catch { /* silently fail — settings optional */ }
+}
+
+async function saveLoggingSettings(guildId) {
+  const saveBtn = document.getElementById('logSettingsSaveBtn');
+  const saveStatus = document.getElementById('logSettingsSaveStatus');
+  if (saveBtn) saveBtn.disabled = true;
+  const map = {
+    logSettingWebhooks: 'useWebhooks',
+    logSettingIgnoreEmbeds: 'ignoreEmbeds',
+    logSettingIgnoreVoice: 'ignoreVoice',
+    logSettingDeletedPolls: 'logDeletedPolls',
+    logSettingDeletedSticky: 'logDeletedSticky',
+    logSettingDeletedForwarded: 'logDeletedForwarded',
+    logSettingUnrecognized: 'logUnrecognized',
+  };
+  const body = {};
+  Object.entries(map).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el) body[key] = el.checked;
+  });
+  try {
+    const r = await fetch(`/api/guild/${guildId}/logging/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (saveStatus) { saveStatus.textContent = '✓ Saved'; saveStatus.className = 'save-status success'; }
+  } catch (e) {
+    if (saveStatus) { saveStatus.textContent = '✗ Failed to save'; saveStatus.className = 'save-status error'; }
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
+    if (saveStatus) setTimeout(() => { if (saveStatus) saveStatus.textContent = ''; }, 3000);
+  }
 }
 
 async function loadLoggingData(guildId) {
