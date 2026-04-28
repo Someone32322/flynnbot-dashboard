@@ -18,6 +18,7 @@ const CustomCommand = require('../models/CustomCommand');
 const ThemeConfig = require('../models/ThemeConfig');
 const ModerationCase = require('../models/ModerationCase');
 const ResponseConfig = require('../models/ResponseConfig');
+const BotMessageTemplate = require('../models/BotMessageTemplate');
 const discordApi = require('../lib/discord');
 const { canReviewSingleApplication } = require('../services/applicationAccess');
 
@@ -2570,6 +2571,74 @@ router.delete('/guild/:guildId/responses/:commandName', requireAuth, requireGuil
   } catch (err) {
     console.error('[API] DELETE response override', err);
     res.status(500).json({ error: 'Failed to delete override' });
+  }
+});
+
+// ── BOT MESSAGE TEMPLATES ────────────────────────────────────
+
+const BOT_MESSAGE_TYPES = [
+  { key: 'warn_dm',         label: 'Warn DM',          group: 'Punishment DMs' },
+  { key: 'mute_dm',         label: 'Mute DM',          group: 'Punishment DMs' },
+  { key: 'kick_dm',         label: 'Kick DM',          group: 'Punishment DMs' },
+  { key: 'ban_dm',          label: 'Ban DM',           group: 'Punishment DMs' },
+  { key: 'unmute_dm',       label: 'Unmute DM',        group: 'Punishment DMs' },
+  { key: 'unban_dm',        label: 'Unban DM',         group: 'Punishment DMs' },
+  { key: 'warn_response',   label: 'Warn Response',    group: 'Punishment Responses' },
+  { key: 'mute_response',   label: 'Mute Response',    group: 'Punishment Responses' },
+  { key: 'kick_response',   label: 'Kick Response',    group: 'Punishment Responses' },
+  { key: 'ban_response',    label: 'Ban Response',     group: 'Punishment Responses' },
+  { key: 'unmute_response', label: 'Unmute Response',  group: 'Punishment Responses' },
+  { key: 'unban_response',  label: 'Unban Response',   group: 'Punishment Responses' },
+  { key: 'warn_log',        label: 'Warn Log',         group: 'Logging' },
+  { key: 'mute_log',        label: 'Mute Log',         group: 'Logging' },
+  { key: 'kick_log',        label: 'Kick Log',         group: 'Logging' },
+  { key: 'ban_log',         label: 'Ban Log',          group: 'Logging' },
+];
+
+// GET /api/guild/:guildId/bot-messages — list all templates for this guild
+router.get('/guild/:guildId/bot-messages', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const templates = await BotMessageTemplate.find({ guildId }).lean();
+    const templateMap = {};
+    templates.forEach(t => { templateMap[t.messageType] = t; });
+    res.json({ types: BOT_MESSAGE_TYPES, templates: templateMap });
+  } catch (err) {
+    console.error('[API] GET bot-messages', err);
+    res.status(500).json({ error: 'Failed to load templates' });
+  }
+});
+
+// GET /api/guild/:guildId/bot-messages/:type — get single template
+router.get('/guild/:guildId/bot-messages/:type', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId, type } = req.params;
+    if (!BOT_MESSAGE_TYPES.find(t => t.key === type)) return res.status(404).json({ error: 'Unknown message type' });
+    const tmpl = await BotMessageTemplate.findOne({ guildId, messageType: type }).lean();
+    res.json(tmpl || { messageType: type });
+  } catch (err) {
+    console.error('[API] GET bot-messages/:type', err);
+    res.status(500).json({ error: 'Failed to load template' });
+  }
+});
+
+// PATCH /api/guild/:guildId/bot-messages/:type — save template
+router.patch('/guild/:guildId/bot-messages/:type', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId, type } = req.params;
+    if (!BOT_MESSAGE_TYPES.find(t => t.key === type)) return res.status(404).json({ error: 'Unknown message type' });
+    const allowed = ['enabled','content','embedEnabled','embedColor','embedAuthor','embedTitle','embedDescription','embedFooter','embedThumbnail','embedFields','messageStyle','removeTitleEmoji','removeEmptyLines'];
+    const update = {};
+    for (const k of allowed) { if (k in req.body) update[k] = req.body[k]; }
+    const tmpl = await BotMessageTemplate.findOneAndUpdate(
+      { guildId, messageType: type },
+      { $set: update },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    res.json(tmpl);
+  } catch (err) {
+    console.error('[API] PATCH bot-messages/:type', err);
+    res.status(500).json({ error: 'Failed to save template' });
   }
 });
 

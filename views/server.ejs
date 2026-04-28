@@ -1023,14 +1023,26 @@
         </div>
       </section>
 
-      <!-- ── RESPONSES SECTION ── -->
+      <!-- ── RESPONSES / BOT MESSAGES SECTION ── -->
       <section class="dash-section" id="section-responses" data-section="responses" style="display:none">
         <div class="section-header">
-          <h2 class="section-title">💬 Custom Responses</h2>
-          <p class="section-subtitle">Override the bot's default command reply text for your server.</p>
+          <div>
+            <h2 class="section-page-title">Bot Messages</h2>
+            <p class="section-page-sub">Customise the messages Flynn sends for punishments, logging, and more.</p>
+          </div>
         </div>
-        <div id="responsesContent">
-          <div class="commands-loading"><div class="spinner"></div> Loading responses…</div>
+        <div class="bm-layout">
+          <!-- Left sidebar: message type list -->
+          <div class="bm-sidebar" id="bmSidebar">
+            <div class="commands-loading"><div class="spinner"></div></div>
+          </div>
+          <!-- Right panel: editor -->
+          <div class="bm-editor" id="bmEditor">
+            <div class="bm-editor-empty">
+              <div class="bm-editor-empty-icon">📨</div>
+              <div class="bm-editor-empty-text">Select a message type to edit</div>
+            </div>
+          </div>
         </div>
       </section>
 
