@@ -169,11 +169,35 @@
 }
 
 .sidebar-nav-icon {
-  font-size: 1rem;
   width: 20px;
-  text-align: center;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  line-height: 1;
+  color: var(--text-3);
+  transition: color 0.18s ease;
+}
+
+.sidebar-nav-icon svg {
+  display: block;
+}
+
+/* Per-section icon colours */
+.sidebar-nav-item[data-section="home"]           .sidebar-nav-icon { color: #94a3b8; }
+.sidebar-nav-item[data-section="commands"]       .sidebar-nav-icon { color: #60a5fa; }
+.sidebar-nav-item[data-section="applications"]   .sidebar-nav-icon { color: #22d3ee; }
+.sidebar-nav-item[data-section="logging"]        .sidebar-nav-icon { color: #fb923c; }
+.sidebar-nav-item[data-section="embeds"]         .sidebar-nav-icon { color: #818cf8; }
+.sidebar-nav-item[data-section="reaction-roles"] .sidebar-nav-icon { color: #f472b6; }
+.sidebar-nav-item[data-section="levels"]         .sidebar-nav-icon { color: #facc15; }
+.sidebar-nav-item[data-section="economy"]        .sidebar-nav-icon { color: #4ade80; }
+.sidebar-nav-item[data-section="cases"]          .sidebar-nav-icon { color: #f87171; }
+
+/* Active: brighten icon to match item colour */
+.sidebar-nav-item.active .sidebar-nav-icon,
+.sidebar-nav-item:hover  .sidebar-nav-icon {
+  filter: brightness(1.25);
 }
 
 .sidebar-nav-text {
