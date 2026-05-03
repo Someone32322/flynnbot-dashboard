@@ -897,3 +897,95 @@ body {
   color: var(--text);
   text-decoration: none;
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   LEGAL PAGES — enhancements (orbs, hero tags, section animation)
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Background orbs ── */
+.legal-orb {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(90px);
+  opacity: 0.18;
+}
+
+.legal-orb--1 {
+  width: 520px;
+  height: 520px;
+  background: radial-gradient(circle, #3b82f6 0%, transparent 70%);
+  top: -160px;
+  right: -160px;
+  animation: orb-drift 22s ease-in-out infinite alternate;
+}
+
+.legal-orb--2 {
+  width: 380px;
+  height: 380px;
+  background: radial-gradient(circle, #7c3aed 0%, transparent 70%);
+  bottom: 10%;
+  left: -100px;
+  animation: orb-drift 28s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes orb-drift {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(40px, 30px) scale(1.08); }
+  100% { transform: translate(-20px, 15px) scale(0.96); }
+}
+
+/* Ensure legal content sits above orbs */
+.legal-hero,
+.legal-body {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Hero tags ── */
+.legal-hero-tags {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.legal-hero-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(79, 142, 247, 0.12);
+  border: 1px solid rgba(79, 142, 247, 0.25);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+/* ── Section fade-in animation ── */
+.legal-section {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.legal-section--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── code inline style ── */
+.legal-section code {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.82em;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+}

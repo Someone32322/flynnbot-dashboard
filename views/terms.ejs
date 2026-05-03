@@ -3,11 +3,21 @@
   <%- include('partials/nav') %>
 
   <div class="legal-page">
+
+    <!-- Background orbs -->
+    <div class="legal-orb legal-orb--1" aria-hidden="true"></div>
+    <div class="legal-orb legal-orb--2" aria-hidden="true"></div>
+
     <div class="legal-hero">
       <div class="legal-hero-inner">
-        <div class="legal-badge">Legal</div>
+        <div class="legal-badge">Terms</div>
         <h1 class="legal-title">Terms of Service</h1>
-        <p class="legal-subtitle">Last updated: April 25, 2026</p>
+        <p class="legal-subtitle">Last updated: May 3, 2026 &mdash; Effective immediately</p>
+        <div class="legal-hero-tags">
+          <span class="legal-hero-tag">Free service</span>
+          <span class="legal-hero-tag">Australian law</span>
+          <span class="legal-hero-tag">Discord-compliant</span>
+        </div>
       </div>
     </div>
 
@@ -15,19 +25,22 @@
       <aside class="legal-toc">
         <p class="toc-heading">On this page</p>
         <nav>
-          <a href="#acceptance" class="toc-link">1. Acceptance of Terms</a>
-          <a href="#description" class="toc-link">2. Service Description</a>
-          <a href="#eligibility" class="toc-link">3. Eligibility</a>
+          <a href="#acceptance"    class="toc-link">1. Acceptance of Terms</a>
+          <a href="#description"   class="toc-link">2. Service Description</a>
+          <a href="#eligibility"   class="toc-link">3. Eligibility</a>
           <a href="#permitted-use" class="toc-link">4. Permitted Use</a>
-          <a href="#prohibited" class="toc-link">5. Prohibited Activities</a>
-          <a href="#availability" class="toc-link">6. Availability</a>
-          <a href="#disclaimers" class="toc-link">7. Disclaimers</a>
-          <a href="#liability" class="toc-link">8. Limitation of Liability</a>
-          <a href="#termination" class="toc-link">9. Termination</a>
-          <a href="#discord-tos" class="toc-link">10. Discord's Terms</a>
-          <a href="#governing-law" class="toc-link">11. Governing Law</a>
-          <a href="#changes" class="toc-link">12. Changes</a>
-          <a href="#contact" class="toc-link">13. Contact</a>
+          <a href="#prohibited"    class="toc-link">5. Prohibited Activities</a>
+          <a href="#ip"            class="toc-link">6. Intellectual Property</a>
+          <a href="#availability"  class="toc-link">7. Availability</a>
+          <a href="#disclaimers"   class="toc-link">8. Disclaimers</a>
+          <a href="#liability"     class="toc-link">9. Limitation of Liability</a>
+          <a href="#indemnification" class="toc-link">10. Indemnification</a>
+          <a href="#termination"   class="toc-link">11. Termination</a>
+          <a href="#discord-tos"   class="toc-link">12. Discord's Terms</a>
+          <a href="#governing-law" class="toc-link">13. Governing Law</a>
+          <a href="#dispute"       class="toc-link">14. Dispute Resolution</a>
+          <a href="#changes"       class="toc-link">15. Changes</a>
+          <a href="#contact"       class="toc-link">16. Contact</a>
         </nav>
       </aside>
 
@@ -107,8 +120,26 @@
           </div>
         </section>
 
+        <section id="ip" class="legal-section">
+          <h2>6. Intellectual Property</h2>
+          <p>
+            FlynnBot, its source code, branding, dashboard design, and all related materials are the intellectual property of FlynnBot's developer(s). All rights are reserved.
+          </p>
+          <p>
+            You are granted a limited, non-exclusive, non-transferable licence to use the Service for its intended purpose. This licence does not include:
+          </p>
+          <ul>
+            <li>The right to copy, distribute, or create derivative works from the Service</li>
+            <li>The right to use FlynnBot's branding, logos, or name in any external context without prior written permission</li>
+            <li>The right to sell, sublicense, or commercially exploit any part of the Service</li>
+          </ul>
+          <p>
+            Content you create within your Discord server (messages, embeds, configurations) remains your intellectual property. By using the Service, you grant us a limited licence to store and process that content solely to provide the features you have configured.
+          </p>
+        </section>
+
         <section id="availability" class="legal-section">
-          <h2>6. Availability &amp; Uptime</h2>
+          <h2>7. Availability &amp; Uptime</h2>
           <p>
             We strive to keep FlynnBot and the dashboard online and available, but we do not guarantee any specific level of uptime or availability. The Service may be temporarily unavailable due to:
           </p>
@@ -124,7 +155,7 @@
         </section>
 
         <section id="disclaimers" class="legal-section">
-          <h2>7. Disclaimers</h2>
+          <h2>8. Disclaimers</h2>
           <p>
             The Service is provided <strong>"as is"</strong> and <strong>"as available"</strong> without warranties of any kind, either express or implied, including but not limited to:
           </p>
@@ -140,7 +171,7 @@
         </section>
 
         <section id="liability" class="legal-section">
-          <h2>8. Limitation of Liability</h2>
+          <h2>9. Limitation of Liability</h2>
           <p>
             To the fullest extent permitted by applicable law, we shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising out of or relating to your use of, or inability to use, the Service, including but not limited to:
           </p>
@@ -155,8 +186,24 @@
           </p>
         </section>
 
+        <section id="indemnification" class="legal-section">
+          <h2>10. Indemnification</h2>
+          <p>
+            You agree to indemnify, defend, and hold harmless FlynnBot and its developer(s) from and against any and all claims, liabilities, damages, losses, costs, and expenses (including reasonable legal fees) arising out of or related to:
+          </p>
+          <ul>
+            <li>Your use or misuse of the Service</li>
+            <li>Your violation of these Terms</li>
+            <li>Your violation of any applicable law or third-party right, including any intellectual property or privacy right</li>
+            <li>Any content you submit, post, or transmit through the Service</li>
+          </ul>
+          <p>
+            We reserve the right, at your expense, to assume the exclusive defence and control of any matter for which you are required to indemnify us, and you agree to cooperate with our defence of these claims.
+          </p>
+        </section>
+
         <section id="termination" class="legal-section">
-          <h2>9. Termination</h2>
+          <h2>11. Termination</h2>
 
           <h3>9.1 By You</h3>
           <p>
@@ -173,7 +220,7 @@
         </section>
 
         <section id="discord-tos" class="legal-section">
-          <h2>10. Discord's Terms of Service</h2>
+          <h2>12. Discord's Terms of Service</h2>
           <p>
             FlynnBot operates within Discord's platform. As such, all use of FlynnBot is also subject to:
           </p>
@@ -188,16 +235,33 @@
         </section>
 
         <section id="governing-law" class="legal-section">
-          <h2>11. Governing Law</h2>
+          <h2>13. Governing Law</h2>
           <p>
-            These Terms shall be governed by and construed in accordance with the laws of Australia, without regard to its conflict of law provisions. Any disputes arising under these Terms shall be subject to the exclusive jurisdiction of the courts located in Australia.
+            These Terms shall be governed by and construed in accordance with the laws of Australia, without regard to its conflict of law provisions.
           </p>
         </section>
 
-        <section id="changes" class="legal-section">
-          <h2>12. Changes to These Terms</h2>
+        <section id="dispute" class="legal-section">
+          <h2>14. Dispute Resolution</h2>
           <p>
-            We may revise these Terms at any time. When we do, we will update the "Last updated" date at the top. Continued use of the Service after changes constitutes your acceptance of the revised Terms.
+            Before pursuing formal legal action, you agree to attempt to resolve any dispute informally by contacting us first. We will try to resolve the dispute within 30 days of receiving your complaint.
+          </p>
+          <p>
+            If informal resolution fails, any dispute, claim, or controversy arising out of or relating to these Terms or the Service shall be resolved by binding arbitration, except that either party may seek injunctive or other equitable relief in a court of competent jurisdiction.
+          </p>
+          <p>
+            You waive any right to participate in a class action lawsuit or class-wide arbitration against FlynnBot or its developer(s).
+          </p>
+          <div class="legal-callout">
+            <span class="callout-icon">💬</span>
+            <span>Most issues can be resolved quickly by contacting us on our <a href="https://discord.gg/aqKp9zr2Ma" target="_blank" rel="noopener noreferrer">Discord support server</a>.</span>
+          </div>
+        </section>
+
+        <section id="changes" class="legal-section">
+          <h2>15. Changes to These Terms</h2>
+          <p>
+            We may revise these Terms at any time. When we do, we will update the &quot;Last updated&quot; date at the top. Continued use of the Service after changes constitutes your acceptance of the revised Terms.
           </p>
           <p>
             We will make reasonable efforts to notify server administrators of significant changes via the dashboard or bot announcements.
@@ -205,7 +269,7 @@
         </section>
 
         <section id="contact" class="legal-section">
-          <h2>13. Contact</h2>
+          <h2>16. Contact</h2>
           <p>
             For questions about these Terms of Service, please reach out:
           </p>
@@ -218,6 +282,10 @@
               <span class="contact-label">Support</span>
               <a href="https://discord.gg/aqKp9zr2Ma" target="_blank" rel="noopener noreferrer" class="contact-link">Contact a developer on our support server</a>
             </div>
+            <div class="contact-row">
+              <span class="contact-label">Response time</span>
+              <span class="contact-label" style="font-weight:400;color:var(--text-2)">Within 30 days</span>
+            </div>
           </div>
         </section>
 
@@ -226,23 +294,6 @@
   </div>
 
   <%- include('partials/footer') %>
-
-  <script>
-    (function () {
-      const links = document.querySelectorAll('.toc-link');
-      const sections = document.querySelectorAll('.legal-section');
-      const obs = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            links.forEach((l) => l.classList.remove('active'));
-            const id = e.target.id;
-            const active = document.querySelector(`.toc-link[href="#${id}"]`);
-            if (active) active.classList.add('active');
-          }
-        });
-      }, { rootMargin: '-30% 0px -60% 0px' });
-      sections.forEach((s) => obs.observe(s));
-    })();
-  </script>
+  <script src="/js/legal.js"></script>
 </body>
 </html>

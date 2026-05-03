@@ -64,11 +64,8 @@
 
 /* ── Popup ───────────────────────────────────────────────── */
 .cs-popup {
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
-  z-index: 9000;
+  position: fixed;
+  z-index: 99999;
   background: rgba(8, 15, 38, 0.97);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -83,7 +80,7 @@
   overflow-x: hidden;
   padding: 6px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(59, 130, 246, 0.2) transparent;
+  scrollbar-color: rgba(59, 130, 246, 0.35) transparent;
 
   /* Hidden by default */
   opacity: 0;
@@ -94,8 +91,6 @@
 }
 
 .cs-popup-up {
-  top: auto;
-  bottom: calc(100% + 6px);
   transform: translateY(6px) scale(0.98);
 }
 

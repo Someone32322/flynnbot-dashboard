@@ -3,11 +3,21 @@
   <%- include('partials/nav') %>
 
   <div class="legal-page">
+
+    <!-- Background orbs -->
+    <div class="legal-orb legal-orb--1" aria-hidden="true"></div>
+    <div class="legal-orb legal-orb--2" aria-hidden="true"></div>
+
     <div class="legal-hero">
       <div class="legal-hero-inner">
-        <div class="legal-badge">Legal</div>
+        <div class="legal-badge">Privacy</div>
         <h1 class="legal-title">Privacy Policy</h1>
-        <p class="legal-subtitle">Last updated: April 25, 2026</p>
+        <p class="legal-subtitle">Last updated: May 3, 2026 &mdash; Effective immediately</p>
+        <div class="legal-hero-tags">
+          <span class="legal-hero-tag">GDPR compliant</span>
+          <span class="legal-hero-tag">CCPA compliant</span>
+          <span class="legal-hero-tag">No data selling</span>
+        </div>
       </div>
     </div>
 
@@ -15,16 +25,20 @@
       <aside class="legal-toc">
         <p class="toc-heading">On this page</p>
         <nav>
-          <a href="#overview" class="toc-link">1. Overview</a>
-          <a href="#data-collected" class="toc-link">2. Data We Collect</a>
-          <a href="#how-we-use" class="toc-link">3. How We Use Your Data</a>
-          <a href="#data-storage" class="toc-link">4. Data Storage & Security</a>
-          <a href="#third-parties" class="toc-link">5. Third-Party Services</a>
-          <a href="#data-retention" class="toc-link">6. Data Retention</a>
-          <a href="#your-rights" class="toc-link">7. Your Rights</a>
-          <a href="#childrens-privacy" class="toc-link">8. Children's Privacy</a>
-          <a href="#changes" class="toc-link">9. Changes to This Policy</a>
-          <a href="#contact" class="toc-link">10. Contact</a>
+          <a href="#overview"          class="toc-link">1. Overview</a>
+          <a href="#data-collected"    class="toc-link">2. Data We Collect</a>
+          <a href="#how-we-use"        class="toc-link">3. How We Use Your Data</a>
+          <a href="#data-storage"      class="toc-link">4. Data Storage &amp; Security</a>
+          <a href="#cookies"           class="toc-link">5. Cookies &amp; Sessions</a>
+          <a href="#third-parties"     class="toc-link">6. Third-Party Services</a>
+          <a href="#data-retention"    class="toc-link">7. Data Retention</a>
+          <a href="#your-rights"       class="toc-link">8. Your Rights</a>
+          <a href="#gdpr"              class="toc-link">9. GDPR (EEA &amp; UK)</a>
+          <a href="#ccpa"              class="toc-link">10. CCPA (California)</a>
+          <a href="#childrens-privacy" class="toc-link">11. Children's Privacy</a>
+          <a href="#international"     class="toc-link">12. International Transfers</a>
+          <a href="#changes"           class="toc-link">13. Changes to This Policy</a>
+          <a href="#contact"           class="toc-link">14. Contact</a>
         </nav>
       </aside>
 
@@ -33,14 +47,14 @@
         <section id="overview" class="legal-section">
           <h2>1. Overview</h2>
           <p>
-            FlynnBot ("we", "our", or "us") is a Discord bot and associated web dashboard. This Privacy Policy explains what information we collect, how we use it, and your rights regarding that information when you use FlynnBot or the FlynnBot Dashboard.
+            FlynnBot (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is a Discord bot and associated web dashboard. This Privacy Policy explains what information we collect, how we use it, how we protect it, and your rights regarding that information when you use FlynnBot or the FlynnBot Dashboard.
           </p>
           <p>
             By using FlynnBot or the FlynnBot Dashboard, you agree to the collection and use of information in accordance with this policy. If you do not agree, please discontinue use of the service.
           </p>
           <div class="legal-callout">
             <span class="callout-icon">🔒</span>
-            <span>We take your privacy seriously. We only collect data necessary to operate the service and never sell your personal information to third parties.</span>
+            <span>We take your privacy seriously. We only collect data necessary to operate the service and <strong>never sell your personal information</strong> to third parties.</span>
           </div>
         </section>
 
@@ -77,7 +91,7 @@
             <li>Case numbers and audit log references</li>
           </ul>
 
-          <h3>2.4 Message Builder & Scheduler Data</h3>
+          <h3>2.4 Message Builder &amp; Scheduler Data</h3>
           <p>For the message builder and scheduler features, we store:</p>
           <ul>
             <li>Message content, embed configurations, and action row configurations created by server administrators</li>
@@ -85,12 +99,24 @@
             <li>IDs of messages sent by the bot to Discord channels</li>
           </ul>
 
-          <h3>2.5 Technical & Log Data</h3>
+          <h3>2.5 Leveling &amp; Economy Data</h3>
+          <p>For leveling and economy features (if enabled by your server), we store:</p>
+          <ul>
+            <li>User IDs and corresponding XP, level, and rank data</li>
+            <li>Economy balances and transaction references</li>
+          </ul>
+
+          <h3>2.6 Technical &amp; Log Data</h3>
           <p>We may automatically log:</p>
           <ul>
             <li>Error logs and crash reports (no personal data beyond IDs)</li>
             <li>Session tokens (stored server-side, cleared on logout)</li>
+            <li>HTTP request logs (IP address, user agent &mdash; retained for a maximum of 7 days)</li>
           </ul>
+          <div class="legal-callout">
+            <span class="callout-icon">ℹ️</span>
+            <span>We do <strong>not</strong> collect payment information, physical addresses, government IDs, or any sensitive personal data beyond what Discord provides via OAuth2.</span>
+          </div>
         </section>
 
         <section id="how-we-use" class="legal-section">
@@ -102,95 +128,196 @@
             <li>Execute moderation actions and maintain case histories for server administrators</li>
             <li>Deliver scheduled messages and manage reaction roles, action rows, and other configured features</li>
             <li>Enforce server-specific settings and configurations</li>
+            <li>Operate leveling and economy systems within configured servers</li>
             <li>Debug and fix issues with the service</li>
           </ul>
-          <p>We do <strong>not</strong> use your data for advertising, profiling, or sale to third parties.</p>
+          <p>
+            Our legal basis for processing under GDPR is <strong>legitimate interests</strong> (operating the bot service as requested) and <strong>contract performance</strong> (providing features that server administrators have configured).
+          </p>
+          <p>We do <strong>not</strong> use your data for advertising, profiling, machine learning training, or sale to third parties.</p>
         </section>
 
         <section id="data-storage" class="legal-section">
           <h2>4. Data Storage &amp; Security</h2>
           <p>
-            Data is stored in a MongoDB Atlas database hosted by MongoDB, Inc. All connections use TLS encryption in transit. We apply access controls to limit who can access the database.
+            Data is stored in a MongoDB Atlas database hosted by MongoDB, Inc. All connections use TLS 1.2+ encryption in transit. We apply role-based access controls to limit who can access the database.
           </p>
           <p>
-            Dashboard sessions are managed server-side using signed, HttpOnly cookies. We do not store passwords as FlynnBot uses Discord OAuth2 exclusively for authentication.
+            Dashboard sessions are managed server-side using signed, HttpOnly, SameSite cookies. We do not store passwords as FlynnBot uses Discord OAuth2 exclusively for authentication.
           </p>
+          <p>Security measures we employ include:</p>
+          <ul>
+            <li>HTTPS-only communication (HTTP Strict Transport Security)</li>
+            <li>Helmet.js security headers (CSP, XSS protection, no-sniff)</li>
+            <li>Parameterised database queries to prevent injection attacks</li>
+            <li>Rate limiting on API endpoints</li>
+            <li>Regular dependency audits via npm audit</li>
+          </ul>
           <div class="legal-callout legal-callout--warn">
             <span class="callout-icon">⚠️</span>
             <span>While we take reasonable precautions, no internet transmission or electronic storage is 100% secure. We cannot guarantee absolute security.</span>
           </div>
         </section>
 
+        <section id="cookies" class="legal-section">
+          <h2>5. Cookies &amp; Sessions</h2>
+          <p>FlynnBot Dashboard uses the following types of cookies and browser storage:</p>
+          <div class="legal-table-wrap">
+            <table class="legal-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Purpose</th>
+                  <th>Duration</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>connect.sid</code></td>
+                  <td>Session cookie</td>
+                  <td>Maintains your authenticated session on the dashboard</td>
+                  <td>7 days (inactivity expiry)</td>
+                </tr>
+                <tr>
+                  <td>Discord OAuth2 tokens</td>
+                  <td>Server-side only</td>
+                  <td>Stored in session to make API calls on your behalf</td>
+                  <td>Cleared on logout</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            We do <strong>not</strong> use tracking cookies, advertising cookies, or third-party analytics cookies. No cookie consent banner is required because the only cookies we set are strictly necessary for authentication.
+          </p>
+        </section>
+
         <section id="third-parties" class="legal-section">
-          <h2>5. Third-Party Services</h2>
-          <p>FlynnBot relies on the following third-party services:</p>
+          <h2>6. Third-Party Services</h2>
+          <p>FlynnBot relies on the following third-party services, each acting as a data processor:</p>
           <div class="legal-table-wrap">
             <table class="legal-table">
               <thead>
                 <tr>
                   <th>Service</th>
+                  <th>Role</th>
                   <th>Purpose</th>
                   <th>Privacy Policy</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>Discord</td>
+                  <td>Discord Inc.</td>
+                  <td>Data Controller (independent)</td>
                   <td>Bot platform &amp; OAuth2 authentication</td>
                   <td><a href="https://discord.com/privacy" target="_blank" rel="noopener noreferrer">discord.com/privacy</a></td>
                 </tr>
                 <tr>
                   <td>MongoDB Atlas</td>
+                  <td>Data Processor</td>
                   <td>Database hosting</td>
                   <td><a href="https://www.mongodb.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer">mongodb.com/legal/privacy-policy</a></td>
                 </tr>
                 <tr>
                   <td>Render</td>
+                  <td>Data Processor</td>
                   <td>Dashboard hosting</td>
                   <td><a href="https://render.com/privacy" target="_blank" rel="noopener noreferrer">render.com/privacy</a></td>
                 </tr>
                 <tr>
                   <td>Railway</td>
+                  <td>Data Processor</td>
                   <td>Bot hosting</td>
                   <td><a href="https://railway.app/legal/privacy" target="_blank" rel="noopener noreferrer">railway.app/legal/privacy</a></td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <p>We are not responsible for the privacy practices of these third-party services.</p>
+          <p>We are not responsible for the privacy practices of these third-party services. Where required, we have Data Processing Agreements in place with our processors.</p>
         </section>
 
         <section id="data-retention" class="legal-section">
-          <h2>6. Data Retention</h2>
+          <h2>7. Data Retention</h2>
           <p>We retain data for as long as it is needed to provide the service:</p>
           <ul>
-            <li><strong>Guild configuration data</strong> is retained while FlynnBot remains in the server. Removing the bot does not automatically delete your server's data — please contact us to request deletion.</li>
-            <li><strong>Moderation case data</strong> is retained indefinitely to preserve audit trails unless a server administrator requests deletion.</li>
-            <li><strong>Session data</strong> expires after 7 days of inactivity.</li>
-            <li><strong>User authentication data</strong> (Discord ID, username, avatar) is refreshed each time you log in and is not stored long-term beyond the active session.</li>
+            <li><strong>Guild configuration data</strong> &mdash; retained while FlynnBot remains in the server. Removing the bot does not automatically delete your server's data. Contact us to request deletion.</li>
+            <li><strong>Moderation case data</strong> &mdash; retained indefinitely to preserve audit trails unless a server administrator requests deletion.</li>
+            <li><strong>Leveling &amp; economy data</strong> &mdash; retained while the feature is active in a server. Deletable on request from the server administrator.</li>
+            <li><strong>Session data</strong> &mdash; expires after 7 days of inactivity.</li>
+            <li><strong>User authentication data</strong> (Discord ID, username, avatar) &mdash; refreshed on each login, not stored long-term beyond the active session.</li>
+            <li><strong>HTTP access logs</strong> &mdash; purged automatically after 7 days.</li>
           </ul>
+          <p>To request deletion of any data, see the <a href="#contact">Contact</a> section.</p>
         </section>
 
         <section id="your-rights" class="legal-section">
-          <h2>7. Your Rights</h2>
-          <p>Depending on your jurisdiction, you may have the right to:</p>
+          <h2>8. Your Rights</h2>
+          <p>Depending on your jurisdiction, you may have the following rights:</p>
           <ul>
-            <li><strong>Access</strong> the personal data we hold about you</li>
-            <li><strong>Correct</strong> inaccurate data</li>
-            <li><strong>Request deletion</strong> of your data ("right to be forgotten")</li>
-            <li><strong>Object</strong> to or restrict certain processing</li>
-            <li><strong>Data portability</strong> — receive your data in a machine-readable format</li>
+            <li><strong>Right of access</strong> &mdash; request a copy of the personal data we hold about you</li>
+            <li><strong>Right to rectification</strong> &mdash; request correction of inaccurate data</li>
+            <li><strong>Right to erasure</strong> &mdash; request deletion of your data (&quot;right to be forgotten&quot;)</li>
+            <li><strong>Right to restriction</strong> &mdash; request that we restrict processing of your data</li>
+            <li><strong>Right to object</strong> &mdash; object to processing based on legitimate interests</li>
+            <li><strong>Right to data portability</strong> &mdash; receive your data in a machine-readable format</li>
+            <li><strong>Right to withdraw consent</strong> &mdash; where processing is based on consent, withdraw it at any time</li>
           </ul>
           <p>
-            To exercise any of these rights, contact us using the details in the <a href="#contact">Contact</a> section below. We will respond within 30 days.
+            To exercise any of these rights, contact us using the details in the <a href="#contact">Contact</a> section. We will respond within <strong>30 days</strong> (or within the timeframe required by applicable law).
           </p>
           <p>
-            Note: Some data may need to be retained to fulfil legal obligations or legitimate server administration needs.
+            Note: Some data may need to be retained to fulfil legal obligations or legitimate server administration needs even after a deletion request.
+          </p>
+          <div class="legal-callout">
+            <span class="callout-icon">📬</span>
+            <span>You also have the right to lodge a complaint with your local data protection authority if you believe we have not handled your data lawfully.</span>
+          </div>
+        </section>
+
+        <section id="gdpr" class="legal-section">
+          <h2>9. GDPR &mdash; EEA &amp; UK Residents</h2>
+          <p>
+            If you are located in the European Economic Area (EEA) or the United Kingdom, the General Data Protection Regulation (GDPR) or UK GDPR applies to our processing of your personal data.
+          </p>
+          <h3>9.1 Legal Bases for Processing</h3>
+          <ul>
+            <li><strong>Legitimate interests</strong> (Art. 6(1)(f) GDPR) &mdash; operating FlynnBot and its features as requested by server administrators</li>
+            <li><strong>Contract performance</strong> (Art. 6(1)(b) GDPR) &mdash; providing the dashboard and bot features you have configured</li>
+            <li><strong>Legal obligation</strong> (Art. 6(1)(c) GDPR) &mdash; where we must retain data to comply with applicable law</li>
+          </ul>
+          <h3>9.2 Data Transfers Outside the EEA</h3>
+          <p>
+            Our hosting providers (Render, Railway) and database provider (MongoDB Atlas) may process data outside the EEA. Where this occurs, transfers are covered by appropriate safeguards including Standard Contractual Clauses (SCCs) as approved by the European Commission.
+          </p>
+          <h3>9.3 Data Protection Representative</h3>
+          <p>
+            As FlynnBot is an independent project operated outside the EEA, we do not currently have a formal EU/UK data protection representative. Contact us directly for any GDPR-related requests via our Discord support server.
           </p>
         </section>
 
+        <section id="ccpa" class="legal-section">
+          <h2>10. CCPA &mdash; California Residents</h2>
+          <p>
+            If you are a California resident, the California Consumer Privacy Act (CCPA) and California Privacy Rights Act (CPRA) grant you specific rights regarding your personal information.
+          </p>
+          <h3>10.1 Categories of Personal Information Collected</h3>
+          <ul>
+            <li><strong>Identifiers</strong> &mdash; Discord user ID, username, avatar hash</li>
+            <li><strong>Internet or network activity</strong> &mdash; Dashboard usage, HTTP request logs</li>
+          </ul>
+          <h3>10.2 Your CCPA Rights</h3>
+          <ul>
+            <li><strong>Right to know</strong> &mdash; know what personal information we collect, use, disclose, and sell</li>
+            <li><strong>Right to delete</strong> &mdash; request deletion of personal information we have collected</li>
+            <li><strong>Right to opt-out of sale</strong> &mdash; we do <strong>not</strong> sell personal information; this right is automatically fulfilled</li>
+            <li><strong>Right to non-discrimination</strong> &mdash; we will not discriminate against you for exercising your rights</li>
+          </ul>
+          <p>To exercise your CCPA rights, contact us via the <a href="#contact">Contact</a> section. We will respond within 45 days.</p>
+        </section>
+
         <section id="childrens-privacy" class="legal-section">
-          <h2>8. Children's Privacy</h2>
+          <h2>11. Children's Privacy</h2>
           <p>
             FlynnBot is not intended for users under the age of 13, or under the minimum age required by Discord's Terms of Service in your country. We do not knowingly collect personal information from children. If we become aware that a child has provided us with personal data, we will delete it promptly.
           </p>
@@ -199,17 +326,17 @@
         <section id="changes" class="legal-section">
           <h2>9. Changes to This Policy</h2>
           <p>
-            We may update this Privacy Policy from time to time. When we do, we will update the "Last updated" date at the top of the page. Continued use of FlynnBot or the dashboard after changes constitutes acceptance of the updated policy.
+            We may update this Privacy Policy from time to time. When we do, we will update the &quot;Last updated&quot; date at the top of the page. Continued use of FlynnBot or the dashboard after changes constitutes acceptance of the updated policy.
           </p>
           <p>
-            For significant changes, we will make reasonable efforts to notify server administrators via the bot or dashboard.
+            For significant changes that materially affect how we use your data, we will make reasonable efforts to notify server administrators via the bot or dashboard announcement.
           </p>
         </section>
 
         <section id="contact" class="legal-section">
-          <h2>10. Contact</h2>
+          <h2>14. Contact</h2>
           <p>
-            If you have questions, concerns, or requests regarding this Privacy Policy, please contact us:
+            If you have questions, concerns, or requests regarding this Privacy Policy or wish to exercise your data rights, please reach out:
           </p>
           <div class="legal-contact-card">
             <div class="contact-row">
@@ -220,6 +347,10 @@
               <span class="contact-label">Support</span>
               <a href="https://discord.gg/aqKp9zr2Ma" target="_blank" rel="noopener noreferrer" class="contact-link">Contact a developer on our support server</a>
             </div>
+            <div class="contact-row">
+              <span class="contact-label">Response time</span>
+              <span class="contact-label" style="font-weight:400;color:var(--text-2)">Within 30 days</span>
+            </div>
           </div>
         </section>
 
@@ -228,24 +359,6 @@
   </div>
 
   <%- include('partials/footer') %>
-
-  <script>
-    // Highlight active TOC link on scroll
-    (function () {
-      const links = document.querySelectorAll('.toc-link');
-      const sections = document.querySelectorAll('.legal-section');
-      const obs = new IntersectionObserver((entries) => {
-        entries.forEach((e) => {
-          if (e.isIntersecting) {
-            links.forEach((l) => l.classList.remove('active'));
-            const id = e.target.id;
-            const active = document.querySelector(`.toc-link[href="#${id}"]`);
-            if (active) active.classList.add('active');
-          }
-        });
-      }, { rootMargin: '-30% 0px -60% 0px' });
-      sections.forEach((s) => obs.observe(s));
-    })();
-  </script>
+  <script src="/js/legal.js"></script>
 </body>
 </html>

@@ -99,6 +99,27 @@
       nativeSelect.dispatchEvent(new Event('change', { bubbles: true }));
     }
 
+    function positionPopup() {
+      const rect = trigger.getBoundingClientRect();
+      const popupH = Math.min(280, popup.scrollHeight + 14);
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const openUp = spaceBelow < popupH + 12 && spaceAbove > spaceBelow;
+
+      popup.style.width = rect.width + 'px';
+      popup.style.left = rect.left + window.scrollX + 'px';
+
+      if (openUp) {
+        popup.style.top = '';
+        popup.style.bottom = (window.innerHeight - rect.top - window.scrollY) + 6 + 'px';
+        popup.classList.add('cs-popup-up');
+      } else {
+        popup.style.bottom = '';
+        popup.style.top = rect.bottom + window.scrollY + 6 + 'px';
+        popup.classList.remove('cs-popup-up');
+      }
+    }
+
     function open() {
       if (wrapper.classList.contains('cs-disabled')) return;
       if (openInstance && openInstance !== wrapper) {
@@ -106,18 +127,17 @@
       }
       openInstance = wrapper;
       buildOptions();
+
+      // Move popup to body so it escapes any overflow:hidden ancestors
+      if (popup.parentNode !== document.body) {
+        document.body.appendChild(popup);
+      }
+
       wrapper.classList.add('cs-open');
       trigger.setAttribute('aria-expanded', 'true');
-      // Position popup: default below; flip above if not enough space
+
       requestAnimationFrame(() => {
-        const rect = wrapper.getBoundingClientRect();
-        const spaceBelow = window.innerHeight - rect.bottom;
-        const spaceAbove = rect.top;
-        if (spaceBelow < popup.offsetHeight + 12 && spaceAbove > spaceBelow) {
-          popup.classList.add('cs-popup-up');
-        } else {
-          popup.classList.remove('cs-popup-up');
-        }
+        positionPopup();
       });
     }
 
@@ -166,6 +186,7 @@
     // Expose methods
     wrapper._csClose = close;
     wrapper._csSelect = selectValue;
+    wrapper._csReposition = positionPopup;
     nativeSelect._csWrapper = wrapper;
 
     // Initial state
@@ -186,6 +207,12 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && openInstance) closeInstance(openInstance);
   });
+  // Reposition on scroll/resize
+  var _reposition = function () {
+    if (openInstance && openInstance._csReposition) openInstance._csReposition();
+  };
+  window.addEventListener('scroll', _reposition, true);
+  window.addEventListener('resize', _reposition);
 
   /* ── Auto-init any selects with data-cs attribute ─────────── */
   function initAllCustomSelects(root) {
