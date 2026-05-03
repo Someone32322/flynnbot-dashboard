@@ -854,144 +854,401 @@
 
       <!-- ── CASES / MODERATION SECTION ── -->
       <section class="dash-section" id="section-cases" data-section="cases" style="display:none">
-        <div class="section-header">
-          <div>
-            <h2 class="section-page-title">Moderation</h2>
-            <p class="section-page-sub">Manage cases, punishments, appeals, and server safety settings.</p>
-          </div>
-        </div>
-        <!-- Dashboard view (default) -->
+
+        <!-- ╔═ MOD DASHBOARD (default) ═╗ -->
         <div id="modDashboard">
-          <!-- Top row: Cases + User reports -->
-          <div class="mod-top-row">
+          <div class="mod-page-header">
+            <div class="mod-page-header-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+            </div>
+            <div>
+              <h2 class="mod-page-title">Moderation</h2>
+              <p class="mod-page-sub">Configure all moderation settings, cases, and safety features.</p>
+            </div>
+          </div>
+
+          <!-- Top cards: Cases + User reports + Appeals -->
+          <div class="mod-top-grid">
             <div class="mod-top-card" id="modCasesCard">
-              <div class="mod-top-card-icon">📋</div>
+              <div class="mod-top-card-icon-wrap">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+              </div>
               <div class="mod-top-card-body">
                 <div class="mod-top-card-title">Cases</div>
-                <div class="mod-top-card-sub">Moderation case history</div>
+                <div class="mod-top-card-sub">Manage all ban, kick, mute and warn cases</div>
               </div>
               <button class="btn btn-sm btn-primary" id="modViewCasesBtn">View cases</button>
             </div>
-            <div class="mod-top-card">
-              <div class="mod-top-card-icon">🚩</div>
+            <div class="mod-top-card" id="modUserReportsCard">
+              <div class="mod-top-card-icon-wrap" style="background:rgba(248,113,113,.12);color:#f87171">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>
+              </div>
               <div class="mod-top-card-body">
                 <div class="mod-top-card-title">User reports</div>
-                <div class="mod-top-card-sub">User-submitted reports</div>
+                <div class="mod-top-card-sub" id="modUserReportsSub">Update this server's user report config</div>
               </div>
-              <button class="btn btn-sm" disabled title="Coming soon">View reports</button>
+              <div class="mod-top-card-actions" id="modUserReportsActions">
+                <button class="btn btn-sm btn-primary" id="modUserReportsSetupBtn">Set up</button>
+              </div>
+            </div>
+            <div class="mod-top-card" id="modAppealsCard">
+              <div class="mod-top-card-icon-wrap" style="background:rgba(34,197,94,.12);color:#4ade80">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              </div>
+              <div class="mod-top-card-body">
+                <div class="mod-top-card-title">Appeals</div>
+                <div class="mod-top-card-sub">Create custom forms for users to appeal their punishments</div>
+              </div>
+              <button class="btn btn-sm" id="modAppealsBtn">Configure</button>
             </div>
           </div>
-          <!-- Settings rows -->
+
+          <!-- Settings rows list -->
           <div class="mod-settings-list">
-            <div class="mod-settings-row" tabindex="0">
+
+            <div class="mod-settings-row" data-subpage="message-histories" tabindex="0" role="button">
               <div class="mod-settings-row-left">
-                <span class="mod-settings-icon">📜</span>
-                <div>
-                  <div class="mod-settings-label">Appeals</div>
-                  <div class="mod-settings-hint">Configure the ban/mute appeal process</div>
+                <div class="mod-settings-row-icon-wrap" style="background:rgba(99,102,241,.12);color:#818cf8">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                 </div>
-              </div>
-              <span class="mod-settings-chevron">›</span>
-            </div>
-            <div class="mod-settings-row" tabindex="0">
-              <div class="mod-settings-row-left">
-                <span class="mod-settings-icon">💬</span>
                 <div>
                   <div class="mod-settings-label">Message Histories</div>
-                  <div class="mod-settings-hint">Save and review message edit/delete history</div>
+                  <div class="mod-settings-hint">View message histories and archives</div>
                 </div>
               </div>
-              <span class="mod-settings-chevron">›</span>
+              <svg class="mod-settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
             </div>
-            <div class="mod-settings-row" tabindex="0">
+
+            <div class="mod-settings-row" data-subpage="punish-settings" tabindex="0" role="button">
               <div class="mod-settings-row-left">
-                <span class="mod-settings-icon">⚙️</span>
+                <div class="mod-settings-row-icon-wrap" style="background:rgba(251,146,60,.12);color:#fb923c">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+                </div>
                 <div>
                   <div class="mod-settings-label">Punish settings</div>
-                  <div class="mod-settings-hint">Default durations, DM settings, and action confirmations</div>
+                  <div class="mod-settings-hint">Edit behaviour for each punishment type</div>
                 </div>
               </div>
-              <span class="mod-settings-chevron">›</span>
+              <svg class="mod-settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
             </div>
-            <div class="mod-settings-row" tabindex="0">
+
+            <div class="mod-settings-row" data-subpage="immune-roles" tabindex="0" role="button">
               <div class="mod-settings-row-left">
-                <span class="mod-settings-icon">🛡️</span>
+                <div class="mod-settings-row-icon-wrap" style="background:rgba(96,165,250,.12);color:#60a5fa">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                </div>
                 <div>
                   <div class="mod-settings-label">Immune roles</div>
-                  <div class="mod-settings-hint">Roles that cannot be moderated</div>
+                  <div class="mod-settings-hint">Set roles that are immune to moderation actions</div>
                 </div>
               </div>
-              <span class="mod-settings-chevron">›</span>
+              <svg class="mod-settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
             </div>
-            <div class="mod-settings-row" tabindex="0">
+
+            <div class="mod-settings-row" data-subpage="user-notifications" tabindex="0" role="button">
               <div class="mod-settings-row-left">
-                <span class="mod-settings-icon">🔔</span>
+                <div class="mod-settings-row-icon-wrap" style="background:rgba(52,211,153,.12);color:#34d399">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+                </div>
                 <div>
                   <div class="mod-settings-label">User notifications</div>
-                  <div class="mod-settings-hint">Configure DM notifications sent to users when punished</div>
+                  <div class="mod-settings-hint">Toggle direct messages on punishments</div>
                 </div>
               </div>
-              <span class="mod-settings-chevron">›</span>
+              <svg class="mod-settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
             </div>
-            <div class="mod-settings-row" tabindex="0">
+
+            <div class="mod-settings-row" data-subpage="predefined-reasons" tabindex="0" role="button">
               <div class="mod-settings-row-left">
-                <span class="mod-settings-icon">📝</span>
+                <div class="mod-settings-row-icon-wrap" style="background:rgba(167,139,250,.12);color:#a78bfa">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h10"/></svg>
+                </div>
                 <div>
                   <div class="mod-settings-label">Predefined reasons</div>
-                  <div class="mod-settings-hint">Quick-select reasons for moderation actions</div>
+                  <div class="mod-settings-hint">Define reason aliases for punishments</div>
                 </div>
               </div>
-              <span class="mod-settings-chevron">›</span>
+              <svg class="mod-settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
             </div>
-            <div class="mod-settings-row" tabindex="0">
+
+            <div class="mod-settings-row" data-subpage="channel-locking" tabindex="0" role="button">
               <div class="mod-settings-row-left">
-                <span class="mod-settings-icon">🔒</span>
+                <div class="mod-settings-row-icon-wrap" style="background:rgba(250,204,21,.12);color:#facc15">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                </div>
                 <div>
                   <div class="mod-settings-label">Channel locking</div>
-                  <div class="mod-settings-hint">Configure which channels can be locked down</div>
+                  <div class="mod-settings-hint">Lock channels to prevent users from sending messages</div>
                 </div>
               </div>
-              <span class="mod-settings-chevron">›</span>
+              <svg class="mod-settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
             </div>
-            <div class="mod-settings-row" tabindex="0">
+
+            <div class="mod-settings-row" data-subpage="privacy" tabindex="0" role="button">
               <div class="mod-settings-row-left">
-                <span class="mod-settings-icon">🔏</span>
+                <div class="mod-settings-row-icon-wrap" style="background:rgba(244,114,182,.12);color:#f472b6">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
                 <div>
                   <div class="mod-settings-label">Privacy</div>
-                  <div class="mod-settings-hint">Control what information is logged and visible</div>
+                  <div class="mod-settings-hint">Decide what case information is shown to users</div>
                 </div>
               </div>
-              <span class="mod-settings-chevron">›</span>
+              <svg class="mod-settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
             </div>
-            <div class="mod-settings-row" tabindex="0">
+
+            <div class="mod-settings-row mod-settings-row--toggle" data-subpage="" tabindex="0">
               <div class="mod-settings-row-left">
-                <span class="mod-settings-icon">📌</span>
+                <div class="mod-settings-row-icon-wrap" style="background:rgba(156,163,175,.1);color:#9ca3af">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10H7M21 6H3M21 14H3M21 18H7"/></svg>
+                </div>
                 <div>
                   <div class="mod-settings-label">Purge pinned messages</div>
-                  <div class="mod-settings-hint">Allow /purge to delete pinned messages</div>
+                  <div class="mod-settings-hint">Allow /purge to also delete pinned messages</div>
                 </div>
               </div>
-              <span class="mod-settings-chevron">›</span>
+              <label class="toggle-switch" onclick="event.stopPropagation()">
+                <input type="checkbox" id="purgePinnedToggle">
+                <span class="toggle-slider"></span>
+              </label>
             </div>
+
           </div>
         </div>
-        <!-- Cases list view (shown when View cases is clicked) -->
+
+        <!-- ╔═ SUB-PAGES ═╗ -->
+
+        <!-- Sub-page: Cases list -->
         <div id="modCasesView" style="display:none">
-          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem">
-            <button class="btn btn-ghost btn-sm" id="modCasesBack">← Back</button>
-            <h3 style="margin:0;font-size:1rem;font-weight:700">Cases</h3>
+          <div class="mod-subpage-header">
+            <button class="mod-back-btn" id="modCasesBack">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Back
+            </button>
+            <div class="mod-subpage-title-wrap">
+              <div class="mod-subpage-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+              </div>
+              <div>
+                <h3 class="mod-subpage-title">Moderation <span class="mod-breadcrumb">› Cases</span></h3>
+                <p class="mod-subpage-desc">View and manage all moderation cases.</p>
+              </div>
+            </div>
           </div>
           <div id="casesContent">
             <div class="commands-loading"><div class="spinner"></div> Loading cases…</div>
           </div>
         </div>
-        <!-- Case detail view -->
+
+        <!-- Sub-page: Case detail -->
         <div id="modCaseDetail" style="display:none">
-          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem">
-            <button class="btn btn-ghost btn-sm" id="modCaseDetailBack">← Back to cases</button>
+          <div class="mod-subpage-header">
+            <button class="mod-back-btn" id="modCaseDetailBack">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Back to cases
+            </button>
           </div>
           <div id="modCaseDetailContent"></div>
         </div>
+
+        <!-- Sub-page: Punish settings -->
+        <div id="modSubPunishSettings" style="display:none">
+          <div class="mod-subpage-header">
+            <button class="mod-back-btn mod-subpage-back">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Back
+            </button>
+            <div class="mod-subpage-title-wrap">
+              <div class="mod-subpage-icon" style="background:rgba(251,146,60,.12);color:#fb923c">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+              </div>
+              <div>
+                <h3 class="mod-subpage-title">Moderation <span class="mod-breadcrumb">› Punish settings</span></h3>
+                <p class="mod-subpage-desc">Configure default behavior for each punishment type.</p>
+              </div>
+            </div>
+          </div>
+          <div id="punishSettingsContent">
+            <div class="commands-loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- Sub-page: Immune roles -->
+        <div id="modSubImmuneRoles" style="display:none">
+          <div class="mod-subpage-header">
+            <button class="mod-back-btn mod-subpage-back">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Back
+            </button>
+            <div class="mod-subpage-title-wrap">
+              <div class="mod-subpage-icon" style="background:rgba(96,165,250,.12);color:#60a5fa">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+              </div>
+              <div>
+                <h3 class="mod-subpage-title">Moderation <span class="mod-breadcrumb">› Immune roles</span></h3>
+                <p class="mod-subpage-desc">Set roles that are immune to moderation actions.<br>To configure which roles can execute punishment commands, head to the <strong>Commands</strong> tab.</p>
+              </div>
+            </div>
+          </div>
+          <div id="immuneRolesContent">
+            <div class="commands-loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- Sub-page: User notifications -->
+        <div id="modSubUserNotifications" style="display:none">
+          <div class="mod-subpage-header">
+            <button class="mod-back-btn mod-subpage-back">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Back
+            </button>
+            <div class="mod-subpage-title-wrap">
+              <div class="mod-subpage-icon" style="background:rgba(52,211,153,.12);color:#34d399">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+              </div>
+              <div>
+                <h3 class="mod-subpage-title">Moderation <span class="mod-breadcrumb">› User notifications</span></h3>
+                <p class="mod-subpage-desc">Decide if users should get notified in their direct messages when they get punished.</p>
+              </div>
+            </div>
+          </div>
+          <div id="userNotificationsContent">
+            <div class="commands-loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- Sub-page: Predefined reasons -->
+        <div id="modSubPredefinedReasons" style="display:none">
+          <div class="mod-subpage-header">
+            <button class="mod-back-btn mod-subpage-back">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Back
+            </button>
+            <div class="mod-subpage-title-wrap">
+              <div class="mod-subpage-icon" style="background:rgba(167,139,250,.12);color:#a78bfa">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h10"/></svg>
+              </div>
+              <div>
+                <h3 class="mod-subpage-title">Moderation <span class="mod-breadcrumb">› Predefined reasons</span></h3>
+                <p class="mod-subpage-desc">Predefine reasons for punishments. You can then use an alias to select the full reason.<br><small style="color:var(--text-3)">Example: alias <code>r1</code> → full reason <em>"Rule #1 — Spamming and disrespect"</em></small></p>
+              </div>
+            </div>
+          </div>
+          <div id="predefinedReasonsContent">
+            <div class="commands-loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- Sub-page: Channel locking -->
+        <div id="modSubChannelLocking" style="display:none">
+          <div class="mod-subpage-header">
+            <button class="mod-back-btn mod-subpage-back">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Back
+            </button>
+            <div class="mod-subpage-title-wrap">
+              <div class="mod-subpage-icon" style="background:rgba(250,204,21,.12);color:#facc15">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+              </div>
+              <div>
+                <h3 class="mod-subpage-title">Moderation <span class="mod-breadcrumb">› Channel locking</span></h3>
+                <p class="mod-subpage-desc">Lock channels to prevent users from sending messages or joining voice channels.</p>
+              </div>
+            </div>
+          </div>
+          <div id="channelLockingContent">
+            <div class="commands-loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- Sub-page: Privacy -->
+        <div id="modSubPrivacy" style="display:none">
+          <div class="mod-subpage-header">
+            <button class="mod-back-btn mod-subpage-back">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Back
+            </button>
+            <div class="mod-subpage-title-wrap">
+              <div class="mod-subpage-icon" style="background:rgba(244,114,182,.12);color:#f472b6">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              <div>
+                <h3 class="mod-subpage-title">Moderation <span class="mod-breadcrumb">› Privacy</span></h3>
+                <p class="mod-subpage-desc">Decide what case information is shown to users.</p>
+              </div>
+            </div>
+          </div>
+          <div id="privacyContent">
+            <div class="commands-loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- Sub-page: Message Histories -->
+        <div id="modSubMessageHistories" style="display:none">
+          <div class="mod-subpage-header">
+            <button class="mod-back-btn mod-subpage-back">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Back
+            </button>
+            <div class="mod-subpage-title-wrap">
+              <div class="mod-subpage-icon" style="background:rgba(99,102,241,.12);color:#818cf8">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+              </div>
+              <div>
+                <h3 class="mod-subpage-title">Moderation <span class="mod-breadcrumb">› Message Histories</span></h3>
+                <p class="mod-subpage-desc">Message histories allow you to archive user messages from your server easily.<br><small style="color:var(--text-3)">Use the <code>/archive</code> command in your server to create a message history. Stored for 2 years.</small></p>
+              </div>
+            </div>
+          </div>
+          <div id="messageHistoriesContent">
+            <div class="commands-loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- Sub-page: Appeals -->
+        <div id="modSubAppeals" style="display:none">
+          <div class="mod-subpage-header">
+            <button class="mod-back-btn mod-subpage-back">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Back
+            </button>
+            <div class="mod-subpage-title-wrap">
+              <div class="mod-subpage-icon" style="background:rgba(34,197,94,.12);color:#4ade80">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              </div>
+              <div>
+                <h3 class="mod-subpage-title">Moderation <span class="mod-breadcrumb">› Appeals</span></h3>
+                <p class="mod-subpage-desc">Create custom appeal forms for users to appeal their punishments.</p>
+              </div>
+            </div>
+          </div>
+          <div id="appealsContent">
+            <div class="commands-loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- Sub-page: User reports (full config) -->
+        <div id="modSubUserReports" style="display:none">
+          <div class="mod-subpage-header">
+            <button class="mod-back-btn mod-subpage-back">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+              Back
+            </button>
+            <div class="mod-subpage-title-wrap">
+              <div class="mod-subpage-icon" style="background:rgba(248,113,113,.12);color:#f87171">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>
+              </div>
+              <div>
+                <h3 class="mod-subpage-title">Moderation <span class="mod-breadcrumb">› User reports</span></h3>
+                <p class="mod-subpage-desc">Configure how users can report others in your server.</p>
+              </div>
+            </div>
+          </div>
+          <div id="userReportsContent">
+            <div class="commands-loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+
       </section>
 
 
@@ -1046,8 +1303,198 @@
   <script src="/js/applications.js?v=20260425"></script>
   <script src="/js/leveling.js?v=20260426"></script>
   <script src="/js/economy.js?v=20260426"></script>
-  <script src="/js/cases.js?v=20260426"></script>
+  <script src="/js/cases.js?v=20260501"></script>
+  <script src="/js/modconfig.js?v=20260501"></script>
   <script src="/js/savebar.js?v=20260426"></script>
+
+  <!-- ── Modal: Add predefined reason ── -->
+  <div id="addReasonModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Add predefined reason">
+    <div class="modal-card modal-card--md">
+      <div class="modal-header">
+        <h3 class="modal-title">Add reason</h3>
+        <button class="modal-close" data-modal="addReasonModal" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label class="modal-label">ALIASES</label>
+        <div class="alias-tags-input" id="aliasTagsWrap">
+          <div id="aliasTagsList" class="alias-tags-list"></div>
+          <input type="text" id="aliasTagInput" class="alias-tag-input-field" placeholder="Type alias and press Enter…" autocomplete="off">
+        </div>
+        <p class="modal-hint">Type an alias and press <kbd>Enter</kbd> to add it. Aliases are shortcuts for the reason below.</p>
+        <label class="modal-label" style="margin-top:1rem">REASON</label>
+        <textarea id="addReasonText" class="modal-textarea" rows="3" placeholder="Enter the full reason text…"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost btn-sm" data-modal="addReasonModal">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="addReasonSave">Add reason</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal: Punish type settings ── -->
+  <div id="punishTypeModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Punish type settings">
+    <div class="modal-card modal-card--lg">
+      <div class="modal-header">
+        <h3 class="modal-title" id="punishTypeModalTitle">Mute settings</h3>
+        <button class="modal-close" data-modal="punishTypeModal" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body" id="punishTypeModalBody">
+        <!-- filled by JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost btn-sm" data-modal="punishTypeModal">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="punishTypeSave">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal: Add appeal question ── -->
+  <div id="addAppealQModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Add appeal question">
+    <div class="modal-card modal-card--md">
+      <div class="modal-header">
+        <h3 class="modal-title" id="appealQModalTitle">Add question</h3>
+        <button class="modal-close" data-modal="addAppealQModal" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label class="modal-label">QUESTION LABEL</label>
+        <input type="text" id="appealQLabel" class="modal-input" placeholder="e.g. Why do you think this punishment was unfair?">
+        <label class="modal-label" style="margin-top:1rem">INPUT TYPE</label>
+        <div class="mod-type-tabs" id="appealQTypeTabs">
+          <button class="mod-type-tab active" data-type="textarea">Long text</button>
+          <button class="mod-type-tab" data-type="text">Short text</button>
+        </div>
+        <div style="margin-top:1rem;display:flex;align-items:center;gap:0.75rem">
+          <label class="toggle-switch">
+            <input type="checkbox" id="appealQRequired">
+            <span class="toggle-slider"></span>
+          </label>
+          <span style="font-size:0.85rem;color:var(--text-2)">Required</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost btn-sm" data-modal="addAppealQModal">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="addAppealQSave">Add question</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Modal: User reports setup wizard ── -->
+  <div id="userReportsWizardModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Set up user reports">
+    <div class="modal-card modal-card--md" id="urWizardCard">
+      <!-- Step 0: intro -->
+      <div class="ur-wizard-step" data-step="0">
+        <div class="modal-header">
+          <h3 class="modal-title">Set up User reports</h3>
+          <button class="modal-close" data-modal="userReportsWizardModal" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="ur-wizard-intro-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>
+          </div>
+          <p class="ur-wizard-intro-text">User reports allow your server members to report each other directly through Discord. Reports are sent to a channel of your choice where moderators can review and take action.</p>
+          <p class="ur-wizard-intro-hint">This quick setup wizard will guide you through configuring ways to report, predefined reasons, the report channel, and ping roles.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost btn-sm" data-modal="userReportsWizardModal">Cancel</button>
+          <button class="btn btn-primary btn-sm" id="urWizardStart">Start setup →</button>
+        </div>
+      </div>
+      <!-- Step 1: ways to report -->
+      <div class="ur-wizard-step" data-step="1" style="display:none">
+        <div class="modal-header">
+          <span class="modal-step-pill">1 / 4</span>
+          <h3 class="modal-title">Ways to report</h3>
+          <button class="modal-close" data-modal="userReportsWizardModal" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-hint">Select the ways users can report others. You can rename each method below.</p>
+          <div class="ur-way-row">
+            <label class="toggle-switch"><input type="checkbox" id="urWaySlash"><span class="toggle-slider"></span></label>
+            <div class="ur-way-info">
+              <span class="ur-way-label">Slash command</span>
+              <input type="text" class="ur-way-name-input" id="urWaySlashName" placeholder="report" value="report">
+            </div>
+          </div>
+          <div class="ur-way-row">
+            <label class="toggle-switch"><input type="checkbox" id="urWayUserCtx"><span class="toggle-slider"></span></label>
+            <div class="ur-way-info">
+              <span class="ur-way-label">User context menu</span>
+              <input type="text" class="ur-way-name-input" id="urWayUserCtxName" placeholder="Report user" value="Report user">
+            </div>
+          </div>
+          <div class="ur-way-row">
+            <label class="toggle-switch"><input type="checkbox" id="urWayMsgCtx"><span class="toggle-slider"></span></label>
+            <div class="ur-way-info">
+              <span class="ur-way-label">Message context menu</span>
+              <input type="text" class="ur-way-name-input" id="urWayMsgCtxName" placeholder="Report message" value="Report message">
+            </div>
+          </div>
+          <div class="ur-way-row">
+            <label class="toggle-switch"><input type="checkbox" id="urWayReaction"><span class="toggle-slider"></span></label>
+            <div class="ur-way-info">
+              <span class="ur-way-label">Message reactions</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost btn-sm ur-wizard-prev">← Back</button>
+          <button class="btn btn-primary btn-sm ur-wizard-next">Next →</button>
+        </div>
+      </div>
+      <!-- Step 2: predefined reasons -->
+      <div class="ur-wizard-step" data-step="2" style="display:none">
+        <div class="modal-header">
+          <span class="modal-step-pill">2 / 4</span>
+          <h3 class="modal-title">Predefined report reasons</h3>
+          <button class="modal-close" data-modal="userReportsWizardModal" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1rem">
+            <label class="toggle-switch"><input type="checkbox" id="urAllowCustomReason" checked><span class="toggle-slider"></span></label>
+            <span style="font-size:0.85rem;color:var(--text-2)">Allow custom reason</span>
+          </div>
+          <div id="urReasonsList" class="ur-reasons-list"></div>
+          <button class="btn btn-ghost btn-sm" id="urAddReason" style="margin-top:0.5rem">+ Add reason</button>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost btn-sm ur-wizard-prev">← Back</button>
+          <button class="btn btn-primary btn-sm ur-wizard-next">Next →</button>
+        </div>
+      </div>
+      <!-- Step 3: report channel -->
+      <div class="ur-wizard-step" data-step="3" style="display:none">
+        <div class="modal-header">
+          <span class="modal-step-pill">3 / 4</span>
+          <h3 class="modal-title">Report channel</h3>
+          <button class="modal-close" data-modal="userReportsWizardModal" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-hint">Select the channel where reports will be sent to your moderation team.</p>
+          <div id="urChannelPickerWrap" class="mod-channel-picker-wrap"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost btn-sm ur-wizard-prev">← Back</button>
+          <button class="btn btn-primary btn-sm ur-wizard-next">Next →</button>
+        </div>
+      </div>
+      <!-- Step 4: ping roles -->
+      <div class="ur-wizard-step" data-step="4" style="display:none">
+        <div class="modal-header">
+          <span class="modal-step-pill">4 / 4</span>
+          <h3 class="modal-title">Ping roles</h3>
+          <button class="modal-close" data-modal="userReportsWizardModal" aria-label="Close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-hint">Select roles to be pinged when a new report is submitted. Leave empty to not ping anyone.</p>
+          <div id="urPingRolesWrap" class="mod-role-picker-wrap"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost btn-sm ur-wizard-prev">← Back</button>
+          <button class="btn btn-primary btn-sm" id="urWizardFinish">Finish setup ✓</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Global Discord-style unsaved changes bar -->
   <div id="globalSaveBar" class="global-save-bar" aria-hidden="true">

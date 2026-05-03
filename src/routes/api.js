@@ -17,6 +17,7 @@ const AIConfig = require('../models/AIConfig');
 const CustomCommand = require('../models/CustomCommand');
 const ThemeConfig = require('../models/ThemeConfig');
 const ModerationCase = require('../models/ModerationCase');
+const { ModerationConfig } = require('../models/ModerationConfig');
 const ResponseConfig = require('../models/ResponseConfig');
 const BotMessageTemplate = require('../models/BotMessageTemplate');
 const discordApi = require('../lib/discord');
@@ -2354,6 +2355,118 @@ router.patch('/guild/:guildId/theme', requireAuth, requireGuildAdmin, async (req
   } catch (err) {
     console.error('[API] PATCH theme', err);
     res.status(500).json({ error: 'Failed to update theme config' });
+  }
+});
+
+// ── MODERATION CONFIG ────────────────────────────────────────
+
+async function getModConfig(guildId) {
+  return ModerationConfig.findOneAndUpdate(
+    { guildId },
+    { $setOnInsert: { guildId } },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  ).lean();
+}
+
+// GET full config
+router.get('/guild/:guildId/modconfig/full', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    res.json(await getModConfig(req.params.guildId));
+  } catch (err) {
+    console.error('[API] GET modconfig/full', err);
+    res.status(500).json({ error: 'Failed to load mod config' });
+  }
+});
+
+// PATCH generic sub-section helper
+router.patch('/guild/:guildId/modconfig/full', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const allowed = ['purgePinned','privacy','channelLock','predefinedReasons',
+      'userNotifications','immuneRoles','punishSettings','userReports','appeals'];
+    const update = {};
+    for (const k of allowed) {
+      if (k in req.body) update[k] = req.body[k];
+    }
+    if (!Object.keys(update).length) return res.status(400).json({ error: 'Nothing to update' });
+    const cfg = await ModerationConfig.findOneAndUpdate(
+      { guildId },
+      { $set: update },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    res.json(cfg);
+  } catch (err) {
+    console.error('[API] PATCH modconfig/full', err);
+    res.status(500).json({ error: 'Failed to save mod config' });
+  }
+});
+
+// POST add predefined reason
+router.post('/guild/:guildId/modconfig/reasons', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const { aliases, reason } = req.body;
+    if (!reason || typeof reason !== 'string') return res.status(400).json({ error: 'reason required' });
+    const safeAliases = (Array.isArray(aliases) ? aliases : []).map(a => String(a).trim().slice(0,50)).filter(Boolean);
+    const cfg = await ModerationConfig.findOneAndUpdate(
+      { guildId },
+      { $push: { predefinedReasons: { aliases: safeAliases, reason: String(reason).trim().slice(0,500) } } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    res.json(cfg.predefinedReasons);
+  } catch (err) {
+    console.error('[API] POST reasons', err);
+    res.status(500).json({ error: 'Failed to add reason' });
+  }
+});
+
+// DELETE predefined reason
+router.delete('/guild/:guildId/modconfig/reasons/:reasonId', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId, reasonId } = req.params;
+    await ModerationConfig.findOneAndUpdate({ guildId }, { $pull: { predefinedReasons: { _id: reasonId } } });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[API] DELETE reason', err);
+    res.status(500).json({ error: 'Failed to delete reason' });
+  }
+});
+
+// POST add appeal question
+router.post('/guild/:guildId/modconfig/appeals/questions', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const { label, type, required, options, placeholder } = req.body;
+    if (!label) return res.status(400).json({ error: 'label required' });
+    const question = {
+      id: Date.now().toString(36),
+      label: String(label).trim().slice(0,200),
+      type: ['text','textarea','select'].includes(type) ? type : 'textarea',
+      required: !!required,
+      options: Array.isArray(options) ? options.map(o => String(o).trim()).filter(Boolean) : [],
+      placeholder: String(placeholder||'').trim().slice(0,200),
+    };
+    const cfg = await ModerationConfig.findOneAndUpdate(
+      { guildId },
+      { $push: { 'appeals.questions': question } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    res.json(cfg.appeals.questions);
+  } catch (err) {
+    console.error('[API] POST appeal question', err);
+    res.status(500).json({ error: 'Failed to add question' });
+  }
+});
+
+// DELETE appeal question
+router.delete('/guild/:guildId/modconfig/appeals/questions/:qId', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId, qId } = req.params;
+    await ModerationConfig.findOneAndUpdate({ guildId }, { $pull: { 'appeals.questions': { id: qId } } });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[API] DELETE appeal question', err);
+    res.status(500).json({ error: 'Failed to delete question' });
   }
 });
 
