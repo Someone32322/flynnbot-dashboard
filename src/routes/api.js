@@ -18,6 +18,7 @@ const CustomCommand = require('../models/CustomCommand');
 const ThemeConfig = require('../models/ThemeConfig');
 const ModerationCase = require('../models/ModerationCase');
 const { ModerationConfig } = require('../models/ModerationConfig');
+const { PredefinedReasons } = require('../models/PredefinedReasons');
 const ResponseConfig = require('../models/ResponseConfig');
 const BotMessageTemplate = require('../models/BotMessageTemplate');
 const discordApi = require('../lib/discord');
@@ -2467,6 +2468,50 @@ router.delete('/guild/:guildId/modconfig/appeals/questions/:qId', requireAuth, r
   } catch (err) {
     console.error('[API] DELETE appeal question', err);
     res.status(500).json({ error: 'Failed to delete question' });
+  }
+});
+
+// ── Per-action predefined reasons (bot autocomplete) ──────────────────────
+
+// GET /api/guild/:guildId/predefined-reasons — returns { ban:[], kick:[], mute:[], warn:[] }
+router.get('/guild/:guildId/predefined-reasons', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    const ACTIONS = ['ban', 'kick', 'mute', 'warn'];
+    const docs = await PredefinedReasons.find({ guildId, action: { $in: ACTIONS } }).lean();
+    const result = {};
+    for (const action of ACTIONS) {
+      const doc = docs.find((d) => d.action === action);
+      result[action] = doc?.reasons || [];
+    }
+    res.json(result);
+  } catch (err) {
+    console.error('[API] GET predefined-reasons', err);
+    res.status(500).json({ error: 'Failed to fetch predefined reasons' });
+  }
+});
+
+// PUT /api/guild/:guildId/predefined-reasons/:action — replace reasons list for one action
+router.put('/guild/:guildId/predefined-reasons/:action', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const { guildId, action } = req.params;
+    const ACTIONS = ['ban', 'kick', 'mute', 'warn'];
+    if (!ACTIONS.includes(action)) {
+      return res.status(400).json({ error: 'Invalid action' });
+    }
+    const reasons = Array.isArray(req.body.reasons) ? req.body.reasons.map((r) => String(r).trim()).filter(Boolean) : [];
+    if (reasons.some((r) => r.length > 200)) {
+      return res.status(400).json({ error: 'Each reason must be 200 characters or less' });
+    }
+    const doc = await PredefinedReasons.findOneAndUpdate(
+      { guildId, action },
+      { $set: { reasons } },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    ).lean();
+    res.json({ action, reasons: doc.reasons });
+  } catch (err) {
+    console.error('[API] PUT predefined-reasons', err);
+    res.status(500).json({ error: 'Failed to save reasons' });
   }
 });
 

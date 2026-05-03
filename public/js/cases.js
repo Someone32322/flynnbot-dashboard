@@ -63,7 +63,7 @@ function renderCases(container, guildId) {
     <!-- Filters -->
     <div class="mod-cases-toolbar">
       <div class="mod-cases-filters">
-        <select id="casesFilterType" class="ec-input" style="max-width:120px">
+        <select id="casesFilterType" class="ec-input" data-cs data-cs-placeholder="All types" style="max-width:160px">
           <option value="all" ${_casesFilters.type === 'all' ? 'selected' : ''}>All types</option>
           <option value="warn" ${_casesFilters.type === 'warn' ? 'selected' : ''}>Warn</option>
           <option value="mute" ${_casesFilters.type === 'mute' ? 'selected' : ''}>Mute</option>
@@ -75,7 +75,10 @@ function renderCases(container, guildId) {
         <input type="text" id="casesFilterUser" class="ec-input" value="${escCase(_casesFilters.userId)}" placeholder="Filter by user ID" style="max-width:160px" />
         <button class="btn btn-sm" id="casesFilterApply">Filter</button>
       </div>
-      <div style="font-size:0.78rem;color:var(--text-3)">${total} case${total !== 1 ? 's' : ''}</div>
+      <div style="display:flex;align-items:center;gap:0.75rem">
+        <span style="font-size:0.78rem;color:var(--text-3)">${total} case${total !== 1 ? 's' : ''}</span>
+        <button class="btn btn-sm btn-primary" id="casesIssueWarnBtn">+ Issue Warning</button>
+      </div>
     </div>
 
     <!-- Case cards -->
@@ -101,6 +104,9 @@ function renderCases(container, guildId) {
       </div>
     </div>`;
 
+  if (window.refreshCustomSelects) window.refreshCustomSelects(container);
+
+  document.getElementById('casesIssueWarnBtn')?.addEventListener('click', () => openCaseModal(guildId));
   document.getElementById('casesFilterApply')?.addEventListener('click', () => {
     _casesFilters.type = document.getElementById('casesFilterType').value;
     _casesFilters.userId = document.getElementById('casesFilterUser').value.trim();

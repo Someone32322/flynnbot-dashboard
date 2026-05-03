@@ -771,7 +771,7 @@
                   </label>
                   <label class="lv-label">
                     Post to Channel
-                    <select id="lvLevelUpChannel" class="lv-select">
+                    <select id="lvLevelUpChannel" class="lv-select" data-cs data-cs-placeholder="Same channel as message">
                       <option value="">Same channel as message</option>
                     </select>
                   </label>
@@ -837,7 +837,7 @@
                   <input type="number" id="lvRewardLevel" min="1" max="9999" placeholder="e.g. 10">
                 </label>
                 <label class="lv-label" style="margin-top:0.75rem">Role <span class="required">*</span>
-                  <select id="lvRewardRole">
+                  <select id="lvRewardRole" data-cs data-cs-placeholder="Select a role…">
                     <option value="">Select a role…</option>
                   </select>
                 </label>
@@ -1306,30 +1306,6 @@
   <script src="/js/cases.js?v=20260501"></script>
   <script src="/js/modconfig.js?v=20260501"></script>
   <script src="/js/savebar.js?v=20260426"></script>
-
-  <!-- ── Modal: Add predefined reason ── -->
-  <div id="addReasonModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Add predefined reason">
-    <div class="modal-card modal-card--md">
-      <div class="modal-header">
-        <h3 class="modal-title">Add reason</h3>
-        <button class="modal-close" data-modal="addReasonModal" aria-label="Close">&times;</button>
-      </div>
-      <div class="modal-body">
-        <label class="modal-label">ALIASES</label>
-        <div class="alias-tags-input" id="aliasTagsWrap">
-          <div id="aliasTagsList" class="alias-tags-list"></div>
-          <input type="text" id="aliasTagInput" class="alias-tag-input-field" placeholder="Type alias and press Enter…" autocomplete="off">
-        </div>
-        <p class="modal-hint">Type an alias and press <kbd>Enter</kbd> to add it. Aliases are shortcuts for the reason below.</p>
-        <label class="modal-label" style="margin-top:1rem">REASON</label>
-        <textarea id="addReasonText" class="modal-textarea" rows="3" placeholder="Enter the full reason text…"></textarea>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost btn-sm" data-modal="addReasonModal">Cancel</button>
-        <button class="btn btn-primary btn-sm" id="addReasonSave">Add reason</button>
-      </div>
-    </div>
-  </div>
 
   <!-- ── Modal: Punish type settings ── -->
   <div id="punishTypeModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Punish type settings">

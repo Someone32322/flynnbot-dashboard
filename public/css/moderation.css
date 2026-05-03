@@ -1036,6 +1036,70 @@
   color: #a5b4fc;
 }
 
+/* ── Per-action predefined reasons tabs ─────────────────────── */
+.mod-reason-action-tabs {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  padding: 0 1rem 0.75rem;
+}
+.mod-reason-tab {
+  padding: 0.3rem 0.85rem;
+  border-radius: 7px;
+  border: 1px solid var(--border, #2e2f35);
+  background: transparent;
+  color: var(--text-3);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.mod-reason-tab:hover { color: var(--text-1); background: rgba(255,255,255,0.04); }
+.mod-reason-tab.active {
+  background: rgba(99,102,241,0.15);
+  border-color: rgba(99,102,241,0.4);
+  color: #a5b4fc;
+}
+.mod-reason-add-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem 0.75rem;
+}
+.mod-reason-add-row .modal-input {
+  height: 36px;
+  font-size: 0.85rem;
+}
+.mod-reason-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  background: var(--card-bg, #1e1f22);
+  border: 1px solid var(--border, #2e2f35);
+  border-radius: 8px;
+  margin: 0 1rem 0.4rem;
+}
+.mod-reason-row .mod-reason-text {
+  flex: 1;
+  font-size: 0.85rem;
+  color: var(--text-1);
+}
+/* ── Custom select sizing inside mod section cards ──────────── */
+.mod-section-card .cs-wrapper,
+.mod-role-picker-wrap .cs-wrapper,
+.mod-channel-picker-wrap .cs-wrapper {
+  display: block;
+  max-width: 320px;
+  margin: 0.25rem 1rem 0.75rem;
+}
+.mod-reasons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
 /* ── User reports wizard: intro ───────────────────────────── */
 .ur-wizard-intro-icon {
   width: 64px; height: 64px;

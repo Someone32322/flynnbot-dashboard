@@ -372,7 +372,7 @@
         <div class="rr-opt-label-wrap">
           <span class="rr-opt-label">List mode</span>
         </div>
-        <select id="rrOptListMode" class="ec-input" style="max-width:140px" aria-label="List mode">
+        <select id="rrOptListMode" class="ec-input" data-cs data-cs-placeholder="None" style="max-width:140px" aria-label="List mode">
           <option value="whitelist"${o.listMode === 'whitelist' ? ' selected' : ''}>Whitelist</option>
           <option value="blacklist"${o.listMode === 'blacklist' ? ' selected' : ''}>Blacklist</option>
           <option value="none"${o.listMode === 'none' ? ' selected' : ''}>None</option>
@@ -457,6 +457,7 @@
     backdrop.classList.add('open');
     document.body.style.overflow = 'hidden';
     bindWizardEvents(backdrop);
+    if (window.refreshCustomSelects) window.refreshCustomSelects(backdrop);
     // Focus first focusable element
     backdrop.querySelector('button, input, select, [tabindex="0"]')?.focus();
   }

@@ -227,6 +227,7 @@
       if (ch.id === currentId) opt.selected = true;
       sel.appendChild(opt);
     });
+    if (window.refreshCustomSelects) window.refreshCustomSelects(sel.closest('label') || sel.parentElement);
   }
 
   // ── Role rewards ──────────────────────────────────────────
@@ -276,6 +277,7 @@
     const bd = $('lvRewardBackdrop');
     if (bd) { bd.style.display = 'flex'; bd.removeAttribute('aria-hidden'); }
     if ($('lvRewardRole')?.options?.length <= 1) populateRoleSelector();
+    if (window.refreshCustomSelects) window.refreshCustomSelects(bd);
     $('lvRewardLevel')?.focus();
   }
 

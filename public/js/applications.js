@@ -254,7 +254,7 @@
       const options = isSection ? '' : `
         <div class="app-field-row">
           <label>Type
-            <select data-field-input="type" data-idx="${idx}">
+            <select data-cs data-field-input="type" data-idx="${idx}">
               ${['text', 'textarea', 'select', 'number', 'boolean'].map((type) => `<option value="${type}" ${type === field.type ? 'selected' : ''}>${type}</option>`).join('')}
             </select>
           </label>
@@ -287,7 +287,7 @@
 
           ${isSection ? `
             <label>Section Style
-              <select data-field-input="sectionStyle" data-idx="${idx}">
+              <select data-cs data-field-input="sectionStyle" data-idx="${idx}">
                 ${['accent', 'glass', 'plain'].map((style) => `<option value="${style}" ${style === (field.sectionStyle || 'accent') ? 'selected' : ''}>${style}</option>`).join('')}
               </select>
             </label>
@@ -304,6 +304,7 @@
       el.addEventListener('input', onFieldInputChanged);
       el.addEventListener('change', onFieldInputChanged);
     });
+    if (window.refreshCustomSelects) window.refreshCustomSelects(fieldBuilderEl);
 
     fieldBuilderEl.querySelectorAll('[data-remove]').forEach((el) => {
       el.addEventListener('click', () => {
@@ -365,7 +366,7 @@
             ${status === 'pending' ? '<span class="app-status-badge">DM sent when applicant submits</span>' : ''}
           </div>
           <label>DM Mode
-            <select class="app-status-mode-select" data-template-input="mode" data-status="${status}">
+            <select class="app-status-mode-select" data-cs data-template-input="mode" data-status="${status}">
               <option value="none" ${template.mode === 'none' ? 'selected' : ''}>No DM</option>
               <option value="generic" ${template.mode === 'generic' ? 'selected' : ''}>Generic embed</option>
               <option value="saved_embed" ${template.mode === 'saved_embed' ? 'selected' : ''}>Saved embed template</option>
@@ -374,7 +375,7 @@
           <div class="app-status-mode-fields" data-mode-for="${status}">
             <div class="app-status-mode-section app-mode-saved" ${template.mode !== 'saved_embed' ? 'style="display:none"' : ''}>
               <label>Saved Embed Template
-                <select data-template-input="savedEmbedId" data-status="${status}">
+                <select data-cs data-template-input="savedEmbedId" data-status="${status}">
                   <option value="">— Select a saved embed —</option>
                   ${embedTemplates.map((emb) => `<option value="${emb._id}" ${String(emb._id) === String(template.savedEmbedId || '') ? 'selected' : ''}>${escHtml(emb.name)}</option>`).join('')}
                 </select>
@@ -397,6 +398,7 @@
     }).join('');
 
     // Wire up mode selects to show/hide the relevant sub-fields
+    if (window.refreshCustomSelects) window.refreshCustomSelects(statusTemplatesEl);
     statusTemplatesEl.querySelectorAll('.app-status-mode-select').forEach((sel) => {
       sel.addEventListener('change', () => {
         const status = sel.dataset.status;

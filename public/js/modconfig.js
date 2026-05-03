@@ -277,6 +277,7 @@ function _renderChannelLocking() {
   _bindChipRemove(el, 'lockall', null, 'lockAllChannelsChips');
   _bindPickerAdd(el, 'ignoredRoleAdd', 'ignoredRolesChips', 'ignored', 'role');
   _bindPickerAdd(el, 'lockAllChannelAdd', 'lockAllChannelsChips', 'lockall', 'channel');
+  if (window.refreshCustomSelects) window.refreshCustomSelects(el);
 
   el.querySelector('#channelLockSaveBtn')?.addEventListener('click', async () => {
     const ignoredIds = [...el.querySelectorAll('.mod-chip[data-group="ignored"]')].map(c => c.dataset.id);
@@ -288,52 +289,120 @@ function _renderChannelLocking() {
 }
 
 /* ── Render: Predefined reasons ───────────────────────────── */
+let _predefinedReasons = null; // { ban:[], kick:[], mute:[], warn:[] }
+let _predefinedReasonsLoaded = false;
+
+async function _loadPredefinedReasons() {
+  try {
+    const res = await fetch(MODCONFIG_API('/predefined-reasons'));
+    if (res.ok) _predefinedReasons = await res.json();
+  } catch (err) {
+    console.error('[modconfig] load predefined-reasons', err);
+  }
+}
+
+const REASON_ACTIONS = ['ban','kick','mute','warn'];
+const REASON_ACTION_LABELS = { ban:'Ban', kick:'Kick', mute:'Mute', warn:'Warn' };
+let _reasonActiveTab = 'ban';
+
 function _renderPredefinedReasons() {
-  const el      = document.getElementById('predefinedReasonsContent');
-  const reasons = _modConfig?.predefinedReasons || [];
+  const el = document.getElementById('predefinedReasonsContent');
+  el.innerHTML = `<div class="commands-loading"><div class="spinner"></div></div>`;
+  _loadPredefinedReasons().then(() => {
+    _predefinedReasonsLoaded = true;
+    _drawPredefinedReasons(el);
+  });
+}
+
+function _drawPredefinedReasons(el) {
+  const reasons = _predefinedReasons || { ban:[], kick:[], mute:[], warn:[] };
+  const activeReasons = reasons[_reasonActiveTab] || [];
 
   el.innerHTML = `
-    <div class="mod-reasons-list" id="reasonsList">
-      ${reasons.length === 0
-        ? '<p class="mod-empty-state">No predefined reasons yet. Add one below.</p>'
-        : reasons.map(r => _reasonRow(r)).join('')}
-    </div>
-    <button class="btn btn-ghost btn-sm mod-add-btn" id="openAddReasonModal">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-      Add reason
-    </button>`;
+    <div class="mod-section-card">
+      <div class="mod-section-card-header">
+        <h4 class="mod-section-card-title">Autocomplete suggestions</h4>
+        <p class="mod-section-card-desc">These appear as autocomplete options when moderators use commands. Select a punishment type to manage its reasons.</p>
+      </div>
+      <div class="mod-reason-action-tabs" id="reasonActionTabs">
+        ${REASON_ACTIONS.map(a => `
+          <button class="mod-reason-tab${a===_reasonActiveTab?' active':''}" data-action="${a}">
+            ${REASON_ACTION_LABELS[a]}
+          </button>`).join('')}
+      </div>
+      <div class="mod-reasons-list" id="reasonsList">
+        ${activeReasons.length === 0
+          ? '<p class="mod-empty-state">No reasons for this action yet. Add one below.</p>'
+          : activeReasons.map((r,i) => _reasonRowSimple(r,i)).join('')}
+      </div>
+      <div class="mod-reason-add-row">
+        <input type="text" id="newReasonInput" class="modal-input" placeholder="Enter a reason…" maxlength="200" style="flex:1">
+        <button class="btn btn-primary btn-sm" id="addReasonInline">Add</button>
+      </div>
+    </div>`;
 
-  el.querySelector('#openAddReasonModal')?.addEventListener('click', () => {
-    _clearAliasInput();
-    document.getElementById('addReasonText').value = '';
-    _openModal('addReasonModal');
+  // Tab switching
+  el.querySelectorAll('.mod-reason-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      _reasonActiveTab = tab.dataset.action;
+      _drawPredefinedReasons(el);
+    });
   });
 
+  // Add reason inline
+  const newInput = el.querySelector('#newReasonInput');
+  el.querySelector('#addReasonInline')?.addEventListener('click', () => _addReason(el, newInput));
+  newInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); _addReason(el, newInput); }
+  });
+
+  // Delete buttons
   el.querySelectorAll('.mod-reason-delete').forEach(btn => {
-    btn.addEventListener('click', async (e) => {
-      const id = e.currentTarget.dataset.id;
-      if (!confirm('Delete this reason?')) return;
-      const res = await fetch(MODCONFIG_API(`/modconfig/reasons/${id}`), { method: 'DELETE' });
-      if (res.ok) {
-        if (_modConfig) _modConfig.predefinedReasons = _modConfig.predefinedReasons.filter(r => String(r._id) !== id);
-        _renderPredefinedReasons();
-        _toast('Reason deleted');
-      }
+    btn.addEventListener('click', () => {
+      const idx = +btn.dataset.idx;
+      const list = _predefinedReasons[_reasonActiveTab] || [];
+      list.splice(idx, 1);
+      _saveReasonAction(_reasonActiveTab, list).then(() => _drawPredefinedReasons(el));
     });
   });
 }
 
-function _reasonRow(r) {
-  const aliases = (r.aliases || []).map(a => `<span class="reason-alias-tag">${_esc(a)}</span>`).join('');
+function _reasonRowSimple(reason, idx) {
   return `<div class="mod-reason-row">
-    <div class="mod-reason-row-top">
-      <div class="mod-reason-aliases">${aliases || '<em style="color:var(--text-3);font-size:0.8rem">No aliases</em>'}</div>
-      <button class="mod-reason-delete btn-icon-ghost" data-id="${r._id}" title="Delete reason">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-      </button>
-    </div>
-    <div class="mod-reason-text">${_esc(r.reason)}</div>
+    <div class="mod-reason-text">${_esc(reason)}</div>
+    <button class="mod-reason-delete btn-icon-ghost" data-idx="${idx}" title="Delete reason">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+    </button>
   </div>`;
+}
+
+async function _addReason(el, input) {
+  const reason = input?.value.trim();
+  if (!reason) { _toast('Please enter a reason.','error'); return; }
+  if (!_predefinedReasons) _predefinedReasons = { ban:[], kick:[], mute:[], warn:[] };
+  const list = [...(_predefinedReasons[_reasonActiveTab] || []), reason];
+  const saved = await _saveReasonAction(_reasonActiveTab, list);
+  if (saved) { input.value = ''; _drawPredefinedReasons(el); }
+}
+
+async function _saveReasonAction(action, reasons) {
+  try {
+    const res = await fetch(MODCONFIG_API(`/predefined-reasons/${action}`), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reasons }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    if (!_predefinedReasons) _predefinedReasons = { ban:[], kick:[], mute:[], warn:[] };
+    _predefinedReasons[action] = data.reasons;
+    _toast('Reasons saved');
+    return true;
+  } catch (err) {
+    console.error('[modconfig] save reasons', err);
+    _toast('Failed to save reasons','error');
+    return false;
+  }
 }
 
 /* ── Render: User notifications ───────────────────────────── */
@@ -418,6 +487,7 @@ function _renderImmuneRoles() {
     _bindPickerAdd(el, `ir-add-${type}`, `ir-chips-${type}`, `ir-${type}`, 'role');
     _bindChipRemove(el, `ir-${type}`, null, `ir-chips-${type}`);
   });
+  if (window.refreshCustomSelects) window.refreshCustomSelects(el);
 
   el.querySelector('#immuneSaveBtn')?.addEventListener('click', async () => {
     const getIds = (group) => [...el.querySelectorAll(`.mod-chip[data-group="${group}"]`)].map(c => c.dataset.id);
@@ -630,7 +700,7 @@ function _renderAppeals() {
       </div>
       <div class="modal-field" style="padding:0 1rem 0.75rem">
         <label class="modal-label">APPEAL CHANNEL</label>
-        <select id="ap-channelId" class="modal-input">
+        <select id="ap-channelId" class="modal-input" data-cs data-cs-placeholder="No channel selected">
           <option value="">No channel selected</option>
           ${_guildChannels.filter(c=>c.type===0).map(c=>`<option value="${c.id}"${c.id===ap.channelId?' selected':''}>#${_esc(c.name)}</option>`).join('')}
         </select>
@@ -647,6 +717,7 @@ function _renderAppeals() {
     document.querySelectorAll('#appealQTypeTabs .mod-type-tab').forEach(t => t.classList.toggle('active', t.dataset.type === 'textarea'));
     _openModal('addAppealQModal');
   });
+  if (window.refreshCustomSelects) window.refreshCustomSelects(el);
 
   el.querySelectorAll('.appeals-q-delete').forEach(btn => {
     btn.addEventListener('click', async (e) => {
@@ -705,7 +776,7 @@ function _renderUserReports() {
         <h4 class="mod-section-card-title">Report channel</h4>
       </div>
       <div class="modal-field" style="padding:0.5rem 1rem 0.75rem">
-        <select id="ur-channelId" class="modal-input">
+        <select id="ur-channelId" class="modal-input" data-cs data-cs-placeholder="No channel selected">
           <option value="">No channel selected</option>
           ${_guildChannels.filter(c=>c.type===0).map(c=>`<option value="${c.id}"${c.id===ur.reportChannelId?' selected':''}>#${_esc(c.name)}</option>`).join('')}
         </select>
@@ -789,6 +860,7 @@ function _renderUserReports() {
 
   _bindPickerAdd(el, 'ur-pingRoleAdd', 'ur-pingRolesChips', 'ur-ping', 'role');
   _bindChipRemove(el, 'ur-ping', null, 'ur-pingRolesChips');
+  if (window.refreshCustomSelects) window.refreshCustomSelects(el);
 
   el.querySelector('#urAddReasonFull')?.addEventListener('click', () => {
     const label = prompt('Enter reason label:');
@@ -838,6 +910,24 @@ let _urWizardStep = 0;
 function _openUserReportsWizard() {
   _urWizardStep = 0;
   _urShowStep(0);
+
+  // Populate step 3 channel picker
+  const chWrap = document.getElementById('urChannelPickerWrap');
+  if (chWrap) {
+    chWrap.innerHTML = _renderChannelPicker('urWizardChannelId', 'Select a channel…', _guildChannels, []);
+    if (window.refreshCustomSelects) window.refreshCustomSelects(chWrap);
+  }
+
+  // Populate step 4 role picker
+  const roleWrap = document.getElementById('urPingRolesWrap');
+  if (roleWrap) {
+    roleWrap.innerHTML = `
+      <div class="mod-role-chips-row" id="urPingRolesChipsWizard"></div>
+      ${_renderRolePicker('urPingRoleAddWizard','Add role',_guildRoles,[])}`;
+    _bindPickerAdd(roleWrap, 'urPingRoleAddWizard', 'urPingRolesChipsWizard', 'ur-ping-wiz', 'role');
+    if (window.refreshCustomSelects) window.refreshCustomSelects(roleWrap);
+  }
+
   _openModal('userReportsWizardModal');
 }
 
@@ -873,9 +963,8 @@ async function _urFinishWizard() {
   const get = (id) => !!document.querySelector('#'+id)?.checked;
   const val = (id) => document.querySelector('#'+id)?.value || '';
   const reasonLabels = [...document.querySelectorAll('#urReasonsList .ur-reason-label')].map((el,i) => ({ label: el.textContent.trim(), order: i }));
-  const channelEl    = document.querySelector('#urChannelPickerWrap select');
-  const channelId    = channelEl?.value || null;
-  const pingRoles    = [...document.querySelectorAll('#urPingRolesWrap .mod-chip')].map(c => c.dataset.id);
+  const channelId    = val('urWizardChannelId') || null;
+  const pingRoles    = [...document.querySelectorAll('#urPingRolesChipsWizard .mod-chip')].map(c => c.dataset.id);
   const res = await _patchModConfig({
     userReports: {
       enabled:           true,
@@ -929,24 +1018,6 @@ function _bindModals() {
     const tab = e.target.closest('#appealQTypeTabs .mod-type-tab');
     if (!tab) return;
     document.querySelectorAll('#appealQTypeTabs .mod-type-tab').forEach(t => t.classList.toggle('active', t === tab));
-  });
-
-  document.getElementById('addReasonSave')?.addEventListener('click', async () => {
-    const reason  = document.getElementById('addReasonText')?.value.trim();
-    const aliases = [...document.querySelectorAll('#aliasTagsList .alias-tag')].map(t => t.dataset.value);
-    if (!reason) { _toast('Please enter a reason.','error'); return; }
-    const res = await fetch(MODCONFIG_API('/modconfig/reasons'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason, aliases }),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      if (_modConfig) _modConfig.predefinedReasons = updated;
-      _closeModal('addReasonModal');
-      _renderPredefinedReasons();
-      _toast('Reason added');
-    }
   });
 
   document.getElementById('addAppealQSave')?.addEventListener('click', async () => {
@@ -1025,7 +1096,7 @@ function _renderChannelChips(channelIds, group) {
 
 function _renderRolePicker(pickerId, placeholder, roles, existing) {
   const available = roles.filter(r => !existing.includes(r.id));
-  return `<select class="mod-picker-select" id="${pickerId}">
+  return `<select class="mod-picker-select" id="${pickerId}" data-cs data-cs-placeholder="${placeholder}">
     <option value="">${placeholder}</option>
     ${available.map(r => `<option value="${r.id}">@${_esc(r.name)}</option>`).join('')}
   </select>`;
@@ -1033,7 +1104,7 @@ function _renderRolePicker(pickerId, placeholder, roles, existing) {
 
 function _renderChannelPicker(pickerId, placeholder, channels, existing) {
   const available = channels.filter(c => c.type === 0 && !existing.includes(c.id));
-  return `<select class="mod-picker-select" id="${pickerId}">
+  return `<select class="mod-picker-select" id="${pickerId}" data-cs data-cs-placeholder="${placeholder}">
     <option value="">${placeholder}</option>
     ${available.map(c => `<option value="${c.id}">#${_esc(c.name)}</option>`).join('')}
   </select>`;
