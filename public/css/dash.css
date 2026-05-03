@@ -732,36 +732,6 @@
   white-space: nowrap;
 }
 
-.dash-command-helper {
-  font-size: 0.78rem;
-  color: var(--text-3);
-}
-
-.dash-quick-nav {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.quick-nav-btn {
-  border: 1px solid rgba(59, 130, 246, 0.2);
-  background: rgba(14, 29, 70, 0.45);
-  color: var(--text-2);
-  border-radius: 999px;
-  padding: 7px 12px;
-  font-size: 0.76rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s var(--ease);
-}
-
-.quick-nav-btn:hover,
-.quick-nav-btn.active {
-  color: #c5e3ff;
-  border-color: rgba(34, 211, 238, 0.42);
-  background: rgba(34, 211, 238, 0.12);
-}
 
 .dash-section {
   padding-top: 26px;
@@ -922,10 +892,6 @@ body.dash-reduced-motion *::after {
   .dash-command-guild-icon {
     width: 30px;
     height: 30px;
-  }
-
-  .dash-quick-nav {
-    display: none;
   }
 
   .mobile-bottom-nav {

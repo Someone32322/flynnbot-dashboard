@@ -2499,10 +2499,11 @@ router.put('/guild/:guildId/predefined-reasons/:action', requireAuth, requireGui
     if (!ACTIONS.includes(action)) {
       return res.status(400).json({ error: 'Invalid action' });
     }
-    const reasons = Array.isArray(req.body.reasons) ? req.body.reasons.map((r) => String(r).trim()).filter(Boolean) : [];
-    if (reasons.some((r) => r.length > 200)) {
-      return res.status(400).json({ error: 'Each reason must be 200 characters or less' });
-    }
+    const raw = Array.isArray(req.body.reasons) ? req.body.reasons : [];
+    const reasons = raw
+      .filter((r) => r && typeof r === 'object' && typeof r.name === 'string' && typeof r.value === 'string')
+      .map((r) => ({ name: r.name.trim().slice(0, 100), value: r.value.trim().slice(0, 512) }))
+      .filter((r) => r.name && r.value);
     const doc = await PredefinedReasons.findOneAndUpdate(
       { guildId, action },
       { $set: { reasons } },
@@ -2550,12 +2551,14 @@ router.get('/guild/:guildId/cases/:id', requireAuth, requireGuildAdmin, async (r
   }
 });
 
-// POST /api/guild/:guildId/cases — create warning
+// POST /api/guild/:guildId/cases — create a moderation case
 router.post('/guild/:guildId/cases', requireAuth, requireGuildAdmin, async (req, res) => {
   try {
     const { guildId } = req.params;
-    const { targetUserId, targetTag, reason } = req.body;
+    const VALID_TYPES = ['warn', 'mute', 'kick', 'ban', 'unban', 'unmute'];
+    const { targetUserId, targetTag, reason, type, duration } = req.body;
     if (!targetUserId) return res.status(400).json({ error: 'targetUserId is required' });
+    const caseType = VALID_TYPES.includes(type) ? type : 'warn';
     // Generate next case number
     const last = await ModerationCase.findOne({ guildId }).sort({ createdAt: -1 }).lean();
     const lastNum = last ? (parseInt(last.caseNumber) || 0) : 0;
@@ -2563,10 +2566,11 @@ router.post('/guild/:guildId/cases', requireAuth, requireGuildAdmin, async (req,
     const moderatorId = req.user.id;
     const moderatorTag = req.user.username || req.user.id;
     const c = await ModerationCase.create({
-      guildId, caseNumber, type: 'warn',
+      guildId, caseNumber, type: caseType,
       targetUserId, targetTag: targetTag || null,
       moderatorId, moderatorTag,
       reason: reason || 'No reason provided.',
+      duration: duration || null,
     });
     res.status(201).json(c);
   } catch (err) {

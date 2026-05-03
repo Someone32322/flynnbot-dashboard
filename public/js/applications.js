@@ -239,6 +239,7 @@
     backdrop.classList.add('open');
     backdrop.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
+    if (window.refreshCustomSelects) window.refreshCustomSelects(backdrop);
   }
 
   function renderFieldBuilder() {

@@ -1,6 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const { canReviewGuildApplications } = require('../services/applicationAccess');
+const { GuildConfig } = require('../models/GuildConfig');
+const ModerationCase = require('../models/ModerationCase');
+const { ApplicationForm } = require('../models/ApplicationForm');
+const { ApplicationSubmission } = require('../models/ApplicationSubmission');
+const { LevelProfile } = require('../models/LevelProfile');
+const EconomyProfile = require('../models/EconomyProfile');
 
 function requireAuth(req, res, next) {
   if (req.isAuthenticated()) return next();
@@ -60,6 +66,52 @@ router.get('/:guildId/applications/review', requireAuth, async (req, res) => {
       code: 500,
       message: 'Failed to load application reviews page.',
     });
+  }
+});
+
+// ── Owner admin panel ─────────────────────────────────────────
+const OWNER_ID = '1192421681751412746';
+
+router.get('/owner', requireAuth, async (req, res) => {
+  if (req.user.id !== OWNER_ID) {
+    return res.status(403).render('error', {
+      code: 403,
+      message: 'You do not have permission to access this page.',
+    });
+  }
+  try {
+    const [
+      totalGuilds,
+      totalCases,
+      totalApplications,
+      totalSubmissions,
+      totalLevelProfiles,
+      totalEconomyProfiles,
+    ] = await Promise.all([
+      GuildConfig.countDocuments().catch(() => null),
+      ModerationCase.countDocuments().catch(() => null),
+      ApplicationForm.countDocuments().catch(() => null),
+      ApplicationSubmission.countDocuments().catch(() => null),
+      LevelProfile.countDocuments().catch(() => null),
+      EconomyProfile.countDocuments().catch(() => null),
+    ]);
+
+    const stats = {
+      totalGuilds,
+      totalCases,
+      totalApplications,
+      totalSubmissions,
+      totalLevelProfiles,
+      totalEconomyProfiles,
+      uptimeSeconds: Math.floor(process.uptime()),
+      memoryMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      nodeVersion: process.version,
+    };
+
+    res.render('owner', { user: req.user, stats });
+  } catch (err) {
+    console.error('[Dashboard] owner route', err);
+    res.status(500).render('error', { code: 500, message: 'Failed to load owner panel.' });
   }
 });
 

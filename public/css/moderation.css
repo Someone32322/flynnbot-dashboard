@@ -719,21 +719,49 @@
   padding: 0.75rem 1rem;
 }
 .privacy-chip {
-  padding: 0.35rem 0.85rem;
-  border-radius: 8px;
-  border: 1px solid var(--border, #2e2f35);
-  background: rgba(255,255,255,0.03);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 1rem 0.4rem 0.7rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
   color: var(--text-3);
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  transition: background 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s;
+  user-select: none;
 }
-.privacy-chip:hover { background: rgba(255,255,255,0.06); color: var(--text-2); }
+.privacy-chip::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.18);
+  background: transparent;
+  flex-shrink: 0;
+  transition: background 0.18s, border-color 0.18s;
+}
+.privacy-chip:hover {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.16);
+  color: var(--text-2);
+}
 .privacy-chip--active {
-  background: rgba(99,102,241,0.15);
-  border-color: rgba(99,102,241,0.45);
+  background: rgba(99,102,241,0.18);
+  border-color: rgba(99,102,241,0.55);
   color: #a5b4fc;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+}
+.privacy-chip--active::before {
+  background: #6366f1;
+  border-color: #6366f1;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6L9 17l-5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 10px;
 }
 
 /* ── Message histories ────────────────────────────────────── */
@@ -1070,6 +1098,23 @@
   height: 36px;
   font-size: 0.85rem;
 }
+/* New name+value add form */
+.mod-reason-add-form {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem 0.75rem;
+}
+.mod-reason-add-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+}
+.mod-reason-add-fields .modal-input {
+  height: 34px;
+  font-size: 0.82rem;
+}
 .mod-reason-row {
   display: flex;
   align-items: center;
@@ -1085,6 +1130,35 @@
   flex: 1;
   font-size: 0.85rem;
   color: var(--text-1);
+}
+/* Name → Value layout */
+.mod-reason-row--nv { align-items: center; }
+.mod-reason-nv {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.mod-reason-name {
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #a5b4fc;
+  white-space: nowrap;
+}
+.mod-reason-arrow {
+  font-size: 0.78rem;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+.mod-reason-value {
+  font-size: 0.82rem;
+  color: var(--text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
 }
 /* ── Custom select sizing inside mod section cards ──────────── */
 .mod-section-card .cs-wrapper,

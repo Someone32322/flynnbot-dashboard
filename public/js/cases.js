@@ -77,7 +77,7 @@ function renderCases(container, guildId) {
       </div>
       <div style="display:flex;align-items:center;gap:0.75rem">
         <span style="font-size:0.78rem;color:var(--text-3)">${total} case${total !== 1 ? 's' : ''}</span>
-        <button class="btn btn-sm btn-primary" id="casesIssueWarnBtn">+ Issue Warning</button>
+        <button class="btn btn-sm btn-primary" id="casesIssueWarnBtn">+ Issue Action</button>
       </div>
     </div>
 
@@ -90,16 +90,28 @@ function renderCases(container, guildId) {
 
     ${pages > 1 ? renderCasesPagination(page, pages, guildId) : ''}
 
-    <!-- Issue Warning Modal -->
+    <!-- Issue Action Modal -->
     <div id="caseModal" class="ec-modal-backdrop" style="display:none">
       <div class="ec-modal" style="max-width:520px">
-        <h3>Issue Warning</h3>
-        <label class="ec-field"><span>User ID <span class="required">*</span></span><input type="text" id="caseTargetId" class="ec-input" placeholder="Discord user ID" /></label>
+        <h3 id="caseModalTitle">Issue Action</h3>
+        <label class="ec-field">
+          <span>Action Type <span class="required">*</span></span>
+          <select id="caseType" class="ec-input" data-cs>
+            <option value="warn">Warn</option>
+            <option value="mute">Mute</option>
+            <option value="kick">Kick</option>
+            <option value="ban">Ban</option>
+            <option value="unban">Unban</option>
+            <option value="unmute">Unmute</option>
+          </select>
+        </label>
+        <label class="ec-field" style="margin-top:.75rem"><span>User ID <span class="required">*</span></span><input type="text" id="caseTargetId" class="ec-input" placeholder="Discord user ID" /></label>
         <label class="ec-field" style="margin-top:.75rem"><span>Username (optional)</span><input type="text" id="caseTargetTag" class="ec-input" placeholder="e.g. username" /></label>
-        <label class="ec-field" style="margin-top:.75rem"><span>Reason</span><textarea id="caseReason" class="ec-input" rows="3" maxlength="1000" placeholder="Reason for the warning…"></textarea></label>
+        <label class="ec-field" id="caseDurationField" style="margin-top:.75rem;display:none"><span>Duration (e.g. 7d, 1h, permanent)</span><input type="text" id="caseDuration" class="ec-input" placeholder="e.g. 7d, 1h, permanent" /></label>
+        <label class="ec-field" style="margin-top:.75rem"><span>Reason</span><textarea id="caseReason" class="ec-input" rows="3" maxlength="1000" placeholder="Reason for this action…"></textarea></label>
         <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.25rem">
           <button class="btn btn-secondary" id="caseModalCancel">Cancel</button>
-          <button class="btn btn-primary" id="caseModalConfirm">Issue Warning</button>
+          <button class="btn btn-primary" id="caseModalConfirm">Issue Action</button>
         </div>
       </div>
     </div>`;
@@ -114,6 +126,11 @@ function renderCases(container, guildId) {
   });
   document.getElementById('caseModalCancel')?.addEventListener('click', () => { document.getElementById('caseModal').style.display = 'none'; });
   document.getElementById('caseModalConfirm')?.addEventListener('click', () => submitCaseModal(guildId));
+
+  // Dynamic type selector — show/hide duration field + update title
+  document.getElementById('caseType')?.addEventListener('change', _updateCaseModalType);
+  // Also listen for custom-select change event
+  document.getElementById('caseType')?.addEventListener('cs-change', _updateCaseModalType);
 
   // Open case detail on card click
   document.querySelectorAll('[data-case-open]').forEach(card => {
@@ -292,11 +309,30 @@ function caseTypeBadge(type) {
   return map[type] || '';
 }
 
+function _updateCaseModalType() {
+  const type = document.getElementById('caseType')?.value || 'warn';
+  const durationField = document.getElementById('caseDurationField');
+  const hasDuration = type === 'ban' || type === 'mute';
+  if (durationField) durationField.style.display = hasDuration ? '' : 'none';
+  const typeLabels = { warn: 'Warn', mute: 'Mute', kick: 'Kick', ban: 'Ban', unban: 'Unban', unmute: 'Unmute' };
+  const title = document.getElementById('caseModalTitle');
+  if (title) title.textContent = 'Issue ' + (typeLabels[type] || 'Action');
+  const confirmBtn = document.getElementById('caseModalConfirm');
+  if (confirmBtn) confirmBtn.textContent = 'Issue ' + (typeLabels[type] || 'Action');
+}
+
 function openCaseModal(guildId) {
+  const typeEl = document.getElementById('caseType');
+  if (typeEl) typeEl.value = 'warn';
   document.getElementById('caseTargetId').value = '';
   document.getElementById('caseTargetTag').value = '';
   document.getElementById('caseReason').value = '';
+  const dur = document.getElementById('caseDuration');
+  if (dur) dur.value = '';
+  _updateCaseModalType();
   document.getElementById('caseModal').style.display = 'flex';
+  // Re-init custom selects in the modal
+  if (window.refreshCustomSelects) window.refreshCustomSelects(document.getElementById('caseModal'));
 }
 
 async function submitCaseModal(guildId) {
@@ -305,12 +341,16 @@ async function submitCaseModal(guildId) {
   const btn = document.getElementById('caseModalConfirm');
   btn.disabled = true;
   try {
+    const type     = document.getElementById('caseType')?.value || 'warn';
+    const duration = document.getElementById('caseDuration')?.value.trim() || undefined;
     const res = await fetch(`/api/guild/${guildId}/cases`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         targetUserId,
+        type,
         targetTag: document.getElementById('caseTargetTag')?.value.trim() || undefined,
         reason: document.getElementById('caseReason')?.value.trim() || 'No reason provided.',
+        duration,
       }),
     });
     const data = await res.json();

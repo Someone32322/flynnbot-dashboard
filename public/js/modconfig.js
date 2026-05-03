@@ -216,23 +216,20 @@ function _renderPrivacy() {
         ${_privacyChip('verifiedProof','Verified proof','dm',dmVisible)}
       </div>
     </div>
-    <div class="mod-save-row" id="privacySaveRow" style="display:none">
-      <button class="btn btn-primary btn-sm" id="privacySaveBtn">Save changes</button>
-    </div>`;
+    `;
 
-  el.querySelectorAll('.privacy-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      chip.classList.toggle('privacy-chip--active');
-      el.querySelector('#privacySaveRow').style.display = '';
-    });
-  });
-
-  el.querySelector('#privacySaveBtn')?.addEventListener('click', async () => {
+  const _privacySave = async () => {
     const cmdOut = [...el.querySelectorAll('.privacy-chip[data-group="cmdOutput"].privacy-chip--active')].map(c => c.dataset.value);
     const dm     = [...el.querySelectorAll('.privacy-chip[data-group="dm"].privacy-chip--active')].map(c => c.dataset.value);
     await _patchModConfig({ privacy: { cmdOutputVisible: cmdOut, dmDetailsVisible: dm } });
-    el.querySelector('#privacySaveRow').style.display = 'none';
     _toast('Privacy settings saved');
+  };
+  window.SaveBar?.setHandlers(_privacySave, () => _renderPrivacy());
+  el.querySelectorAll('.privacy-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      chip.classList.toggle('privacy-chip--active');
+      window.SaveBar?.markDirty();
+    });
   });
 }
 
@@ -269,9 +266,7 @@ function _renderChannelLocking() {
       </div>
       ${_renderChannelPicker('lockAllChannelAdd','Add channel',_guildChannels,lockAllChannels)}
     </div>
-    <div class="mod-save-row">
-      <button class="btn btn-primary btn-sm" id="channelLockSaveBtn">Save changes</button>
-    </div>`;
+    `;
 
   _bindChipRemove(el, 'ignored', null, 'ignoredRolesChips');
   _bindChipRemove(el, 'lockall', null, 'lockAllChannelsChips');
@@ -279,13 +274,14 @@ function _renderChannelLocking() {
   _bindPickerAdd(el, 'lockAllChannelAdd', 'lockAllChannelsChips', 'lockall', 'channel');
   if (window.refreshCustomSelects) window.refreshCustomSelects(el);
 
-  el.querySelector('#channelLockSaveBtn')?.addEventListener('click', async () => {
+  const _clSave = async () => {
     const ignoredIds = [...el.querySelectorAll('.mod-chip[data-group="ignored"]')].map(c => c.dataset.id);
     const lockallIds = [...el.querySelectorAll('.mod-chip[data-group="lockall"]')].map(c => c.dataset.id);
     await _patchModConfig({ channelLock: { ignoredRoles: ignoredIds, lockAllChannels: lockallIds } });
     _toast('Channel locking saved');
     _renderChannelLocking();
-  });
+  };
+  window.SaveBar?.setHandlers(_clSave, () => _renderChannelLocking());
 }
 
 /* ── Render: Predefined reasons ───────────────────────────── */
@@ -322,7 +318,7 @@ function _drawPredefinedReasons(el) {
     <div class="mod-section-card">
       <div class="mod-section-card-header">
         <h4 class="mod-section-card-title">Autocomplete suggestions</h4>
-        <p class="mod-section-card-desc">These appear as autocomplete options when moderators use commands. Select a punishment type to manage its reasons.</p>
+        <p class="mod-section-card-desc">Add named autocomplete entries. The <strong>Name</strong> appears in the Discord autocomplete list; the <strong>Reason</strong> is the text sent with the action.</p>
       </div>
       <div class="mod-reason-action-tabs" id="reasonActionTabs">
         ${REASON_ACTIONS.map(a => `
@@ -333,10 +329,13 @@ function _drawPredefinedReasons(el) {
       <div class="mod-reasons-list" id="reasonsList">
         ${activeReasons.length === 0
           ? '<p class="mod-empty-state">No reasons for this action yet. Add one below.</p>'
-          : activeReasons.map((r,i) => _reasonRowSimple(r,i)).join('')}
+          : activeReasons.map((r,i) => _reasonRow(r,i)).join('')}
       </div>
-      <div class="mod-reason-add-row">
-        <input type="text" id="newReasonInput" class="modal-input" placeholder="Enter a reason…" maxlength="200" style="flex:1">
+      <div class="mod-reason-add-form">
+        <div class="mod-reason-add-fields">
+          <input type="text" id="newReasonName" class="modal-input" placeholder="Name (shown in autocomplete)" maxlength="100">
+          <input type="text" id="newReasonValue" class="modal-input" placeholder="Reason text (sent with action)" maxlength="512">
+        </div>
         <button class="btn btn-primary btn-sm" id="addReasonInline">Add</button>
       </div>
     </div>`;
@@ -350,39 +349,49 @@ function _drawPredefinedReasons(el) {
   });
 
   // Add reason inline
-  const newInput = el.querySelector('#newReasonInput');
-  el.querySelector('#addReasonInline')?.addEventListener('click', () => _addReason(el, newInput));
-  newInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); _addReason(el, newInput); }
+  el.querySelector('#addReasonInline')?.addEventListener('click', () => _addReason(el));
+  el.querySelector('#newReasonValue')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); _addReason(el); }
   });
 
-  // Delete buttons
+  // Delete + edit buttons
   el.querySelectorAll('.mod-reason-delete').forEach(btn => {
     btn.addEventListener('click', () => {
       const idx = +btn.dataset.idx;
-      const list = _predefinedReasons[_reasonActiveTab] || [];
+      const list = [...(_predefinedReasons[_reasonActiveTab] || [])];
       list.splice(idx, 1);
       _saveReasonAction(_reasonActiveTab, list).then(() => _drawPredefinedReasons(el));
     });
   });
 }
 
-function _reasonRowSimple(reason, idx) {
-  return `<div class="mod-reason-row">
-    <div class="mod-reason-text">${_esc(reason)}</div>
+function _reasonRow(reason, idx) {
+  // reason is { name, value } object
+  const name  = typeof reason === 'object' ? reason.name  : reason;
+  const value = typeof reason === 'object' ? reason.value : reason;
+  return `<div class="mod-reason-row mod-reason-row--nv">
+    <div class="mod-reason-nv">
+      <span class="mod-reason-name">${_esc(name)}</span>
+      <span class="mod-reason-arrow">→</span>
+      <span class="mod-reason-value">${_esc(value)}</span>
+    </div>
     <button class="mod-reason-delete btn-icon-ghost" data-idx="${idx}" title="Delete reason">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
     </button>
   </div>`;
 }
 
-async function _addReason(el, input) {
-  const reason = input?.value.trim();
-  if (!reason) { _toast('Please enter a reason.','error'); return; }
+async function _addReason(el) {
+  const nameInput  = el.querySelector('#newReasonName');
+  const valueInput = el.querySelector('#newReasonValue');
+  const name  = nameInput?.value.trim();
+  const value = valueInput?.value.trim();
+  if (!name)  { _toast('Please enter a name for the reason.','error'); return; }
+  if (!value) { _toast('Please enter the reason text.','error'); return; }
   if (!_predefinedReasons) _predefinedReasons = { ban:[], kick:[], mute:[], warn:[] };
-  const list = [...(_predefinedReasons[_reasonActiveTab] || []), reason];
+  const list = [...(_predefinedReasons[_reasonActiveTab] || []), { name, value }];
   const saved = await _saveReasonAction(_reasonActiveTab, list);
-  if (saved) { input.value = ''; _drawPredefinedReasons(el); }
+  if (saved) { if (nameInput) nameInput.value = ''; if (valueInput) valueInput.value = ''; _drawPredefinedReasons(el); }
 }
 
 async function _saveReasonAction(action, reasons) {
@@ -423,11 +432,9 @@ function _renderUserNotifications() {
       ${_notifRow('un-onUnpunishByOther','Notify on unpunish by another bot','Send a DM when unpunished by another bot or integration.',!!un.onUnpunishByOther)}
       ${_notifRow('un-sendAttachments','Send proof attachments','Include proof image/file attachments in the DM if available.',!!un.sendAttachments)}
     </div>
-    <div class="mod-save-row">
-      <button class="btn btn-primary btn-sm" id="userNotifSaveBtn">Save changes</button>
-    </div>`;
+    `;
 
-  el.querySelector('#userNotifSaveBtn')?.addEventListener('click', async () => {
+  const _unSave = async () => {
     const get = (id) => !!el.querySelector(`#${id}`)?.checked;
     await _patchModConfig({
       userNotifications: {
@@ -440,7 +447,8 @@ function _renderUserNotifications() {
       }
     });
     _toast('User notification settings saved');
-  });
+  };
+  window.SaveBar?.track(el, _unSave, () => _renderUserNotifications());
 }
 
 function _notifRow(id, label, desc, checked) {
@@ -479,9 +487,7 @@ function _renderImmuneRoles() {
       </div>
       ${_renderRolePicker('ir-add-'+type,'Add role',_guildRoles,ir[type]||[])}
     </div>`).join('')}
-    <div class="mod-save-row">
-      <button class="btn btn-primary btn-sm" id="immuneSaveBtn">Save changes</button>
-    </div>`;
+    `;
 
   ['global','ban','kick','mute','warn'].forEach(type => {
     _bindPickerAdd(el, `ir-add-${type}`, `ir-chips-${type}`, `ir-${type}`, 'role');
@@ -489,7 +495,7 @@ function _renderImmuneRoles() {
   });
   if (window.refreshCustomSelects) window.refreshCustomSelects(el);
 
-  el.querySelector('#immuneSaveBtn')?.addEventListener('click', async () => {
+  const _irSave = async () => {
     const getIds = (group) => [...el.querySelectorAll(`.mod-chip[data-group="${group}"]`)].map(c => c.dataset.id);
     await _patchModConfig({
       immuneRoles: {
@@ -502,7 +508,9 @@ function _renderImmuneRoles() {
       }
     });
     _toast('Immune roles saved');
-  });
+  };
+  window.SaveBar?.setHandlers(_irSave, () => _renderImmuneRoles());
+  el.querySelector('#ir-hierarchy')?.addEventListener('change', () => window.SaveBar?.markDirty());
 }
 
 /* ── Render: Punish settings ──────────────────────────────── */
@@ -539,9 +547,7 @@ function _renderPunishSettings() {
       ${_notifRow('ps-logExpired','Log expired punishments','Create a log entry when a punishment expires.',ps.logExpiredOutside!==false)}
       ${_notifRow('ps-cacheDeleted','Cache deleted messages','Keep a cache of deleted messages for context in moderation actions.',!!ps.cacheDeleted)}
     </div>
-    <div class="mod-save-row">
-      <button class="btn btn-primary btn-sm" id="punishGenSaveBtn">Save general settings</button>
-    </div>`;
+    `;
 
   el.querySelectorAll('.punish-type-row').forEach(row => {
     const type = row.dataset.punishType;
@@ -551,7 +557,7 @@ function _renderPunishSettings() {
     });
   });
 
-  el.querySelector('#punishGenSaveBtn')?.addEventListener('click', async () => {
+  const _psSave = async () => {
     const get = (id) => !!el.querySelector(`#${id}`)?.checked;
     await _patchModConfig({
       'punishSettings.replyToMsg':        get('ps-reply'),
@@ -560,7 +566,8 @@ function _renderPunishSettings() {
       'punishSettings.cacheDeleted':      get('ps-cacheDeleted'),
     });
     _toast('General settings saved');
-  });
+  };
+  window.SaveBar?.track(el.querySelector('.mod-section-card:last-child'), _psSave, () => _renderPunishSettings());
 }
 
 function _punishTypeIcon(t) {
@@ -707,9 +714,7 @@ function _renderAppeals() {
         <p class="modal-hint">Appeals will be sent to this channel for your moderation team to review.</p>
       </div>
     </div>
-    <div class="mod-save-row">
-      <button class="btn btn-primary btn-sm" id="appealsSaveBtn">Save settings</button>
-    </div>`;
+    `;
 
   el.querySelector('#openAddAppealQModal')?.addEventListener('click', () => {
     document.getElementById('appealQLabel').value = '';
@@ -732,7 +737,7 @@ function _renderAppeals() {
     });
   });
 
-  el.querySelector('#appealsSaveBtn')?.addEventListener('click', async () => {
+  const _apSave = async () => {
     const get = (id) => !!el.querySelector('#'+id)?.checked;
     await _patchModConfig({
       appeals: {
@@ -746,7 +751,8 @@ function _renderAppeals() {
       }
     });
     _toast('Appeal settings saved');
-  });
+  };
+  window.SaveBar?.track(el, _apSave, () => _renderAppeals());
 }
 
 function _appealQRow(q) {
@@ -854,9 +860,7 @@ function _renderUserReports() {
         <input type="number" id="ur-maxUser" class="modal-input" style="max-width:120px" min="1" max="100" value="${ur.maxPerUser||5}">
       </div>
     </div>
-    <div class="mod-save-row">
-      <button class="btn btn-primary btn-sm" id="urSaveBtn">Save changes</button>
-    </div>`;
+    `;
 
   _bindPickerAdd(el, 'ur-pingRoleAdd', 'ur-pingRolesChips', 'ur-ping', 'role');
   _bindChipRemove(el, 'ur-ping', null, 'ur-pingRolesChips');
@@ -878,7 +882,7 @@ function _renderUserReports() {
     });
   });
 
-  el.querySelector('#urSaveBtn')?.addEventListener('click', async () => {
+  const _urSave = async () => {
     const get  = (id) => !!el.querySelector('#'+id)?.checked;
     const val  = (id) => el.querySelector('#'+id)?.value || '';
     const pingIds = [...el.querySelectorAll('.mod-chip[data-group="ur-ping"]')].map(c => c.dataset.id);
@@ -901,7 +905,9 @@ function _renderUserReports() {
       }
     });
     _toast('User report settings saved');
-  });
+  };
+  window.SaveBar?.setHandlers(_urSave, () => _renderUserReports());
+  window.SaveBar?.track(el, _urSave, () => _renderUserReports());
 }
 
 /* ── User Reports Wizard ──────────────────────────────────── */
@@ -1118,6 +1124,7 @@ function _bindPickerAdd(container, pickerId, chipsId, group, type) {
     if (!id) return;
     const chipsEl = document.getElementById(chipsId);
     if (!chipsEl || chipsEl.querySelector(`.mod-chip[data-id="${id}"]`)) { picker.value=''; return; }
+    window.SaveBar?.markDirty();
     const item  = type === 'role' ? _guildRoles.find(r=>r.id===id) : _guildChannels.find(c=>c.id===id);
     const chip  = document.createElement('div');
     chip.className = `mod-chip mod-chip--${type}`;
@@ -1145,6 +1152,7 @@ function _bindChipRemove(container, group, onRemove, chipsId) {
     const chip = e.target.closest('.mod-chip');
     if (!chip) return;
     chip.remove();
+    window.SaveBar?.markDirty();
     if (onRemove) {
       const remaining = [...(document.getElementById(chipsId) || el).querySelectorAll(`.mod-chip[data-group="${group}"]`)].map(c => c.dataset.id);
       onRemove(remaining);

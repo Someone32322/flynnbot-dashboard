@@ -96,6 +96,12 @@
       </nav>
 
       <div class="sidebar-footer">
+        <% if (user && user.id === '1192421681751412746') { %>
+          <a href="/dashboard/owner" class="sidebar-back-btn" style="margin-bottom:0.5rem">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Owner Panel
+          </a>
+        <% } %>
         <a href="/dashboard" class="sidebar-back-btn">
           <span>←</span> All Servers
         </a>
@@ -119,16 +125,6 @@
               <div class="dash-command-name"><%= guild.name %></div>
             </div>
           </div>
-          <div class="dash-command-helper">Tip: use quick switch to jump between modules instantly.</div>
-        </div>
-        <div class="dash-quick-nav" aria-label="Quick section navigation">
-          <button class="quick-nav-btn" type="button" data-section="commands">Commands</button>
-          <button class="quick-nav-btn" type="button" data-section="applications">Applications</button>
-          <button class="quick-nav-btn" type="button" data-section="embeds">Messages</button>
-          <button class="quick-nav-btn" type="button" data-section="reaction-roles">Reaction Roles</button>
-          <button class="quick-nav-btn" type="button" data-section="levels">Leveling</button>
-          <button class="quick-nav-btn" type="button" data-section="economy">Economy</button>
-          <button class="quick-nav-btn" type="button" data-section="logging">Logging</button>
         </div>
       </header>
 
@@ -290,7 +286,7 @@
 
               <div class="app-two-cols">
                 <label class="rr-label">Send Results To Type <span class="required">*</span>
-                  <select id="appRecipientType">
+                  <select id="appRecipientType" data-cs>
                     <option value="channel">Channel</option>
                     <option value="user">User</option>
                   </select>
@@ -313,7 +309,7 @@
                   <input type="color" id="appStyleAccent" value="#22d3ee">
                 </label>
                 <label class="rr-label">Animation Preset
-                  <select id="appStyleAnim">
+                  <select id="appStyleAnim" data-cs>
                     <option value="wave">Wave</option>
                     <option value="pulse">Pulse</option>
                     <option value="float">Float</option>
