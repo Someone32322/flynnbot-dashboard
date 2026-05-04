@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
+const MongoStore = require('connect-mongo');
 const passport = require('passport');
 const path = require('path');
 const helmet = require('helmet');
@@ -17,6 +18,9 @@ const { ApplicationForm } = require('./models/ApplicationForm');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Trust Render/reverse-proxy HTTPS termination so cookie.secure works correctly
+app.set('trust proxy', 1);
 
 // Security headers
 app.use(
@@ -73,6 +77,11 @@ app.use(
     secret: process.env.SESSION_SECRET || 'flynnbot-change-this-secret',
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URI,
+      ttl: 7 * 24 * 60 * 60, // 7 days in seconds
+      autoRemove: 'native',
+    }),
     cookie: {
       secure: isProduction,
       httpOnly: true,
