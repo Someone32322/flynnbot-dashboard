@@ -215,11 +215,11 @@
       <div class="op-table-wrap">
         <table class="op-table">
           <thead><tr><th>Server</th><th>ID</th><th>Config Status</th><th>Actions</th></tr></thead>
-          <tbody>
+          <tbody id="serversTableBody">
             <tr><td colspan="4"><div class="op-empty">
               <div class="op-empty-icon" style="color:var(--op-text-3)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg></div>
-              <div class="op-empty-title">Bot connection required</div>
-              <div class="op-empty-desc">Server list is fetched live from Discord. Configured server count: <strong style="color:var(--op-text)"><%= stats.totalGuilds != null ? stats.totalGuilds : '—' %></strong></div>
+              <div class="op-empty-title">Loading servers…</div>
+              <div class="op-empty-desc">Fetching live server list from Discord bot.</div>
             </div></td></tr>
           </tbody>
         </table>

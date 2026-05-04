@@ -23,6 +23,7 @@
     panels.forEach(p => p.classList.toggle('op-panel--active', p.dataset.panel === name));
     navItems.forEach(n => n.classList.toggle('op-nav-item--active', n.dataset.panel === name));
     window.location.hash = name;
+    if (name === 'servers') fetchServers();
   }
 
   navItems.forEach(n => {
@@ -172,22 +173,199 @@
   });
 
   /* ═══════════════════════════════════════════════════
+     API HELPERS
+  ═══════════════════════════════════════════════════ */
+  async function apiPost(path, body = {}) {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return res.json();
+  }
+
+  async function apiGet(path) {
+    const res = await fetch(path);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return res.json();
+  }
+
+  /* ═══════════════════════════════════════════════════
+     SERVERS PANEL
+  ═══════════════════════════════════════════════════ */
+  const serversTableBody = document.getElementById('serversTableBody');
+  const serverSearch = document.getElementById('serverSearch');
+  let _allServers = [];
+  let _serversFetched = false;
+
+  async function fetchServers() {
+    if (_serversFetched) { renderServers(); return; }
+    if (serversTableBody) {
+      serversTableBody.innerHTML = `<tr><td colspan="4"><div class="op-empty">
+        <div class="op-empty-title">Loading…</div>
+        <div class="op-empty-desc">Fetching live server list from Discord bot.</div>
+      </div></td></tr>`;
+    }
+    try {
+      const data = await apiGet('/api/owner/guilds');
+      _allServers = data.guilds || [];
+      _serversFetched = true;
+      renderServers();
+    } catch (err) {
+      if (serversTableBody) {
+        serversTableBody.innerHTML = `<tr><td colspan="4"><div class="op-empty">
+          <div class="op-empty-title" style="color:var(--op-danger)">Failed to load servers</div>
+          <div class="op-empty-desc">${escHtml(err.message)}</div>
+        </div></td></tr>`;
+      }
+      opToast(`Servers: ${err.message}`, 'error');
+    }
+  }
+
+  function renderServers() {
+    if (!serversTableBody) return;
+    const q = (serverSearch ? serverSearch.value.trim().toLowerCase() : '');
+    const list = q
+      ? _allServers.filter(g => g.name.toLowerCase().includes(q) || g.id.includes(q))
+      : _allServers;
+
+    if (!list.length) {
+      serversTableBody.innerHTML = `<tr><td colspan="4"><div class="op-empty">
+        <div class="op-empty-title">No servers found</div>
+        <div class="op-empty-desc">${q ? 'No match for "' + escHtml(q) + '"' : 'Bot is not in any servers.'}</div>
+      </div></td></tr>`;
+      return;
+    }
+
+    serversTableBody.innerHTML = list.map(g => {
+      const icon = g.icon
+        ? `<img src="${escHtml(g.icon)}" width="24" height="24" style="border-radius:6px;margin-right:0.5rem;vertical-align:middle" alt="">`
+        : `<span class="op-avatar-placeholder" style="width:24px;height:24px;border-radius:6px;background:var(--op-bg-2);display:inline-block;margin-right:0.5rem;vertical-align:middle"></span>`;
+      const badge = g.configured
+        ? `<span class="op-badge op-badge--success">Configured</span>`
+        : `<span class="op-badge op-badge--neutral">No config</span>`;
+      return `<tr>
+        <td>${icon}<span>${escHtml(g.name)}</span></td>
+        <td style="font-family:monospace;font-size:0.8rem">${escHtml(g.id)}</td>
+        <td>${badge}</td>
+        <td><a href="/dashboard/${escHtml(g.id)}/general" class="op-btn op-btn--xs op-btn--ghost" target="_blank">Manage</a></td>
+      </tr>`;
+    }).join('');
+  }
+
+  if (serverSearch) {
+    serverSearch.addEventListener('input', renderServers);
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ═══════════════════════════════════════════════════
+     USER LOOKUP
+  ═══════════════════════════════════════════════════ */
+  const userLookupBtn = document.getElementById('userLookupBtn');
+  const userLookupInput = document.getElementById('userLookupInput');
+  const userLookupResult = document.getElementById('userLookupResult');
+
+  async function doUserLookup() {
+    const uid = userLookupInput ? userLookupInput.value.trim() : '';
+    if (!uid || !/^\d{17,20}$/.test(uid)) {
+      opToast('Enter a valid 17–20 digit Discord user ID', 'error');
+      return;
+    }
+    if (userLookupResult) {
+      userLookupResult.innerHTML = `<div class="op-empty"><div class="op-empty-title">Looking up ${escHtml(uid)}…</div></div>`;
+    }
+    try {
+      const d = await apiGet(`/api/owner/user/${uid}`);
+      renderUserLookup(d);
+    } catch (err) {
+      if (userLookupResult) {
+        userLookupResult.innerHTML = `<div class="op-empty">
+          <div class="op-empty-title" style="color:var(--op-danger)">Lookup failed</div>
+          <div class="op-empty-desc">${escHtml(err.message)}</div>
+        </div>`;
+      }
+      opToast(`User lookup: ${err.message}`, 'error');
+    }
+  }
+
+  function renderUserLookup(d) {
+    if (!userLookupResult) return;
+    const u = d.discordUser;
+    const s = d.stats || {};
+    const avatar = u && u.avatar
+      ? `https://cdn.discordapp.com/avatars/${u.id}/${u.avatar}.png?size=64`
+      : null;
+
+    userLookupResult.innerHTML = `
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem">
+        ${avatar ? `<img src="${escHtml(avatar)}" width="48" height="48" style="border-radius:50%" alt="">` : '<div style="width:48px;height:48px;border-radius:50%;background:var(--op-bg-2)"></div>'}
+        <div>
+          <div style="font-weight:600;font-size:1rem">${u ? escHtml(u.username) + (u.discriminator && u.discriminator !== '0' ? '#' + u.discriminator : '') : `User ${escHtml(d.userId)}`}</div>
+          <div style="color:var(--op-text-3);font-size:0.8rem;font-family:monospace">${escHtml(d.userId)}</div>
+        </div>
+      </div>
+      <div class="op-stats-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0.5rem;margin-bottom:1rem">
+        <div class="op-stat-card"><div class="op-stat-label">Level Servers</div><div class="op-stat-value">${s.levelServers ?? 0}</div></div>
+        <div class="op-stat-card"><div class="op-stat-label">Total XP</div><div class="op-stat-value">${(s.totalXp ?? 0).toLocaleString()}</div></div>
+        <div class="op-stat-card"><div class="op-stat-label">Avg Level</div><div class="op-stat-value">${s.levelServers ? Math.round((s.totalLevel || 0) / s.levelServers) : 0}</div></div>
+        <div class="op-stat-card"><div class="op-stat-label">Economy Servers</div><div class="op-stat-value">${s.economyServers ?? 0}</div></div>
+        <div class="op-stat-card"><div class="op-stat-label">Net Worth</div><div class="op-stat-value">${(s.totalNetWorth ?? 0).toLocaleString()}</div></div>
+        <div class="op-stat-card"><div class="op-stat-label">Mod Cases</div><div class="op-stat-value" style="color:${(s.modCases ?? 0) > 0 ? 'var(--op-warn)' : 'inherit'}">${s.modCases ?? 0}</div></div>
+      </div>
+      ${d.modCases && d.modCases.length ? `
+        <div style="font-size:0.78rem;color:var(--op-text-3);margin-bottom:0.4rem">Recent infractions (${d.modCases.length})</div>
+        <div style="max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:0.3rem">
+          ${d.modCases.map(c => `
+            <div style="display:flex;gap:0.75rem;align-items:center;padding:0.35rem 0.6rem;background:var(--op-bg-2);border-radius:6px;font-size:0.8rem">
+              <span style="font-weight:600;text-transform:uppercase;font-size:0.7rem;color:var(--op-warn)">${escHtml(c.type)}</span>
+              <span style="color:var(--op-text-2);flex:1">${escHtml(c.reason || 'No reason')}</span>
+              <span style="color:var(--op-text-3);font-size:0.72rem">${new Date(c.createdAt).toLocaleDateString()}</span>
+            </div>`).join('')}
+        </div>` : ''}
+    `;
+  }
+
+  if (userLookupBtn) {
+    userLookupBtn.addEventListener('click', doUserLookup);
+  }
+  if (userLookupInput) {
+    userLookupInput.addEventListener('keydown', e => { if (e.key === 'Enter') doUserLookup(); });
+  }
+
+  /* ═══════════════════════════════════════════════════
      ACTION HANDLERS
   ═══════════════════════════════════════════════════ */
   async function handleAction(action, el) {
     switch (action) {
 
       case 'restart':
-        if (await opConfirm({ title: 'Restart Bot', desc: 'The bot will go offline briefly while restarting. Continue?', type: 'warning', btnLabel: 'Restart' })) {
-          opToast('Restart signal sent', 'warn');
-          logAction('Bot restart initiated');
+        if (await opConfirm({ title: 'Restart Dashboard', desc: 'The dashboard will restart briefly. You will be redirected. Continue?', type: 'warning', btnLabel: 'Restart' })) {
+          try {
+            await apiPost('/api/owner/restart');
+            opToast('Restart signal sent — reconnecting…', 'warn');
+            logAction('Dashboard restart initiated');
+            setTimeout(() => window.location.reload(), 3000);
+          } catch (err) { opToast(err.message, 'error'); }
         }
         break;
 
       case 'emergency-shutdown':
-        if (await opConfirm({ title: 'Emergency Shutdown', desc: 'This will immediately kill the bot process with no graceful exit. This cannot be undone until the bot is manually restarted.', type: 'danger', btnLabel: 'SHUTDOWN' })) {
-          opToast('Shutdown signal sent', 'error');
-          logAction('Emergency shutdown triggered');
+        if (await opConfirm({ title: 'Emergency Shutdown', desc: 'This will immediately kill the process with no graceful exit. It cannot be undone until the process is manually restarted.', type: 'danger', btnLabel: 'SHUTDOWN' })) {
+          try {
+            await apiPost('/api/owner/restart');
+            opToast('Shutdown signal sent', 'error');
+            logAction('Emergency shutdown triggered');
+          } catch (err) { opToast(err.message, 'error'); }
         }
         break;
 
@@ -199,19 +377,21 @@
 
       case 'sync-commands':
         if (await opConfirm({ title: 'Force Sync Commands', desc: 'This will re-register all slash commands with Discord globally. It may take up to 1 hour to propagate.', type: 'warn', btnLabel: 'Sync' })) {
-          opToast('Command sync initiated', 'info');
-          logAction('Force sync commands triggered');
+          opToast('Command sync is managed by the bot process — trigger it there', 'info');
+          logAction('Force sync commands requested (bot-side action)');
         }
         break;
 
       case 'reload-modules':
-        opToast('Module reload signal sent', 'info');
-        logAction('Hot reload modules triggered');
+        opToast('Module reload is managed by the bot process', 'info');
+        logAction('Hot reload modules requested (bot-side action)');
         break;
 
       case 'refresh':
       case 'refresh-servers':
-        opToast('Refreshed', 'success');
+        _serversFetched = false;
+        fetchServers();
+        opToast('Refreshing server list…', 'info');
         break;
 
       case 'refresh-logs':
@@ -232,8 +412,8 @@
       }
 
       case 'backup-db':
-        opToast('Database backup queued', 'info');
-        logAction('Database backup triggered');
+        opToast('Database backup must be triggered server-side (use mongodump)', 'info');
+        logAction('Database backup requested');
         break;
 
       case 'blacklist-user': {
@@ -241,9 +421,12 @@
         const uid = input ? input.value.trim() : '';
         if (!uid || !/^\d{17,20}$/.test(uid)) { opToast('Enter a valid Discord user ID', 'error'); return; }
         if (await opConfirm({ title: 'Blacklist User', desc: `User ${uid} will be blocked from using the bot globally.`, type: 'danger', btnLabel: 'Blacklist' })) {
-          opToast(`User ${uid} blacklisted`, 'success');
-          logAction(`Blacklisted user: ${uid}`);
-          if (input) input.value = '';
+          try {
+            await apiPost('/api/owner/blacklist', { userId: uid });
+            opToast(`User ${uid} blacklisted`, 'success');
+            logAction(`Blacklisted user: ${uid}`);
+            if (input) input.value = '';
+          } catch (err) { opToast(err.message, 'error'); }
         }
         break;
       }
@@ -253,9 +436,13 @@
         const uid = input ? input.value.trim() : '';
         if (!uid || !/^\d{17,20}$/.test(uid)) { opToast('Enter a valid Discord user ID', 'error'); return; }
         if (await opConfirm({ title: 'Reset User Data', desc: `All XP, economy, and infractions for ${uid} will be permanently deleted.`, type: 'danger', btnLabel: 'Reset' })) {
-          opToast(`User data for ${uid} reset`, 'success');
-          logAction(`Reset user data: ${uid}`);
-          if (input) input.value = '';
+          try {
+            const r = await apiPost('/api/owner/reset-user', { userId: uid });
+            const del = r.deleted || {};
+            opToast(`Deleted ${del.levelProfiles ?? 0} level + ${del.economyProfiles ?? 0} economy records for ${uid}`, 'success');
+            logAction(`Reset user data: ${uid}`);
+            if (input) input.value = '';
+          } catch (err) { opToast(err.message, 'error'); }
         }
         break;
       }
@@ -263,16 +450,19 @@
       case 'reset-module': {
         const mod = el.dataset.module || 'unknown';
         if (await opConfirm({ title: `Reset ${mod} Module`, desc: `All ${mod} data will be permanently wiped from the database. This cannot be undone.`, type: 'danger', btnLabel: `Reset ${mod}` })) {
-          opToast(`${mod} module reset`, 'warn');
-          logAction(`Reset module: ${mod}`);
+          try {
+            const r = await apiPost('/api/owner/reset-module', { module: mod });
+            opToast(`${mod} module reset — ${r.deletedCount ?? 0} records deleted`, 'warn');
+            logAction(`Reset module: ${mod}`);
+          } catch (err) { opToast(err.message, 'error'); }
         }
         break;
       }
 
       case 'run-task': {
         const task = el.dataset.task || 'unknown';
-        opToast(`Task "${task}" queued`, 'info');
-        logAction(`Manual task run: ${task}`);
+        opToast(`Task "${task}" — connect to your task runner to execute`, 'info');
+        logAction(`Manual task run requested: ${task}`);
         break;
       }
 

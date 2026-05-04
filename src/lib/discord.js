@@ -81,6 +81,16 @@ async function deleteGuildCommand(guildId, commandId) {
   });
 }
 
+// ── User helpers ──────────────────────────────────────────────
+async function getUser(userId) {
+  return discordFetch(`/users/${userId}`);
+}
+
+// Returns the guilds the bot itself is in (max 200 per page).
+async function getBotGuilds() {
+  return discordFetch('/users/@me/guilds?limit=200');
+}
+
 module.exports = {
   getGuild,
   getGuildRoles,
@@ -97,6 +107,8 @@ module.exports = {
   addReaction,
   createDmChannel,
   sendWebhook,
+  getUser,
+  getBotGuilds,
 };
 
 // ── Message helpers ───────────────────────────────────────────

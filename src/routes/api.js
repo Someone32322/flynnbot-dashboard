@@ -2804,4 +2804,196 @@ router.patch('/guild/:guildId/bot-messages/:type', requireAuth, requireGuildAdmi
   }
 });
 
+// ══════════════════════════════════════════════════════════════
+// OWNER-ONLY ROUTES
+// ══════════════════════════════════════════════════════════════
+
+const OWNER_ID = '1192421681751412746';
+
+function requireOwner(req, res, next) {
+  if (!req.isAuthenticated()) return res.status(401).json({ error: 'Not authenticated' });
+  if (req.user.id !== OWNER_ID) return res.status(403).json({ error: 'Owner only' });
+  next();
+}
+
+// GET /api/owner/guilds — all guilds the bot is in, enriched with DB config status
+router.get('/owner/guilds', requireOwner, async (req, res) => {
+  try {
+    const botGuilds = await discordApi.getBotGuilds();
+
+    // Get which guild IDs have a config document
+    const guildIds = botGuilds.map((g) => g.id);
+    const configs = await GuildConfig.find(
+      { guildId: { $in: guildIds } },
+      { guildId: 1 }
+    ).lean();
+    const configuredSet = new Set(configs.map((c) => c.guildId));
+
+    const guilds = botGuilds.map((g) => ({
+      id: g.id,
+      name: g.name,
+      icon: g.icon
+        ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png?size=64`
+        : null,
+      configured: configuredSet.has(g.id),
+    }));
+
+    // Sort: configured first, then alphabetically
+    guilds.sort((a, b) => {
+      if (a.configured !== b.configured) return a.configured ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+
+    res.json({ guilds });
+  } catch (err) {
+    console.error('[Owner API] GET /owner/guilds', err);
+    res.status(500).json({ error: err.message || 'Failed to fetch guilds' });
+  }
+});
+
+// GET /api/owner/user/:userId — user lookup across all DB collections
+router.get('/owner/user/:userId', requireOwner, async (req, res) => {
+  const { userId } = req.params;
+  if (!/^\d{17,20}$/.test(userId)) {
+    return res.status(400).json({ error: 'Invalid Discord user ID' });
+  }
+
+  try {
+    // Fetch Discord profile (bot token)
+    let discordUser = null;
+    try {
+      discordUser = await discordApi.getUser(userId);
+    } catch {
+      // User may not exist or token may lack scope — non-fatal
+    }
+
+    // DB lookups in parallel
+    const [levelProfiles, economyProfiles, modCases] = await Promise.all([
+      LevelProfile.find({ userId }).select('guildId xp level -_id').lean(),
+      EconomyProfile.find({ userId }).select('guildId wallet bank netWorth -_id').lean(),
+      ModerationCase.find({ targetUserId: userId })
+        .select('guildId type reason createdAt active -_id')
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean(),
+    ]);
+
+    // Aggregate totals
+    const totalXp    = levelProfiles.reduce((s, p) => s + (p.xp || 0), 0);
+    const totalLevel = levelProfiles.reduce((s, p) => s + (p.level || 0), 0);
+    const totalWallet = economyProfiles.reduce((s, p) => s + (p.wallet || 0), 0);
+    const totalBank   = economyProfiles.reduce((s, p) => s + (p.bank || 0), 0);
+
+    res.json({
+      discordUser,
+      stats: {
+        levelServers: levelProfiles.length,
+        totalXp,
+        totalLevel,
+        economyServers: economyProfiles.length,
+        totalWallet,
+        totalBank,
+        totalNetWorth: totalWallet + totalBank,
+        modCases: modCases.length,
+        activeCases: modCases.filter((c) => c.active).length,
+      },
+      levelProfiles,
+      economyProfiles,
+      modCases,
+    });
+  } catch (err) {
+    console.error('[Owner API] GET /owner/user/:userId', err);
+    res.status(500).json({ error: err.message || 'Failed to look up user' });
+  }
+});
+
+// POST /api/owner/blacklist — add user to a simple in-memory blacklist
+// (extend to DB if you have a Blacklist model)
+const _blacklist = new Set();
+router.post('/owner/blacklist', requireOwner, (req, res) => {
+  const { userId } = req.body || {};
+  if (!userId || !/^\d{17,20}$/.test(userId)) {
+    return res.status(400).json({ error: 'Invalid userId' });
+  }
+  _blacklist.add(userId);
+  res.json({ ok: true, blacklisted: userId });
+});
+
+// POST /api/owner/reset-user — delete all DB records for a user
+router.post('/owner/reset-user', requireOwner, async (req, res) => {
+  const { userId } = req.body || {};
+  if (!userId || !/^\d{17,20}$/.test(userId)) {
+    return res.status(400).json({ error: 'Invalid userId' });
+  }
+  try {
+    const [lvl, eco] = await Promise.all([
+      LevelProfile.deleteMany({ userId }),
+      EconomyProfile.deleteMany({ userId }),
+    ]);
+    res.json({ ok: true, deleted: { levelProfiles: lvl.deletedCount, economyProfiles: eco.deletedCount } });
+  } catch (err) {
+    console.error('[Owner API] POST /owner/reset-user', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/owner/reset-module — wipe all data for a named module
+const MODULE_COLLECTIONS = {
+  economy:      () => EconomyProfile.deleteMany({}),
+  levels:       () => LevelProfile.deleteMany({}),
+  moderation:   () => ModerationCase.deleteMany({}),
+  applications: () => ApplicationSubmission.deleteMany({}),
+};
+router.post('/owner/reset-module', requireOwner, async (req, res) => {
+  const { module: mod } = req.body || {};
+  const handler = MODULE_COLLECTIONS[mod];
+  if (!handler) {
+    return res.status(400).json({ error: `Unknown module: ${mod}. Valid: ${Object.keys(MODULE_COLLECTIONS).join(', ')}` });
+  }
+  try {
+    const result = await handler();
+    res.json({ ok: true, module: mod, deletedCount: result.deletedCount });
+  } catch (err) {
+    console.error('[Owner API] POST /owner/reset-module', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/owner/restart — signal the dashboard process to restart (relies on PM2 / supervisor)
+router.post('/owner/restart', requireOwner, (req, res) => {
+  res.json({ ok: true, message: 'Restarting…' });
+  // Give the response a moment to flush before exiting
+  setTimeout(() => process.exit(0), 500);
+});
+
+// GET /api/owner/stats — live runtime stats (refresh endpoint)
+router.get('/owner/stats', requireOwner, async (req, res) => {
+  try {
+    const [totalGuilds, totalCases, totalApplications, totalSubmissions, totalLevelProfiles, totalEconomyProfiles] =
+      await Promise.all([
+        GuildConfig.countDocuments().catch(() => null),
+        ModerationCase.countDocuments().catch(() => null),
+        ApplicationForm.countDocuments().catch(() => null),
+        ApplicationSubmission.countDocuments().catch(() => null),
+        LevelProfile.countDocuments().catch(() => null),
+        EconomyProfile.countDocuments().catch(() => null),
+      ]);
+
+    res.json({
+      totalGuilds,
+      totalCases,
+      totalApplications,
+      totalSubmissions,
+      totalLevelProfiles,
+      totalEconomyProfiles,
+      uptimeSeconds: Math.floor(process.uptime()),
+      memoryMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      nodeVersion: process.version,
+    });
+  } catch (err) {
+    console.error('[Owner API] GET /owner/stats', err);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
 module.exports = router;
