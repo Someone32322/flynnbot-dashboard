@@ -4,6 +4,7 @@ const session = require('express-session');
 const passport = require('passport');
 const path = require('path');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 require('./lib/passport');
 const { connectDb } = require('./lib/db');
@@ -11,6 +12,7 @@ const { connectDb } = require('./lib/db');
 const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
 const apiRoutes = require('./routes/api');
+const statusRoutes = require('./routes/status');
 const { ApplicationForm } = require('./models/ApplicationForm');
 
 const app = express();
@@ -44,15 +46,37 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
+// Rate limiters
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: 'Too many requests, please try again later.',
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Sessions
+const isProduction = process.env.NODE_ENV === 'production';
+if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET === 'flynnbot-change-this-secret') {
+  console.warn('[Dashboard] WARNING: SESSION_SECRET is not set or is using the default value. Set it in .env for security.');
+}
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'flynnbot-change-this-secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false,
+      secure: isProduction,
       httpOnly: true,
+      sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     },
   })
@@ -70,9 +94,10 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api', apiRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api', apiLimiter, apiRoutes);
 app.use('/dashboard', dashboardRoutes);
+app.use('/status', statusRoutes);
 
 // Home
 app.get('/', (req, res) => res.render('index'));
@@ -80,6 +105,9 @@ app.get('/', (req, res) => res.render('index'));
 // Legal
 app.get('/privacy', (req, res) => res.render('privacy'));
 app.get('/terms', (req, res) => res.render('terms'));
+
+// Status redirect from #status anchor in footer
+app.get('/status-redirect', (req, res) => res.redirect('/status'));
 
 // Public application page (requires OAuth identity)
 app.get('/apply/:guildId/:applicationId', async (req, res) => {

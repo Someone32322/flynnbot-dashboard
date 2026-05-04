@@ -1,0 +1,241 @@
+<%- include('partials/head', { title: 'Status' }) %>
+<link rel="stylesheet" href="/css/status.css">
+<%- include('partials/nav') %>
+
+<div class="status-page" id="status-page">
+
+  <%
+    const s = status;
+    const iconMap  = { online: '✅', degraded: '⚠️', offline: '🔴' };
+    const labelMap = { online: 'All Systems Operational', degraded: 'Degraded Performance', offline: 'Service Disruption' };
+    const icon     = iconMap[s.status]  || '❓';
+    const label    = labelMap[s.status] || 'Unknown';
+  %>
+
+  <!-- Hero -->
+  <div class="status-hero">
+    <div class="status-hero-icon <%= s.status %>" id="status-icon"><%= icon %></div>
+    <h1 class="status-hero-title">FlynnBot Status</h1>
+
+    <div class="status-badge <%= s.status %>" id="status-badge">
+      <span class="status-dot"></span>
+      <span id="status-label"><%= label %></span>
+    </div>
+
+    <p class="status-hero-message" id="status-message"><%= s.statusMessage %></p>
+
+    <div class="status-live-badge" style="margin-top:16px;justify-content:center">
+      <span class="status-live-dot"></span>
+      <span>Live — updates every 15 seconds</span>
+    </div>
+  </div>
+
+  <div class="status-container">
+
+    <!-- Metrics -->
+    <p class="status-section-title">Current Metrics</p>
+    <div class="status-metrics" id="status-metrics">
+
+      <div class="status-metric-card">
+        <span class="status-metric-label">Latency</span>
+        <span class="status-metric-value" id="metric-latency">
+          <%= s.latencyMs !== null ? s.latencyMs + ' ms' : '—' %>
+        </span>
+        <span class="status-metric-sub">Discord API ping</span>
+      </div>
+
+      <div class="status-metric-card">
+        <span class="status-metric-label">Uptime</span>
+        <span class="status-metric-value" id="metric-uptime">
+          <%= s.uptimeSeconds !== null ? formatUptime(s.uptimeSeconds) : '—' %>
+        </span>
+        <span class="status-metric-sub">Since last restart</span>
+      </div>
+
+      <div class="status-metric-card">
+        <span class="status-metric-label">Servers</span>
+        <span class="status-metric-value" id="metric-guilds">
+          <%= s.guildCount !== null ? s.guildCount.toLocaleString() : '—' %>
+        </span>
+        <span class="status-metric-sub">Active guilds</span>
+      </div>
+
+      <div class="status-metric-card">
+        <span class="status-metric-label">Memory</span>
+        <span class="status-metric-value" id="metric-memory">
+          <%= s.memoryMB !== null ? s.memoryMB + ' MB' : '—' %>
+        </span>
+        <span class="status-metric-sub">RSS usage</span>
+      </div>
+
+    </div>
+
+    <!-- Components -->
+    <p class="status-section-title" style="margin-top:28px">Components</p>
+
+    <div class="status-card">
+      <div class="status-component">
+        <span class="status-component-name">🤖 Discord Bot (Flynn)</span>
+        <span class="status-component-label <%= s.status %>" id="comp-bot">
+          <%= label %>
+        </span>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <div class="status-component">
+        <span class="status-component-name">📊 Dashboard</span>
+        <span class="status-component-label online">Operational</span>
+      </div>
+    </div>
+
+    <div class="status-card">
+      <div class="status-component">
+        <span class="status-component-name">🗄️ Database (MongoDB)</span>
+        <span class="status-component-label online" id="comp-db">Operational</span>
+      </div>
+    </div>
+
+    <!-- Uptime history bar (last 30 intervals = ~15 min) -->
+    <p class="status-section-title" style="margin-top:28px">Uptime — Last 30 Reports</p>
+    <div class="status-card">
+      <div class="status-history-bar" id="status-history"></div>
+      <div class="status-history-meta">
+        <span>15 min ago</span>
+        <span>Now</span>
+      </div>
+    </div>
+
+    <!-- Last updated -->
+    <p class="status-last-updated">
+      Last updated: <span id="status-last-updated-time">
+        <%= s.updatedAt ? new Date(s.updatedAt).toUTCString() : 'Never' %>
+      </span>
+    </p>
+
+  </div><!-- /.status-container -->
+</div><!-- /.status-page -->
+
+<%- include('partials/footer') %>
+
+<script>
+// ─── Helpers ─────────────────────────────────────────────────
+function formatUptime(sec) {
+  if (sec === null || sec === undefined) return '—';
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
+const LABEL_MAP = {
+  online:   'All Systems Operational',
+  degraded: 'Degraded Performance',
+  offline:  'Service Disruption',
+};
+const ICON_MAP = {
+  online:   '✅',
+  degraded: '⚠️',
+  offline:  '🔴',
+};
+
+// ─── Uptime history ring buffer ───────────────────────────────
+const HISTORY_SIZE = 30;
+const history = [];
+
+function pushHistory(statusStr) {
+  history.push(statusStr);
+  if (history.length > HISTORY_SIZE) history.shift();
+}
+
+function renderHistory() {
+  const bar = document.getElementById('status-history');
+  if (!bar) return;
+  bar.innerHTML = '';
+  // Pad with offline segments if we have fewer than HISTORY_SIZE entries
+  const padded = Array(Math.max(0, HISTORY_SIZE - history.length)).fill('offline').concat(history);
+  padded.forEach((s) => {
+    const seg = document.createElement('div');
+    seg.className = `status-history-segment ${s}`;
+    bar.appendChild(seg);
+  });
+}
+
+// ─── DOM update ───────────────────────────────────────────────
+function applyStatus(data) {
+  const status   = data.status || 'offline';
+  const label    = LABEL_MAP[status] || 'Unknown';
+  const icon     = ICON_MAP[status]  || '❓';
+
+  // Hero icon
+  const iconEl = document.getElementById('status-icon');
+  if (iconEl) { iconEl.textContent = icon; iconEl.className = `status-hero-icon ${status}`; }
+
+  // Badge
+  const badgeEl = document.getElementById('status-badge');
+  if (badgeEl) badgeEl.className = `status-badge ${status}`;
+
+  const labelEl = document.getElementById('status-label');
+  if (labelEl) labelEl.textContent = label;
+
+  // Message
+  const msgEl = document.getElementById('status-message');
+  if (msgEl) msgEl.textContent = data.statusMessage || '';
+
+  // Metrics
+  const latEl  = document.getElementById('metric-latency');
+  if (latEl)  latEl.textContent  = data.latencyMs    !== null ? `${data.latencyMs} ms`  : '—';
+  const uptEl  = document.getElementById('metric-uptime');
+  if (uptEl)  uptEl.textContent  = data.uptimeSeconds !== null ? formatUptime(data.uptimeSeconds) : '—';
+  const gldEl  = document.getElementById('metric-guilds');
+  if (gldEl)  gldEl.textContent  = data.guildCount    !== null ? Number(data.guildCount).toLocaleString() : '—';
+  const memEl  = document.getElementById('metric-memory');
+  if (memEl)  memEl.textContent  = data.memoryMB      !== null ? `${data.memoryMB} MB`  : '—';
+
+  // Component labels
+  const botComp = document.getElementById('comp-bot');
+  if (botComp) { botComp.textContent = label; botComp.className = `status-component-label ${status}`; }
+
+  // Last updated
+  const updEl = document.getElementById('status-last-updated-time');
+  if (updEl && data.updatedAt) updEl.textContent = new Date(data.updatedAt).toUTCString();
+
+  // Page background colour tint (subtle)
+  const page = document.getElementById('status-page');
+  if (page) page.dataset.status = status;
+
+  // History
+  pushHistory(status);
+  renderHistory();
+}
+
+// ─── Initial history seed ─────────────────────────────────────
+pushHistory('<%= s.status %>');
+renderHistory();
+
+// ─── Polling ─────────────────────────────────────────────────
+async function poll() {
+  try {
+    const res  = await fetch('/status/api');
+    if (!res.ok) return;
+    const data = await res.json();
+    applyStatus(data);
+  } catch (_) { /* silent — keep showing last known state */ }
+}
+
+setInterval(poll, 15_000);
+</script>
+
+<%
+function formatUptime(sec) {
+  if (!sec) return '—';
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+%>
