@@ -1290,6 +1290,16 @@
   </aside>
 
   <div id="pageData" data-guild-id="<%= guild.id %>" style="display:none"></div>
+
+  <!-- Global Discord-style unsaved changes bar -->
+  <div id="globalSaveBar" class="global-save-bar" aria-hidden="true">
+    <span class="global-save-bar-text">Careful — you have unsaved changes!</span>
+    <div class="global-save-bar-actions">
+      <button class="btn btn-ghost btn-sm" id="globalSaveBarReset">Reset</button>
+      <button class="btn btn-primary btn-sm" id="globalSaveBarSave">Save changes</button>
+    </div>
+  </div>
+
   <script src="/js/custom-select.js?v=20260427"></script>
   <script src="/js/app.js?v=20260425"></script>
   <script src="/js/server.js?v=20260425"></script>
@@ -1468,13 +1478,5 @@
     </div>
   </div>
 
-  <!-- Global Discord-style unsaved changes bar -->
-  <div id="globalSaveBar" class="global-save-bar" aria-hidden="true">
-    <span class="global-save-bar-text">Careful — you have unsaved changes!</span>
-    <div class="global-save-bar-actions">
-      <button class="btn btn-ghost btn-sm" id="globalSaveBarReset">Reset</button>
-      <button class="btn btn-primary btn-sm" id="globalSaveBarSave">Save changes</button>
-    </div>
-  </div>
 </body>
 </html>

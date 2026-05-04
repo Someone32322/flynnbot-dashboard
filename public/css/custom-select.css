@@ -90,10 +90,22 @@
               transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Open state — driven by class on the popup itself (popup lives on body) */
+.cs-popup--open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
 .cs-popup-up {
   transform: translateY(6px) scale(0.98);
 }
 
+.cs-popup-up.cs-popup--open {
+  transform: translateY(0) scale(1);
+}
+
+/* Keep legacy selectors working for wrappers that still hold the popup */
 .cs-open .cs-popup {
   opacity: 1;
   transform: translateY(0) scale(1);

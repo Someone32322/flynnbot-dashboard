@@ -107,15 +107,15 @@
       const openUp = spaceBelow < popupH + 12 && spaceAbove > spaceBelow;
 
       popup.style.width = rect.width + 'px';
-      popup.style.left = rect.left + window.scrollX + 'px';
+      popup.style.left = rect.left + 'px';
 
       if (openUp) {
         popup.style.top = '';
-        popup.style.bottom = (window.innerHeight - rect.top - window.scrollY) + 6 + 'px';
+        popup.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
         popup.classList.add('cs-popup-up');
       } else {
         popup.style.bottom = '';
-        popup.style.top = rect.bottom + window.scrollY + 6 + 'px';
+        popup.style.top = (rect.bottom + 6) + 'px';
         popup.classList.remove('cs-popup-up');
       }
     }
@@ -134,6 +134,7 @@
       }
 
       wrapper.classList.add('cs-open');
+      popup.classList.add('cs-popup--open');
       trigger.setAttribute('aria-expanded', 'true');
 
       requestAnimationFrame(() => {
@@ -143,6 +144,7 @@
 
     function close() {
       wrapper.classList.remove('cs-open');
+      popup.classList.remove('cs-popup--open');
       trigger.setAttribute('aria-expanded', 'false');
       popup.classList.remove('cs-popup-up');
       if (openInstance === wrapper) openInstance = null;

@@ -38,7 +38,7 @@ router.get('/:guildId', requireAuth, (req, res) => {
   const guild = guilds.find((g) => g.id === guildId && hasAdmin(g.permissions));
   if (!guild) return res.redirect('/dashboard');
 
-  res.render('server', { guild });
+  res.render('server', { guild, user: req.user });
 });
 
 // Application reviews page (admins or allocated reviewer roles)
