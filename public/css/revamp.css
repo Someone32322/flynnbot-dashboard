@@ -382,7 +382,7 @@ body {
   content: '';
   position: absolute;
   height: 18px; width: 18px;
-  left: 3px; top: 50%;
+  left: 3px; bottom: auto; top: 50%;
   transform: translateY(-50%);
   background: rgba(255,255,255,0.45);
   border-radius: 50%;
@@ -395,6 +395,8 @@ body {
 }
 .toggle-switch input:checked + .toggle-slider::before {
   left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
   background: var(--accent);
   box-shadow: 0 0 10px rgba(79,142,247,0.7);
 }

@@ -28,47 +28,6 @@ router.get('/', requireAuth, (req, res) => {
   res.render('dashboard', { guilds: adminGuilds });
 });
 
-// Server detail
-router.get('/:guildId', requireAuth, (req, res) => {
-  const { guildId } = req.params;
-  // Basic validation: Discord snowflakes are numeric strings
-  if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
-
-  const guilds = req.user.guilds || [];
-  const guild = guilds.find((g) => g.id === guildId && hasAdmin(g.permissions));
-  if (!guild) return res.redirect('/dashboard');
-
-  res.render('server', { guild, user: req.user });
-});
-
-// Application reviews page (admins or allocated reviewer roles)
-router.get('/:guildId/applications/review', requireAuth, async (req, res) => {
-  try {
-    const { guildId } = req.params;
-    if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
-
-    const guilds = req.user.guilds || [];
-    const guild = guilds.find((g) => g.id === guildId);
-    if (!guild) return res.redirect('/dashboard');
-
-    const access = await canReviewGuildApplications({ guildId, user: req.user });
-    if (!access.allowed) {
-      return res.status(403).render('error', {
-        code: 403,
-        message: 'You need Administrator or a configured reviewer role to access application reviews.',
-      });
-    }
-
-    res.render('applications-review', { guild, isGuildAdmin: access.isAdmin === true });
-  } catch (err) {
-    console.error('[Dashboard] applications review route', err);
-    res.status(500).render('error', {
-      code: 500,
-      message: 'Failed to load application reviews page.',
-    });
-  }
-});
-
 // ── Owner admin panel ─────────────────────────────────────────
 const OWNER_ID = '1192421681751412746';
 
@@ -112,6 +71,47 @@ router.get('/owner', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('[Dashboard] owner route', err);
     res.status(500).render('error', { code: 500, message: 'Failed to load owner panel.' });
+  }
+});
+
+// Server detail
+router.get('/:guildId', requireAuth, (req, res) => {
+  const { guildId } = req.params;
+  // Basic validation: Discord snowflakes are numeric strings
+  if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
+
+  const guilds = req.user.guilds || [];
+  const guild = guilds.find((g) => g.id === guildId && hasAdmin(g.permissions));
+  if (!guild) return res.redirect('/dashboard');
+
+  res.render('server', { guild, user: req.user });
+});
+
+// Application reviews page (admins or allocated reviewer roles)
+router.get('/:guildId/applications/review', requireAuth, async (req, res) => {
+  try {
+    const { guildId } = req.params;
+    if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
+
+    const guilds = req.user.guilds || [];
+    const guild = guilds.find((g) => g.id === guildId);
+    if (!guild) return res.redirect('/dashboard');
+
+    const access = await canReviewGuildApplications({ guildId, user: req.user });
+    if (!access.allowed) {
+      return res.status(403).render('error', {
+        code: 403,
+        message: 'You need Administrator or a configured reviewer role to access application reviews.',
+      });
+    }
+
+    res.render('applications-review', { guild, isGuildAdmin: access.isAdmin === true });
+  } catch (err) {
+    console.error('[Dashboard] applications review route', err);
+    res.status(500).render('error', {
+      code: 500,
+      message: 'Failed to load application reviews page.',
+    });
   }
 });
 
