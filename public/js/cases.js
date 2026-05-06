@@ -16,6 +16,9 @@ function showView(viewId) {
     const el = document.getElementById(id);
     if (el) el.style.display = id === viewId ? '' : 'none';
   });
+  if (viewId !== 'modCaseDetail') {
+    window.SaveBar?.markClean({ clearHandlers: true });
+  }
 }
 
 async function initCases(guildId) {
@@ -187,6 +190,14 @@ function renderCasesPagination(page, pages) {
   return html + '</div>';
 }
 
+function notifyCaseSave(msg, ok = true) {
+  if (window.showToast) {
+    window.showToast(msg, ok ? 'success' : 'error');
+    return;
+  }
+  if (!ok) alert(msg);
+}
+
 function openCaseDetail(c, guildId) {
   showView('modCaseDetail');
   const content = document.getElementById('modCaseDetailContent');
@@ -251,46 +262,39 @@ function openCaseDetail(c, guildId) {
         <div class="mod-case-detail-card-title">Edit reason</div>
         <textarea id="caseDetailReason" class="ec-input" rows="3" style="width:100%;box-sizing:border-box">${escCase(c.reason || '')}</textarea>
         <div class="mod-case-detail-hint">If the original DM can be edited, it will be updated. Otherwise a new message will be sent to the user.</div>
-        <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:.75rem">
-          <button class="btn btn-primary" id="caseDetailSaveBtn" data-case-id="${escCase(c._id)}">Save changes</button>
-          <span class="save-status" id="caseDetailSaveStatus"></span>
-        </div>
+        <div class="mod-case-detail-hint" style="margin-top:.75rem">Use the global save bar at the bottom to save or reset your edits.</div>
       </div>
     </div>`;
 
-  document.getElementById('caseDetailSaveBtn')?.addEventListener('click', async () => {
-    const btn = document.getElementById('caseDetailSaveBtn');
-    const status = document.getElementById('caseDetailSaveStatus');
-    btn.disabled = true;
-    try {
-      const res = await fetch(`/api/guild/${guildId}/cases/${c._id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          reason: document.getElementById('caseDetailReason').value.trim(),
-          notes: document.getElementById('caseDetailNotes').value.trim(),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
-      status.textContent = data.dmUpdated ? '✓ Saved & DM updated' : (data.dmSent ? '✓ Saved & new DM sent' : '✓ Saved');
-      status.className = 'save-status success';
-      // Update local data
-      const caseInList = _casesData.cases.find(x => x._id === c._id);
-      if (caseInList) {
-        caseInList.reason = document.getElementById('caseDetailReason').value.trim();
-        caseInList.notes = document.getElementById('caseDetailNotes').value.trim();
-        c.reason = caseInList.reason;
-        c.notes = caseInList.notes;
-      }
-    } catch (e) {
-      status.textContent = '✗ ' + e.message;
-      status.className = 'save-status error';
-    } finally {
-      btn.disabled = false;
-      setTimeout(() => { if (status) status.textContent = ''; }, 4000);
+  const saveCaseDetail = async () => {
+    const reason = document.getElementById('caseDetailReason').value.trim();
+    const notes = document.getElementById('caseDetailNotes').value.trim();
+
+    const res = await fetch(`/api/guild/${guildId}/cases/${c._id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason, notes }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Failed to save case');
+
+    const caseInList = _casesData.cases.find(x => x._id === c._id);
+    if (caseInList) {
+      caseInList.reason = reason;
+      caseInList.notes = notes;
     }
-  });
+    c.reason = reason;
+    c.notes = notes;
+
+    notifyCaseSave(
+      data.dmUpdated ? 'Saved and updated user DM.' : (data.dmSent ? 'Saved and sent a new user DM.' : 'Case changes saved.'),
+      true
+    );
+  };
+
+  window.SaveBar?.track(content, saveCaseDetail, () => openCaseDetail(c, guildId));
+  window.SaveBar?.markClean();
 }
 
 function formatDuration(ms) {

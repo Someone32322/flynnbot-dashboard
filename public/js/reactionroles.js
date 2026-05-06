@@ -814,7 +814,11 @@
 
       const rrId = data._id || wiz.rrId;
       if (rrId) {
-        await fetch(`/api/guild/${GID}/reaction-roles/${rrId}/post`, { method: 'POST' });
+        const postRes = await fetch(`/api/guild/${GID}/reaction-roles/${rrId}/post`, { method: 'POST' });
+        const postData = await postRes.json().catch(() => ({}));
+        if (!postRes.ok) {
+          throw new Error(postData.error || `Failed to post reaction role message (${postRes.status})`);
+        }
       }
 
       closeModal();

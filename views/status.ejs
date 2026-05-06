@@ -11,108 +11,89 @@
     const label    = labelMap[s.status] || 'Unknown';
   %>
 
-  <!-- Hero -->
-  <div class="status-hero">
-    <div class="status-hero-icon <%= s.status %>" id="status-icon"><%= icon %></div>
-    <h1 class="status-hero-title">FlynnBot Status</h1>
-
-    <div class="status-badge <%= s.status %>" id="status-badge">
-      <span class="status-dot"></span>
-      <span id="status-label"><%= label %></span>
+  <section class="status-hero">
+    <div class="status-hero-copy">
+      <p class="status-kicker">Platform Pulse</p>
+      <h1 class="status-hero-title">FlynnBot Service Health</h1>
+      <p class="status-hero-message" id="status-message"><%= s.statusMessage %></p>
+      <div class="status-live-badge">
+        <span class="status-live-dot"></span>
+        <span>Live telemetry refreshes every 15 seconds</span>
+      </div>
     </div>
 
-    <p class="status-hero-message" id="status-message"><%= s.statusMessage %></p>
-
-    <div class="status-live-badge" style="margin-top:16px;justify-content:center">
-      <span class="status-live-dot"></span>
-      <span>Live — updates every 15 seconds</span>
+    <div class="status-hero-panel">
+      <div class="status-hero-icon <%= s.status %>" id="status-icon"><%= icon %></div>
+      <div class="status-badge <%= s.status %>" id="status-badge">
+        <span class="status-dot"></span>
+        <span id="status-label"><%= label %></span>
+      </div>
+      <p class="status-hero-meta">
+        Last heartbeat:
+        <strong id="status-heartbeat"><%= s.lastHeartbeat ? new Date(s.lastHeartbeat).toUTCString() : 'No heartbeat yet' %></strong>
+      </p>
     </div>
-  </div>
+  </section>
 
   <div class="status-container">
-
-    <!-- Metrics -->
     <p class="status-section-title">Current Metrics</p>
     <div class="status-metrics" id="status-metrics">
-
       <div class="status-metric-card">
         <span class="status-metric-label">Latency</span>
-        <span class="status-metric-value" id="metric-latency">
-          <%= s.latencyMs !== null ? s.latencyMs + ' ms' : '—' %>
-        </span>
+        <span class="status-metric-value" id="metric-latency"><%= s.latencyMs !== null ? s.latencyMs + ' ms' : '—' %></span>
         <span class="status-metric-sub">Discord API ping</span>
       </div>
 
       <div class="status-metric-card">
         <span class="status-metric-label">Uptime</span>
-        <span class="status-metric-value" id="metric-uptime">
-          <%= s.uptimeSeconds !== null ? formatUptime(s.uptimeSeconds) : '—' %>
-        </span>
+        <span class="status-metric-value" id="metric-uptime"><%= s.uptimeSeconds !== null ? formatUptime(s.uptimeSeconds) : '—' %></span>
         <span class="status-metric-sub">Since last restart</span>
       </div>
 
       <div class="status-metric-card">
         <span class="status-metric-label">Servers</span>
-        <span class="status-metric-value" id="metric-guilds">
-          <%= s.guildCount !== null ? s.guildCount.toLocaleString() : '—' %>
-        </span>
+        <span class="status-metric-value" id="metric-guilds"><%= s.guildCount !== null ? s.guildCount.toLocaleString() : '—' %></span>
         <span class="status-metric-sub">Active guilds</span>
       </div>
 
       <div class="status-metric-card">
         <span class="status-metric-label">Memory</span>
-        <span class="status-metric-value" id="metric-memory">
-          <%= s.memoryMB !== null ? s.memoryMB + ' MB' : '—' %>
-        </span>
-        <span class="status-metric-sub">RSS usage</span>
+        <span class="status-metric-value" id="metric-memory"><%= s.memoryMB !== null ? s.memoryMB + ' MB' : '—' %></span>
+        <span class="status-metric-sub">Process RSS</span>
       </div>
-
     </div>
 
-    <!-- Components -->
     <p class="status-section-title" style="margin-top:28px">Components</p>
-
     <div class="status-card">
-      <div class="status-component">
-        <span class="status-component-name">🤖 Discord Bot (Flynn)</span>
-        <span class="status-component-label <%= s.status %>" id="comp-bot">
-          <%= label %>
-        </span>
+      <div class="status-component-list">
+        <div class="status-component">
+          <span class="status-component-name">🤖 Discord Bot (Flynn)</span>
+          <span class="status-component-label <%= s.status %>" id="comp-bot"><%= label %></span>
+        </div>
+        <div class="status-component">
+          <span class="status-component-name">📊 Dashboard</span>
+          <span class="status-component-label online" id="comp-dashboard">Operational</span>
+        </div>
+        <div class="status-component">
+          <span class="status-component-name">🗄️ Database (MongoDB)</span>
+          <span class="status-component-label online" id="comp-db">Operational</span>
+        </div>
       </div>
     </div>
 
-    <div class="status-card">
-      <div class="status-component">
-        <span class="status-component-name">📊 Dashboard</span>
-        <span class="status-component-label online">Operational</span>
-      </div>
-    </div>
-
-    <div class="status-card">
-      <div class="status-component">
-        <span class="status-component-name">🗄️ Database (MongoDB)</span>
-        <span class="status-component-label online" id="comp-db">Operational</span>
-      </div>
-    </div>
-
-    <!-- Uptime history bar (last 30 intervals = ~15 min) -->
-    <p class="status-section-title" style="margin-top:28px">Uptime — Last 30 Reports</p>
+    <p class="status-section-title" style="margin-top:28px">Uptime Timeline</p>
     <div class="status-card">
       <div class="status-history-bar" id="status-history"></div>
       <div class="status-history-meta">
-        <span>15 min ago</span>
+        <span>~15 min ago</span>
         <span>Now</span>
       </div>
     </div>
 
-    <!-- Last updated -->
     <p class="status-last-updated">
-      Last updated: <span id="status-last-updated-time">
-        <%= s.updatedAt ? new Date(s.updatedAt).toUTCString() : 'Never' %>
-      </span>
+      Last updated: <span id="status-last-updated-time"><%= s.updatedAt ? new Date(s.updatedAt).toUTCString() : 'Never' %></span>
     </p>
-
-  </div><!-- /.status-container -->
+  </div>
 </div><!-- /.status-page -->
 
 <%- include('partials/footer') %>
@@ -138,6 +119,20 @@ const ICON_MAP = {
   online:   '✅',
   degraded: '⚠️',
   offline:  '🔴',
+};
+
+let lastSuccessfulPollAt = Date.now();
+let staleApplied = false;
+let latestStatus = {
+  status: '<%= s.status %>',
+  statusMessage: <%- JSON.stringify(String(s.statusMessage || '')).replace(/</g, '\\u003c').replace(/>/g, '\\u003e') %>,
+  latencyMs: <%= s.latencyMs === null ? 'null' : Number(s.latencyMs) %>,
+  uptimeSeconds: <%= s.uptimeSeconds === null ? 'null' : Number(s.uptimeSeconds) %>,
+  guildCount: <%= s.guildCount === null ? 'null' : Number(s.guildCount) %>,
+  memoryMB: <%= s.memoryMB === null ? 'null' : Number(s.memoryMB) %>,
+  highLatency: <%= s.highLatency ? 'true' : 'false' %>,
+  updatedAt: <%= s.updatedAt ? `'${new Date(s.updatedAt).toISOString()}'` : 'null' %>,
+  lastHeartbeat: <%= s.lastHeartbeat ? `'${new Date(s.lastHeartbeat).toISOString()}'` : 'null' %>,
 };
 
 // ─── Uptime history ring buffer ───────────────────────────────
@@ -167,6 +162,7 @@ function applyStatus(data) {
   const status   = data.status || 'offline';
   const label    = LABEL_MAP[status] || 'Unknown';
   const icon     = ICON_MAP[status]  || '❓';
+  latestStatus = { ...latestStatus, ...data, status, statusMessage: data.statusMessage || '' };
 
   // Hero icon
   const iconEl = document.getElementById('status-icon');
@@ -185,7 +181,10 @@ function applyStatus(data) {
 
   // Metrics
   const latEl  = document.getElementById('metric-latency');
-  if (latEl)  latEl.textContent  = data.latencyMs    !== null ? `${data.latencyMs} ms`  : '—';
+  if (latEl) {
+    latEl.textContent = data.latencyMs !== null ? `${data.latencyMs} ms` : '—';
+    latEl.classList.toggle('metric-alert', !!data.highLatency || (typeof data.latencyMs === 'number' && data.latencyMs >= 300));
+  }
   const uptEl  = document.getElementById('metric-uptime');
   if (uptEl)  uptEl.textContent  = data.uptimeSeconds !== null ? formatUptime(data.uptimeSeconds) : '—';
   const gldEl  = document.getElementById('metric-guilds');
@@ -197,9 +196,24 @@ function applyStatus(data) {
   const botComp = document.getElementById('comp-bot');
   if (botComp) { botComp.textContent = label; botComp.className = `status-component-label ${status}`; }
 
+  const dbComp = document.getElementById('comp-db');
+  if (dbComp) {
+    const dbState = status === 'offline' ? 'degraded' : 'online';
+    dbComp.textContent = status === 'offline' ? 'Reachability Unknown' : 'Operational';
+    dbComp.className = `status-component-label ${dbState}`;
+  }
+
+  const dashboardComp = document.getElementById('comp-dashboard');
+  if (dashboardComp) {
+    dashboardComp.textContent = 'Operational';
+    dashboardComp.className = 'status-component-label online';
+  }
+
   // Last updated
   const updEl = document.getElementById('status-last-updated-time');
   if (updEl && data.updatedAt) updEl.textContent = new Date(data.updatedAt).toUTCString();
+  const hbEl = document.getElementById('status-heartbeat');
+  if (hbEl) hbEl.textContent = data.lastHeartbeat ? new Date(data.lastHeartbeat).toUTCString() : 'No heartbeat yet';
 
   // Page background colour tint (subtle)
   const page = document.getElementById('status-page');
@@ -220,11 +234,22 @@ async function poll() {
     const res  = await fetch('/status/api');
     if (!res.ok) return;
     const data = await res.json();
+    lastSuccessfulPollAt = Date.now();
+    staleApplied = false;
     applyStatus(data);
   } catch (_) { /* silent — keep showing last known state */ }
 }
 
 setInterval(poll, 15_000);
+setInterval(() => {
+  if (Date.now() - lastSuccessfulPollAt <= 90_000 || staleApplied) return;
+  staleApplied = true;
+  applyStatus({
+    ...latestStatus,
+    status: 'offline',
+    statusMessage: 'Live telemetry is stale. Waiting for the next heartbeat from FlynnBot.',
+  });
+}, 5_000);
 </script>
 
 <%

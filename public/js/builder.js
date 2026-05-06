@@ -16,6 +16,7 @@
   let arRowCount   = 0;      // monotonic counter for action row IDs
   let arCompCount  = 0;      // monotonic counter for component IDs
   let initialized  = false;
+  let editorFocusMode = false;
 
   const DELIVERY_TYPES = [
     { key: 'template',        icon: '🗂️',  label: 'Template',     desc: 'Save only. Send with /sendembed.' },
@@ -221,9 +222,16 @@
     document.getElementById('builderNewBtn')?.addEventListener('click', () => openEditor(null));
     document.getElementById('builderNewBtnEmpty')?.addEventListener('click', () => openEditor(null));
     document.getElementById('builderEditorBack')?.addEventListener('click', closeEditor);
+    document.getElementById('builderFocusBtn')?.addEventListener('click', toggleFocusMode);
     document.getElementById('builderSaveBtn')?.addEventListener('click', () => saveMessage(false));
     document.getElementById('builderSendNowBtn')?.addEventListener('click', () => saveMessage(true));
     document.getElementById('builderAddEmbedBtn')?.addEventListener('click', () => addEmbed());
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && editorFocusMode) {
+        setFocusMode(false);
+      }
+    });
 
     // Attach modal backdrop click
     document.getElementById('attachMsgBackdrop')?.addEventListener('click', (e) => {
@@ -376,11 +384,13 @@
     const editor = document.getElementById('builderEditor');
     if (editor) editor.style.display = 'flex';
 
+    setFocusMode(false);
     updatePreview();
   }
 
   function closeEditor() {
     editingId = null;
+    setFocusMode(false);
     const editor = document.getElementById('builderEditor');
     if (editor) editor.style.display = 'none';
 
@@ -388,6 +398,25 @@
       document.getElementById('builderEmptyState')?.style?.setProperty('display', 'flex');
     }
     renderList();
+  }
+
+  function setFocusMode(enabled) {
+    editorFocusMode = !!enabled;
+    const section = document.getElementById('section-embeds');
+    const btn = document.getElementById('builderFocusBtn');
+
+    if (section) section.classList.toggle('builder-focus-mode', editorFocusMode);
+    document.body.classList.toggle('builder-focus-active', editorFocusMode);
+
+    if (btn) {
+      btn.textContent = editorFocusMode ? '⤡ Exit Focus' : '⤢ Focus Mode';
+    }
+  }
+
+  function toggleFocusMode() {
+    const editor = document.getElementById('builderEditor');
+    if (!editor || editor.style.display === 'none') return;
+    setFocusMode(!editorFocusMode);
   }
 
   // ── Embed panels ──────────────────────────────────────────────
@@ -1490,7 +1519,11 @@
   // ── Wire up on section activation ────────────────────────────
   // server.js dispatches CustomEvent 'sectionActivated' with detail.section
   document.addEventListener('sectionActivated', (e) => {
-    if (e.detail?.section === 'embeds') initBuilder();
+    if (e.detail?.section === 'embeds') {
+      initBuilder();
+      return;
+    }
+    if (editorFocusMode) setFocusMode(false);
   });
 
   // Scripts are at bottom of <body> so DOM is already ready — no DOMContentLoaded needed.

@@ -142,6 +142,59 @@
   gap: 12px;
 }
 
+/* Ensure all controls in the application editor match the dashboard theme */
+#appEditorBackdrop .modal input[type="text"],
+#appEditorBackdrop .modal input[type="number"],
+#appEditorBackdrop .modal input[type="color"],
+#appEditorBackdrop .modal textarea,
+#appEditorBackdrop .modal select,
+.app-field-card input[type="text"],
+.app-field-card input[type="number"],
+.app-field-card textarea,
+.app-field-card select,
+.app-status-card input[type="text"],
+.app-status-card textarea,
+.app-status-card select {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(7, 12, 28, 0.9);
+  color: #e2e8f0;
+  padding: 10px 12px;
+  font: inherit;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+#appEditorBackdrop .modal input[type="color"] {
+  width: 48px;
+  height: 34px;
+  padding: 2px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#appEditorBackdrop .modal input:focus,
+#appEditorBackdrop .modal textarea:focus,
+#appEditorBackdrop .modal select:focus,
+.app-field-card input:focus,
+.app-field-card textarea:focus,
+.app-field-card select:focus,
+.app-status-card input:focus,
+.app-status-card textarea:focus,
+.app-status-card select:focus {
+  outline: none;
+  border-color: rgba(34, 211, 238, 0.65);
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.16);
+}
+
+.app-json-input {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 10px;
+  background: rgba(7, 12, 28, 0.9);
+  color: #e2e8f0;
+  padding: 10px 12px;
+}
+
 .app-two-cols {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

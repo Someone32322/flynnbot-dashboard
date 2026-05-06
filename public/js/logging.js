@@ -236,6 +236,7 @@ const EVENT_MAP = Object.fromEntries(ALL_EVENTS.map(e => [e.key, e]));
 let _loggingInitDone = false;
 let _channelOptions = [];
 let _bulkSelectMode = false;
+let _loggingEventsDirty = false;
 
 function getLoggingContainer() {
   return document.getElementById('loggingContent') || document.getElementById('logging-container');
@@ -260,6 +261,53 @@ function setSaveStatus(message, ok = true) {
   }, 3000);
 }
 
+function getActiveLoggingTab() {
+  return document.querySelector('.logging-main-tab.active')?.dataset?.logTab || 'events';
+}
+
+function setLoggingEventsDirtyState(isDirty) {
+  _loggingEventsDirty = !!isDirty;
+  const saveRow = getLoggingSaveRow();
+  if (saveRow && getActiveLoggingTab() !== 'settings') {
+    saveRow.style.display = _loggingEventsDirty ? 'flex' : 'none';
+  }
+}
+
+function markLoggingDirty() {
+  if (getActiveLoggingTab() === 'events') {
+    setLoggingEventsDirtyState(true);
+  }
+  window.SaveBar?.markDirty();
+}
+
+function bindLoggingSaveBar(guildId) {
+  const section = document.getElementById('section-logging');
+  if (!section || !window.SaveBar) return;
+
+  window.SaveBar.track(
+    section,
+    async () => {
+      if (getActiveLoggingTab() === 'settings') {
+        await saveLoggingSettings(guildId);
+      } else {
+        await saveLogging(guildId);
+      }
+    },
+    async () => {
+      if (getActiveLoggingTab() === 'settings') {
+        await loadLoggingSettings(guildId);
+      } else {
+        await loadLoggingData(guildId);
+        renderLogging(guildId);
+      }
+      setLoggingEventsDirtyState(false);
+      bindLoggingSaveBar(guildId);
+    }
+  );
+
+  window.SaveBar.markClean();
+}
+
 async function initLogging() {
   if (_loggingInitDone) return;
   const guildId = document.getElementById('pageData')?.dataset?.guildId;
@@ -267,9 +315,19 @@ async function initLogging() {
   
   await loadLoggingData(guildId);
   renderLogging(guildId);
+  bindLoggingSaveBar(guildId);
+
   const saveBtn = getLoggingSaveButton();
   if (saveBtn) {
-    saveBtn.addEventListener('click', () => saveLogging(guildId));
+    saveBtn.addEventListener('click', async () => {
+      try {
+        await saveLogging(guildId);
+        setLoggingEventsDirtyState(false);
+        bindLoggingSaveBar(guildId);
+      } catch {
+        // saveLogging already sets failure status
+      }
+    });
   }
 
   // Wire up main tab switcher (Events | Settings)
@@ -282,35 +340,71 @@ async function initLogging() {
       const eventsRow = document.getElementById('loggingSaveRow');
       const settingsPanel = document.getElementById('loggingSettingsPanel');
       if (eventsContent) eventsContent.style.display = isSettings ? 'none' : '';
-      if (eventsRow) eventsRow.style.display = isSettings ? 'none' : (eventsRow._wasVisible ? 'flex' : 'none');
+      if (eventsRow) eventsRow.style.display = isSettings ? 'none' : (_loggingEventsDirty ? 'flex' : 'none');
       if (settingsPanel) settingsPanel.style.display = isSettings ? '' : 'none';
-      if (isSettings) loadLoggingSettings(guildId);
+      if (isSettings) {
+        loadLoggingSettings(guildId).finally(() => bindLoggingSaveBar(guildId));
+      } else {
+        bindLoggingSaveBar(guildId);
+      }
     });
   });
 
   // Settings save
-  document.getElementById('logSettingsSaveBtn')?.addEventListener('click', () => saveLoggingSettings(guildId));
+  document.getElementById('logSettingsSaveBtn')?.addEventListener('click', async () => {
+    try {
+      await saveLoggingSettings(guildId);
+      bindLoggingSaveBar(guildId);
+    } catch {
+      // saveLoggingSettings already sets failure status
+    }
+  });
 
   _loggingInitDone = true;
 }
 
 async function loadLoggingSettings(guildId) {
+  const map = {
+    logSettingWebhooks: 'useWebhooks',
+    logSettingIgnoreEmbeds: 'ignoreEmbeds',
+    logSettingIgnoreVoice: 'ignoreVoice',
+    logSettingDeletedPolls: 'logDeletedPolls',
+    logSettingDeletedSticky: 'logDeletedSticky',
+    logSettingDeletedForwarded: 'logDeletedForwarded',
+    logSettingUnrecognized: 'logUnrecognized',
+  };
+
   try {
-    const r = await fetch(`/api/guild/${guildId}/logging/settings`);
-    if (!r.ok) return;
-    const s = await r.json();
-    const map = {
-      logSettingWebhooks: 'useWebhooks',
-      logSettingIgnoreEmbeds: 'ignoreEmbeds',
-      logSettingIgnoreVoice: 'ignoreVoice',
-      logSettingDeletedPolls: 'logDeletedPolls',
-      logSettingDeletedSticky: 'logDeletedSticky',
-      logSettingDeletedForwarded: 'logDeletedForwarded',
-      logSettingUnrecognized: 'logUnrecognized',
-    };
+    const [loggingRes, modConfigRes] = await Promise.all([
+      fetch(`/api/guild/${guildId}/logging/settings`),
+      fetch(`/api/guild/${guildId}/modconfig`),
+    ]);
+
+    const s = loggingRes.ok ? await loggingRes.json() : {};
+    const modCfg = modConfigRes.ok ? await modConfigRes.json() : {};
+
     Object.entries(map).forEach(([id, key]) => {
       const el = document.getElementById(id);
       if (el) el.checked = !!s[key];
+    });
+
+    const auditSelect = document.getElementById('logSettingAuditChannel');
+    if (auditSelect) {
+      const opts = ['<option value="">Not set</option>']
+        .concat(_channelOptions.map((ch) => {
+          const selected = ch.id === modCfg.auditLogChannelId ? ' selected' : '';
+          return `<option value="${escapeHtml(ch.id)}"${selected}>#${escapeHtml(ch.name || ch.id)}</option>`;
+        }))
+        .join('');
+      auditSelect.innerHTML = opts;
+      auditSelect.value = modCfg.auditLogChannelId || '';
+    }
+
+    [...Object.keys(map), 'logSettingAuditChannel'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el || el.dataset.loggingDirtyBound === '1') return;
+      el.dataset.loggingDirtyBound = '1';
+      el.addEventListener('change', markLoggingDirty);
     });
   } catch { /* silently fail — settings optional */ }
 }
@@ -333,16 +427,32 @@ async function saveLoggingSettings(guildId) {
     const el = document.getElementById(id);
     if (el) body[key] = el.checked;
   });
+
+  const auditLogChannelId = document.getElementById('logSettingAuditChannel')?.value || null;
+
   try {
-    const r = await fetch(`/api/guild/${guildId}/logging/settings`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const [loggingSaveRes, modSaveRes] = await Promise.all([
+      fetch(`/api/guild/${guildId}/logging/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+      fetch(`/api/guild/${guildId}/modconfig`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ auditLogChannelId }),
+      }),
+    ]);
+
+    if (!loggingSaveRes.ok || !modSaveRes.ok) {
+      throw new Error('One or more logging settings failed to save');
+    }
+
     if (saveStatus) { saveStatus.textContent = '✓ Saved'; saveStatus.className = 'save-status success'; }
+    return true;
   } catch (e) {
     if (saveStatus) { saveStatus.textContent = '✗ Failed to save'; saveStatus.className = 'save-status error'; }
+    throw e;
   } finally {
     if (saveBtn) saveBtn.disabled = false;
     if (saveStatus) setTimeout(() => { if (saveStatus) saveStatus.textContent = ''; }, 3000);
@@ -454,6 +564,7 @@ function renderLogging(guildId) {
     });
 
     updateBulkSelectionState(container);
+    markLoggingDirty();
   });
 
   container.querySelectorAll('.logging-channel-select').forEach((selectEl) => {
@@ -461,6 +572,7 @@ function renderLogging(guildId) {
     selectEl.addEventListener('change', () => {
       const key = selectEl.dataset.eventKey;
       window.loggingConfig[key] = selectEl.value || null;
+      markLoggingDirty();
     });
   });
 
@@ -469,7 +581,7 @@ function renderLogging(guildId) {
   });
 
   const saveRow = getLoggingSaveRow();
-  if (saveRow) saveRow.style.display = 'flex';
+  if (saveRow) saveRow.style.display = _loggingEventsDirty ? 'flex' : 'none';
 
   updateBulkSelectionState(container);
 }
@@ -552,13 +664,16 @@ async function saveLogging(guildId) {
       body: JSON.stringify({ channels }),
     });
 
-    if (resp.ok) {
-      setSaveStatus('✅ Saved logging configuration.', true);
-    } else {
-      setSaveStatus('❌ Failed to save logging configuration.', false);
+    if (!resp.ok) {
+      throw new Error('Failed to save logging configuration');
     }
-  } catch {
+
+    setLoggingEventsDirtyState(false);
+    setSaveStatus('✅ Saved logging configuration.', true);
+    return true;
+  } catch (e) {
     setSaveStatus('❌ Failed to save logging configuration.', false);
+    throw e;
   } finally {
     if (saveBtn) saveBtn.disabled = false;
   }

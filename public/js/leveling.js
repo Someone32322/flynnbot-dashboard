@@ -22,16 +22,27 @@
 
   function markDirty() {
     dirty = true;
-    const bar = $('lvSaveBar');
-    if (bar) bar.style.display = 'flex';
+    window.SaveBar?.markDirty();
   }
 
   function showStatus(msg, ok = true) {
     const el = $('lvSaveStatus');
-    if (!el) return;
+    if (!el) {
+      if (window.showToast) window.showToast(msg, ok ? 'success' : 'error');
+      return;
+    }
     el.textContent = msg;
     el.style.color = ok ? '#4ade80' : '#f87171';
     setTimeout(() => { el.textContent = ''; }, 3000);
+  }
+
+  function bindSaveBar() {
+    const section = document.getElementById('section-levels');
+    if (!section || !window.SaveBar) return;
+    window.SaveBar.track(section, saveConfig, async () => {
+      await loadAll();
+    });
+    window.SaveBar.markClean();
   }
 
   // ── Init ──────────────────────────────────────────────────
@@ -40,8 +51,7 @@
     guildId = pageData?.dataset?.guildId;
     if (!guildId) return;
 
-    // Wire save/reset
-    $('lvSaveBtn')?.addEventListener('click', saveConfig);
+    // Wire reset
     $('lvResetBtn')?.addEventListener('click', confirmReset);
 
     // Wire add-reward modal
@@ -125,6 +135,7 @@
       populateRoleSelector();
       loadLeaderboard(1);
       dataLoaded = true;
+      bindSaveBar();
     } catch (err) {
       console.error('[leveling] loadAll', err);
     }
@@ -182,8 +193,8 @@
     renderRewards();
 
     dirty = false;
-    const bar = $('lvSaveBar');
-    if (bar) bar.style.display = 'none';
+    window.SaveBar?.markClean();
+    bindSaveBar();
   }
 
   function updateContentVisibility(show) {
@@ -331,8 +342,8 @@
         return;
       }
       dirty = false;
-      const bar = $('lvSaveBar');
-      if (bar) bar.style.display = 'none';
+      window.SaveBar?.markClean();
+      bindSaveBar();
       showStatus('Saved!', true);
     } catch (err) {
       showStatus('Network error', false);

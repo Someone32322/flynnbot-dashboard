@@ -80,12 +80,6 @@
             </span>
             <span class="sidebar-nav-text">Leveling</span>
           </button>
-          <button class="sidebar-nav-item" data-section="economy">
-            <span class="sidebar-nav-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v2m0 8v2M8.5 9.5A3.5 1.5 0 0112 8a3.5 1.5 0 013.5 1.5c0 1.5-3.5 2.5-3.5 4a1 1 0 002 0"/></svg>
-            </span>
-            <span class="sidebar-nav-text">Economy</span>
-          </button>
           <button class="sidebar-nav-item" data-section="cases">
             <span class="sidebar-nav-icon">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
@@ -388,7 +382,6 @@
         <div class="category-tabs" id="categoryTabs">
           <button class="cat-tab active" data-cat="all">All</button>
           <button class="cat-tab" data-cat="Moderation">Moderation</button>
-          <button class="cat-tab" data-cat="Economy">Economy</button>
           <button class="cat-tab" data-cat="Levels">Levels</button>
           <button class="cat-tab" data-cat="General">General</button>
           <button class="cat-tab" data-cat="Info">Info</button>
@@ -423,6 +416,15 @@
         <!-- Settings panel (hidden by default) -->
         <div id="loggingSettingsPanel" style="display:none">
           <div class="logging-settings-grid">
+            <div class="logging-setting-row">
+              <div class="logging-setting-info">
+                <span class="logging-setting-label">Moderation audit log channel</span>
+                <span class="logging-setting-hint">Channel where moderation case/audit messages are sent</span>
+              </div>
+              <select id="logSettingAuditChannel" class="logging-setting-select">
+                <option value="">Not set</option>
+              </select>
+            </div>
             <div class="logging-setting-row">
               <div class="logging-setting-info">
                 <span class="logging-setting-label">Use webhooks</span>
@@ -529,6 +531,7 @@
               maxlength="60" placeholder="Message name…">
             <div class="builder-editor-btns">
               <button class="btn btn-secondary" id="builderEditorBack">← Back</button>
+              <button class="btn btn-secondary" id="builderFocusBtn">⤢ Focus Mode</button>
               <button class="btn btn-primary"   id="builderSaveBtn">💾 Save</button>
               <button class="btn btn-success"   id="builderSendNowBtn">▶ Send Now</button>
             </div>
@@ -719,11 +722,7 @@
               </div>
             </div>
 
-            <!-- Save bar -->
-            <div class="lv-save-bar" id="lvSaveBar" style="display:none">
-              <button class="btn btn-primary" id="lvSaveBtn">💾 Save Changes</button>
-              <span class="save-status" id="lvSaveStatus"></span>
-            </div>
+            <div class="save-status" id="lvSaveStatus" style="margin:0 0 0.75rem"></div>
 
             <div id="lvContent" style="display:none">
 
@@ -1247,20 +1246,6 @@
 
       </section>
 
-
-
-      <!-- ── ECONOMY SECTION ── -->
-      <section class="dash-section" id="section-economy" data-section="economy" style="display:none">
-        <div class="section-header">
-          <h2 class="section-title">🪙 Economy</h2>
-          <p class="section-subtitle">Configure the server economy system, shop, and leaderboard.</p>
-        </div>
-
-        <div id="economyContent">
-          <div class="commands-loading"><div class="spinner"></div> Loading economy config…</div>
-        </div>
-      </section>
-
   <nav class="mobile-bottom-nav" aria-label="Mobile quick navigation">
     <button class="mobile-nav-item" type="button" data-section="home">Home</button>
     <button class="mobile-nav-item" type="button" data-section="commands">Commands</button>
@@ -1303,15 +1288,14 @@
   <script src="/js/custom-select.js?v=20260427"></script>
   <script src="/js/app.js?v=20260425"></script>
   <script src="/js/server.js?v=20260425"></script>
-  <script src="/js/logging.js?v=20260425"></script>
-  <script src="/js/builder.js?v=20260425"></script>
+  <script src="/js/logging.js?v=20260506"></script>
+  <script src="/js/builder.js?v=20260506"></script>
   <script src="/js/reactionroles.js?v=20260425"></script>
   <script src="/js/applications.js?v=20260425"></script>
-  <script src="/js/leveling.js?v=20260426"></script>
-  <script src="/js/economy.js?v=20260426"></script>
-  <script src="/js/cases.js?v=20260501"></script>
+  <script src="/js/leveling.js?v=20260506"></script>
+  <script src="/js/cases.js?v=20260506"></script>
   <script src="/js/modconfig.js?v=20260501"></script>
-  <script src="/js/savebar.js?v=20260426"></script>
+  <script src="/js/savebar.js?v=20260506"></script>
 
   <!-- ── Modal: Punish type settings ── -->
   <div id="punishTypeModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Punish type settings">

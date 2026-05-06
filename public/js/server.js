@@ -199,6 +199,7 @@
       openSettingsPanel(cmd);
     });
 
+    row.classList.add('menu-open');
     btn.parentElement.appendChild(dropdown);
     openDropdownRow = row;
   }
@@ -206,6 +207,7 @@
   function closeDropdown() {
     if (openDropdownRow) {
       openDropdownRow.querySelector('.cmd-dropdown')?.remove();
+      openDropdownRow.classList.remove('menu-open');
       openDropdownRow = null;
     }
   }
@@ -294,9 +296,9 @@
       <!-- Reply Visibility -->
       <div class="settings-field">
         <label class="settings-label" for="sp-ephemeral">Reply Visibility</label>
-        <div class="settings-hint">Control whether replies are visible only to the user or to the channel.</div>
+        <div class="settings-hint">Default behavior for /${escHtml(cmd.name)} is <strong>Private</strong> (only the command user can see it). You can override it below.</div>
         <select class="settings-select" id="sp-ephemeral" data-cs>
-          <option value="default" ${s.ephemeralMode === 'default' ? 'selected' : ''}>Default (bot decides)</option>
+          <option value="default" ${s.ephemeralMode === 'default' ? 'selected' : ''}>Default (Private)</option>
           <option value="all"     ${s.ephemeralMode === 'all'     ? 'selected' : ''}>Always Ephemeral (private)</option>
           <option value="off"     ${s.ephemeralMode === 'off'     ? 'selected' : ''}>Always Public</option>
         </select>

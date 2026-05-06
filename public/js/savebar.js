@@ -40,17 +40,26 @@ const SaveBar = (() => {
     show();
   }
 
-  function markClean() {
+  function markClean({ clearHandlers = false } = {}) {
     _dirty = false;
     hide();
-    _tracked = [];
-    _onSave = null;
-    _onReset = null;
+    if (clearHandlers) {
+      untrack();
+      _onSave = null;
+      _onReset = null;
+    }
   }
 
   function setHandlers(onSave, onReset) {
     _onSave = onSave;
     _onReset = onReset;
+  }
+
+  function resnapshot() {
+    _tracked = _tracked.map(({ el }) => ({
+      el,
+      val: el.type === 'checkbox' ? el.checked : el.value,
+    }));
   }
 
   /**
@@ -61,6 +70,8 @@ const SaveBar = (() => {
    */
   function track(containerEl, onSave, onReset) {
     if (!containerEl) return;
+    untrack();
+
     _onSave = onSave;
     _onReset = onReset;
 
@@ -82,10 +93,7 @@ const SaveBar = (() => {
       return cur !== val;
     });
     if (isDirty) markDirty();
-    else {
-      _dirty = false;
-      hide();
-    }
+    else markClean();
   }
 
   function untrack() {
@@ -101,6 +109,7 @@ const SaveBar = (() => {
     saveBtn.disabled = true;
     try {
       await _onSave();
+      resnapshot();
       markClean();
     } catch (e) {
       console.error('[SaveBar] save error', e);
@@ -109,10 +118,15 @@ const SaveBar = (() => {
     }
   });
 
-  resetBtn?.addEventListener('click', () => {
-    if (_onReset) _onReset();
-    markClean();
-    untrack();
+  resetBtn?.addEventListener('click', async () => {
+    resetBtn.disabled = true;
+    try {
+      if (_onReset) await _onReset();
+      resnapshot();
+      markClean();
+    } finally {
+      resetBtn.disabled = false;
+    }
   });
 
   return { markDirty, markClean, setHandlers, track, untrack };

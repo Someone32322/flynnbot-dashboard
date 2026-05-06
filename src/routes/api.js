@@ -1005,7 +1005,7 @@ router.get('/guild/:guildId/reaction-roles', requireAuth, requireGuildAdmin, asy
 router.post('/guild/:guildId/reaction-roles', requireAuth, requireGuildAdmin, async (req, res) => {
   try {
     const { guildId } = req.params;
-    const { name, type, channelId, messageUrl, embedTitle, embedDescription, embedColor, options } = req.body;
+    const { name, type, channelId, messageUrl, content, embedTitle, embedDescription, embedColor, options } = req.body;
     if (!name?.trim()) return res.status(400).json({ error: 'name is required' });
     if (!['button', 'dropdown', 'emoji'].includes(type)) return res.status(400).json({ error: 'Invalid type' });
 
@@ -1022,6 +1022,7 @@ router.post('/guild/:guildId/reaction-roles', requireAuth, requireGuildAdmin, as
       type,
       channelId: channelId || null,
       messageUrl: messageUrl || null,
+      content: content?.trim() || null,
       embedTitle: embedTitle?.trim() || 'Reaction Roles',
       embedDescription: embedDescription?.trim() || 'Click a button or select an option below.',
       embedColor: typeof embedColor === 'number' ? embedColor : 0x0f52ba,
@@ -1043,7 +1044,7 @@ router.post('/guild/:guildId/reaction-roles', requireAuth, requireGuildAdmin, as
 router.put('/guild/:guildId/reaction-roles/:rrId', requireAuth, requireGuildAdmin, async (req, res) => {
   try {
     const { guildId, rrId } = req.params;
-    const { channelId, messageUrl, embedTitle, embedDescription, embedColor, options } = req.body;
+    const { channelId, messageUrl, content, embedTitle, embedDescription, embedColor, options } = req.body;
     const rr = await ReactionRole.findOne({ _id: rrId, guildId });
     if (!rr) return res.status(404).json({ error: 'Reaction role group not found' });
 
@@ -1052,6 +1053,7 @@ router.put('/guild/:guildId/reaction-roles/:rrId', requireAuth, requireGuildAdmi
       return res.status(400).json({ error: 'Existing message links are only supported for emoji reaction roles' });
     }
     if (messageUrl !== undefined) rr.messageUrl = messageUrl || null;
+    if (content !== undefined) rr.content = content?.trim() || null;
     if (embedTitle !== undefined) rr.embedTitle = embedTitle?.trim() || 'Reaction Roles';
     if (embedDescription !== undefined) rr.embedDescription = embedDescription?.trim() || '';
     if (typeof embedColor === 'number') rr.embedColor = embedColor;
@@ -1101,23 +1103,50 @@ router.post('/guild/:guildId/reaction-roles/:rrId/post', requireAuth, requireGui
     if (!rr) return res.status(404).json({ error: 'Reaction role group not found' });
 
     if (rr.type === 'emoji') {
-      // For emoji type: resolve message URL and seed reactions
       const url = rr.messageUrl;
-      if (!url) return res.status(400).json({ error: 'No message URL set for emoji reaction role' });
-      const match = url.match(/channels\/(\d+)\/(\d+)\/(\d+)/);
-      if (!match) return res.status(400).json({ error: 'Invalid Discord message URL' });
-      const [, , chanId, msgId] = match;
-      rr.externalChannelId = chanId;
-      rr.externalMessageId = msgId;
+      const usingLinkedExistingMessage = Boolean(url);
+      let targetChannelId = null;
+      let targetMessageId = null;
+
+      if (url) {
+        const match = url.match(/channels\/(\d+)\/(\d+)\/(\d+)/);
+        if (!match) return res.status(400).json({ error: 'Invalid Discord message URL' });
+        const [, , chanId, msgId] = match;
+        targetChannelId = chanId;
+        targetMessageId = msgId;
+      } else {
+        targetChannelId = rr.channelId || rr.externalChannelId;
+        if (!targetChannelId) return res.status(400).json({ error: 'No channel set for this reaction role group' });
+
+        const body = buildMessageBody(rr);
+        let postedMessage;
+        const previousMessageId = rr.externalMessageId || rr.messageId;
+
+        if (previousMessageId) {
+          try {
+            postedMessage = await discordApi.editMessage(targetChannelId, previousMessageId, body);
+          } catch {
+            postedMessage = await discordApi.postMessage(targetChannelId, body);
+          }
+        } else {
+          postedMessage = await discordApi.postMessage(targetChannelId, body);
+        }
+
+        targetMessageId = postedMessage?.id || previousMessageId;
+      }
+
+      rr.externalChannelId = targetChannelId;
+      rr.externalMessageId = targetMessageId;
+      rr.messageId = usingLinkedExistingMessage ? null : targetMessageId;
       await rr.save();
 
       // Seed reactions so users know what to react with
       for (const opt of rr.options) {
         if (opt.label) {
-          try { await discordApi.addReaction(chanId, msgId, normalizeEmojiForReactionApi(opt.label)); } catch (_) {}
+          try { await discordApi.addReaction(targetChannelId, targetMessageId, normalizeEmojiForReactionApi(opt.label)); } catch (_) {}
         }
       }
-      return res.json({ ok: true, messageId: msgId });
+      return res.json({ ok: true, messageId: targetMessageId, channelId: targetChannelId });
     }
 
     const body = buildMessageBody(rr);
@@ -1256,8 +1285,9 @@ function buildMessageBody(rr) {
   }
 
   return {
+    content:    rr.content || undefined,
     embeds:     embeds.length ? embeds : undefined,
-    components: components.length ? components : [],
+    components: components.length ? components : undefined,
   };
 }
 

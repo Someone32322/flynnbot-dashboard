@@ -12,6 +12,21 @@
   let uptimeStart = Date.now();
   let currentLogFilter = 'all';
   let spotlightIdx = -1;
+  const SUPPORTED_PANELS = new Set(['overview', 'servers', 'users', 'database', 'deploy', 'security']);
+  const DISABLED_OWNER_ACTIONS = new Set([
+    'maintenance',
+    'sync-commands',
+    'reload-modules',
+    'check-updates',
+    'create-task',
+    'run-task',
+    'backup-db',
+    'create-api-key',
+    'add-webhook',
+    'refresh-logs',
+    'export-logs',
+    'emergency-shutdown',
+  ]);
 
   /* ═══════════════════════════════════════════════════
      PANEL NAVIGATION
@@ -19,11 +34,62 @@
   const panels = document.querySelectorAll('.op-panel');
   const navItems = document.querySelectorAll('.op-nav-item');
 
+  function stripPlaceholderControls() {
+    navItems.forEach((item) => {
+      if (!SUPPORTED_PANELS.has(item.dataset.panel)) item.remove();
+    });
+
+    panels.forEach((panel) => {
+      if (!SUPPORTED_PANELS.has(panel.dataset.panel)) {
+        panel.remove();
+        return;
+      }
+
+      panel.querySelectorAll('[data-action]').forEach((el) => {
+        if (!DISABLED_OWNER_ACTIONS.has(el.dataset.action)) return;
+        const removable = el.closest('.op-action-row, .op-ph-actions, .op-filter-bar') || el;
+        removable.remove();
+      });
+    });
+
+    document.querySelectorAll('[data-module="economy"]').forEach((btn) => {
+      const row = btn.closest('.op-action-row');
+      if (row) row.remove();
+    });
+
+    document.querySelectorAll('.op-stat').forEach((stat) => {
+      const label = stat.querySelector('.op-stat-label')?.textContent || '';
+      if (/economy/i.test(label)) stat.remove();
+    });
+
+    document.querySelectorAll('.op-table tbody tr').forEach((row) => {
+      if (/EconomyProfiles/i.test(row.textContent || '')) row.remove();
+    });
+
+    const usersPanel = document.querySelector('.op-panel[data-panel="users"]');
+    const usersDesc = usersPanel?.querySelector('.op-ph-desc');
+    if (usersDesc) usersDesc.textContent = 'Search users globally — XP and infractions';
+    const usersEmptyDesc = usersPanel?.querySelector('#userLookupResult .op-empty-desc');
+    if (usersEmptyDesc) usersEmptyDesc.textContent = 'XP and infraction history will appear here';
+    const resetUserDesc = usersPanel
+      ?.querySelector('[data-action="reset-user"]')
+      ?.closest('.op-action-row')
+      ?.querySelector('.op-action-row-desc');
+    if (resetUserDesc) resetUserDesc.textContent = 'Wipe all XP and infractions for a user';
+  }
+
+  function normalizePanelName(name) {
+    return SUPPORTED_PANELS.has(name) ? name : 'overview';
+  }
+
+  stripPlaceholderControls();
+
   function showPanel(name) {
-    panels.forEach(p => p.classList.toggle('op-panel--active', p.dataset.panel === name));
-    navItems.forEach(n => n.classList.toggle('op-nav-item--active', n.dataset.panel === name));
-    window.location.hash = name;
-    if (name === 'servers') fetchServers();
+    const panelName = normalizePanelName(name);
+    panels.forEach(p => p.classList.toggle('op-panel--active', p.dataset.panel === panelName));
+    navItems.forEach(n => n.classList.toggle('op-nav-item--active', n.dataset.panel === panelName));
+    window.location.hash = panelName;
+    if (panelName === 'servers') fetchServers();
   }
 
   navItems.forEach(n => {
@@ -34,7 +100,7 @@
   });
 
   // Hash-based navigation on load
-  const initPanel = (window.location.hash || '').replace('#', '') || 'overview';
+  const initPanel = normalizePanelName((window.location.hash || '').replace('#', '') || 'overview');
   showPanel(initPanel);
 
   /* ═══════════════════════════════════════════════════
@@ -318,8 +384,6 @@
         <div class="op-stat-card"><div class="op-stat-label">Level Servers</div><div class="op-stat-value">${s.levelServers ?? 0}</div></div>
         <div class="op-stat-card"><div class="op-stat-label">Total XP</div><div class="op-stat-value">${(s.totalXp ?? 0).toLocaleString()}</div></div>
         <div class="op-stat-card"><div class="op-stat-label">Avg Level</div><div class="op-stat-value">${s.levelServers ? Math.round((s.totalLevel || 0) / s.levelServers) : 0}</div></div>
-        <div class="op-stat-card"><div class="op-stat-label">Economy Servers</div><div class="op-stat-value">${s.economyServers ?? 0}</div></div>
-        <div class="op-stat-card"><div class="op-stat-label">Net Worth</div><div class="op-stat-value">${(s.totalNetWorth ?? 0).toLocaleString()}</div></div>
         <div class="op-stat-card"><div class="op-stat-label">Mod Cases</div><div class="op-stat-value" style="color:${(s.modCases ?? 0) > 0 ? 'var(--op-warn)' : 'inherit'}">${s.modCases ?? 0}</div></div>
       </div>
       ${d.modCases && d.modCases.length ? `
@@ -435,11 +499,11 @@
         const input = document.getElementById('resetUserInput');
         const uid = input ? input.value.trim() : '';
         if (!uid || !/^\d{17,20}$/.test(uid)) { opToast('Enter a valid Discord user ID', 'error'); return; }
-        if (await opConfirm({ title: 'Reset User Data', desc: `All XP, economy, and infractions for ${uid} will be permanently deleted.`, type: 'danger', btnLabel: 'Reset' })) {
+        if (await opConfirm({ title: 'Reset User Data', desc: `All XP and infractions for ${uid} will be permanently deleted.`, type: 'danger', btnLabel: 'Reset' })) {
           try {
             const r = await apiPost('/api/owner/reset-user', { userId: uid });
             const del = r.deleted || {};
-            opToast(`Deleted ${del.levelProfiles ?? 0} level + ${del.economyProfiles ?? 0} economy records for ${uid}`, 'success');
+            opToast(`Deleted ${del.levelProfiles ?? 0} level profiles for ${uid}`, 'success');
             logAction(`Reset user data: ${uid}`);
             if (input) input.value = '';
           } catch (err) { opToast(err.message, 'error'); }
@@ -552,16 +616,10 @@
     { label: 'Overview', desc: 'System status & quick actions', panel: 'overview' },
     { label: 'Servers', desc: 'All servers the bot is in', panel: 'servers' },
     { label: 'Users', desc: 'User lookup & blacklist', panel: 'users' },
-    { label: 'Commands', desc: 'Global command controls', panel: 'commands' },
-    { label: 'Features', desc: 'Module toggles & defaults', panel: 'features' },
-    { label: 'Automation', desc: 'Scheduled tasks', panel: 'automation' },
-    { label: 'Logs', desc: 'Live log stream', panel: 'logs' },
     { label: 'Database', desc: 'Collection stats & backup', panel: 'database' },
-    { label: 'API', desc: 'API keys & webhooks', panel: 'api' },
     { label: 'Deploy', desc: 'Restart & update controls', panel: 'deploy' },
     { label: 'Security', desc: 'Action log & emergency controls', panel: 'security' },
-    { label: 'Experiments', desc: 'Feature flags', panel: 'experiments' },
-  ];
+  ].filter((item) => SUPPORTED_PANELS.has(item.panel));
 
   const spotlightOverlay = document.getElementById('opSpotlightOverlay');
   const spotlightInput = document.getElementById('opSpotlightInput');
