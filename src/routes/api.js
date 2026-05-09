@@ -449,7 +449,7 @@ router.patch('/guild/:guildId/logging/settings', requireAuth, requireGuildAdmin,
     await LoggingConfig.findOneAndUpdate(
       { guildId },
       { $set: update },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     );
     res.json({ ok: true });
   } catch (err) {
@@ -1952,7 +1952,7 @@ router.get('/guild/:guildId/levels', requireAuth, requireGuildAdmin, async (req,
     const cfg = await LevelConfig.findOneAndUpdate(
       { guildId: req.params.guildId },
       { $setOnInsert: { guildId: req.params.guildId, ...DEFAULT_LEVEL_CONFIG } },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     ).lean();
     res.json(cfg);
   } catch (err) {
@@ -2015,7 +2015,7 @@ router.patch('/guild/:guildId/levels', requireAuth, requireGuildAdmin, async (re
     const doc = await LevelConfig.findOneAndUpdate(
       { guildId },
       { $set: update, $setOnInsert: { guildId, ...setOnInsertDefaults } },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     ).lean();
 
     res.json({ ok: true, config: doc });
@@ -2076,7 +2076,7 @@ router.get('/guild/:guildId/economy', requireAuth, requireGuildAdmin, async (req
     const cfg = await EconomyConfig.findOneAndUpdate(
       { guildId: req.params.guildId },
       { $setOnInsert: { guildId: req.params.guildId } },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     ).lean();
     res.json(cfg);
   } catch (err) {
@@ -2105,7 +2105,7 @@ router.patch('/guild/:guildId/economy', requireAuth, requireGuildAdmin, async (r
     const cfg = await EconomyConfig.findOneAndUpdate(
       { guildId: req.params.guildId },
       { $set: update },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     ).lean();
     res.json(cfg);
   } catch (err) {
@@ -2178,7 +2178,7 @@ router.post('/guild/:guildId/economy/shop', requireAuth, requireGuildAdmin, asyn
     const cfg = await EconomyConfig.findOneAndUpdate(
       { guildId: req.params.guildId },
       { $push: { shop: item } },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     ).lean();
     res.json({ ok: true, shop: cfg.shop });
   } catch (err) {
@@ -2198,7 +2198,7 @@ router.patch('/guild/:guildId/economy/shop/:itemId', requireAuth, requireGuildAd
     const cfg = await EconomyConfig.findOneAndUpdate(
       { guildId: req.params.guildId, 'shop.itemId': req.params.itemId },
       { $set: setFields },
-      { new: true }
+      { returnDocument: 'after' }
     ).lean();
     if (!cfg) return res.status(404).json({ error: 'Item not found' });
     res.json({ ok: true, shop: cfg.shop });
@@ -2214,7 +2214,7 @@ router.delete('/guild/:guildId/economy/shop/:itemId', requireAuth, requireGuildA
     const cfg = await EconomyConfig.findOneAndUpdate(
       { guildId: req.params.guildId },
       { $pull: { shop: { itemId: req.params.itemId } } },
-      { new: true }
+      { returnDocument: 'after' }
     ).lean();
     if (!cfg) return res.status(404).json({ error: 'Config not found' });
     res.json({ ok: true, shop: cfg.shop });
@@ -2234,7 +2234,7 @@ router.get('/guild/:guildId/ai', requireAuth, requireGuildAdmin, async (req, res
     const cfg = await AIConfig.findOneAndUpdate(
       { guildId: req.params.guildId },
       { $setOnInsert: { guildId: req.params.guildId } },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     ).lean();
     res.json(cfg);
   } catch (err) {
@@ -2256,7 +2256,7 @@ router.patch('/guild/:guildId/ai', requireAuth, requireGuildAdmin, async (req, r
     const cfg = await AIConfig.findOneAndUpdate(
       { guildId: req.params.guildId },
       { $set: update },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     ).lean();
     res.json(cfg);
   } catch (err) {
@@ -2328,7 +2328,7 @@ router.patch('/guild/:guildId/custom-commands/:id', requireAuth, requireGuildAdm
     const cmd = await CustomCommand.findOneAndUpdate(
       { _id: req.params.id, guildId: req.params.guildId },
       { $set: update },
-      { new: true }
+      { returnDocument: 'after' }
     ).lean();
     if (!cmd) return res.status(404).json({ error: 'Command not found' });
     res.json(cmd);
@@ -2359,7 +2359,7 @@ router.get('/guild/:guildId/theme', requireAuth, requireGuildAdmin, async (req, 
     const theme = await ThemeConfig.findOneAndUpdate(
       { guildId },
       { $setOnInsert: { guildId } },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
     res.json(theme);
   } catch (err) {
@@ -2380,7 +2380,7 @@ router.patch('/guild/:guildId/theme', requireAuth, requireGuildAdmin, async (req
     const theme = await ThemeConfig.findOneAndUpdate(
       { guildId },
       { $set: update },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
     res.json(theme);
   } catch (err) {
@@ -2395,7 +2395,7 @@ async function getModConfig(guildId) {
   return ModerationConfig.findOneAndUpdate(
     { guildId },
     { $setOnInsert: { guildId } },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
+    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
   ).lean();
 }
 
@@ -2423,7 +2423,7 @@ router.patch('/guild/:guildId/modconfig/full', requireAuth, requireGuildAdmin, a
     const cfg = await ModerationConfig.findOneAndUpdate(
       { guildId },
       { $set: update },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
     res.json(cfg);
   } catch (err) {
@@ -2442,7 +2442,7 @@ router.post('/guild/:guildId/modconfig/reasons', requireAuth, requireGuildAdmin,
     const cfg = await ModerationConfig.findOneAndUpdate(
       { guildId },
       { $push: { predefinedReasons: { aliases: safeAliases, reason: String(reason).trim().slice(0,500) } } },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
     res.json(cfg.predefinedReasons);
   } catch (err) {
@@ -2480,7 +2480,7 @@ router.post('/guild/:guildId/modconfig/appeals/questions', requireAuth, requireG
     const cfg = await ModerationConfig.findOneAndUpdate(
       { guildId },
       { $push: { 'appeals.questions': question } },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
     res.json(cfg.appeals.questions);
   } catch (err) {
@@ -2537,7 +2537,7 @@ router.put('/guild/:guildId/predefined-reasons/:action', requireAuth, requireGui
     const doc = await PredefinedReasons.findOneAndUpdate(
       { guildId, action },
       { $set: { reasons } },
-      { new: true, upsert: true, setDefaultsOnInsert: true }
+      { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
     ).lean();
     res.json({ action, reasons: doc.reasons });
   } catch (err) {
@@ -2618,7 +2618,7 @@ router.patch('/guild/:guildId/cases/:id', requireAuth, requireGuildAdmin, async 
     for (const k of allowed) { if (k in req.body) update[k] = req.body[k]; }
 
     const c = await ModerationCase.findOneAndUpdate(
-      { _id: id, guildId }, { $set: update }, { new: true }
+      { _id: id, guildId }, { $set: update }, { returnDocument: 'after' }
     );
     if (!c) return res.status(404).json({ error: 'Case not found' });
 
@@ -2698,7 +2698,7 @@ router.get('/guild/:guildId/responses', requireAuth, requireGuildAdmin, async (r
     const cfg = await ResponseConfig.findOneAndUpdate(
       { guildId },
       { $setOnInsert: { guildId } },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
     res.json({ ...cfg.toObject(), availableCommands: RESPONSE_COMMANDS });
   } catch (err) {
@@ -2716,7 +2716,7 @@ router.patch('/guild/:guildId/responses', requireAuth, requireGuildAdmin, async 
     const cfg = await ResponseConfig.findOneAndUpdate(
       { guildId },
       { $set: update },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
     res.json(cfg);
   } catch (err) {
@@ -2740,7 +2740,7 @@ router.put('/guild/:guildId/responses/:commandName', requireAuth, requireGuildAd
     const cfg = await ResponseConfig.findOneAndUpdate(
       { guildId },
       { $push: { overrides: { commandName, template } } },
-      { new: true }
+      { returnDocument: 'after' }
     );
     res.json(cfg);
   } catch (err) {
@@ -2756,7 +2756,7 @@ router.delete('/guild/:guildId/responses/:commandName', requireAuth, requireGuil
     const cfg = await ResponseConfig.findOneAndUpdate(
       { guildId },
       { $pull: { overrides: { commandName } } },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!cfg) return res.status(404).json({ error: 'Config not found' });
     res.json(cfg);
@@ -2825,7 +2825,7 @@ router.patch('/guild/:guildId/bot-messages/:type', requireAuth, requireGuildAdmi
     const tmpl = await BotMessageTemplate.findOneAndUpdate(
       { guildId, messageType: type },
       { $set: update },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
     res.json(tmpl);
   } catch (err) {
