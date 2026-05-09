@@ -88,10 +88,10 @@
   /* Z-index */
   --z-base:   1;
   --z-raised: 10;
-  --z-modal:  100;
+  --z-modal:  500;
   --z-nav:    200;
-  --z-toast:  300;
-  --z-savebar:400;
+  --z-savebar:300;
+  --z-toast:  400;
 }
 
 /* ── 2. RESET & BASE ───────────────────────────────────────── */
