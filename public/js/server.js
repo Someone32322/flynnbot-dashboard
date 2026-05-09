@@ -26,7 +26,6 @@
   document.addEventListener('DOMContentLoaded', () => {
     initSectionNav();
     initSectionQuickSearch();
-    initWorkspacePreferences();
     loadCommands();
     bindCategoryTabs();
     bindSearch();
@@ -685,36 +684,6 @@
         item.style.display = !term || text.includes(term) ? '' : 'none';
       });
     });
-  }
-
-  function initWorkspacePreferences() {
-    const compactToggle = document.getElementById('prefCompactMode');
-    const motionToggle = document.getElementById('prefReducedMotion');
-    if (!compactToggle && !motionToggle) return;
-
-    const compactStored = localStorage.getItem('dashboard.compact') === '1';
-    const motionStored = localStorage.getItem('dashboard.reducedMotion') === '1';
-
-    document.body.classList.toggle('dash-compact', compactStored);
-    document.body.classList.toggle('dash-reduced-motion', motionStored);
-
-    if (compactToggle) {
-      compactToggle.checked = compactStored;
-      compactToggle.addEventListener('change', () => {
-        const on = compactToggle.checked;
-        document.body.classList.toggle('dash-compact', on);
-        localStorage.setItem('dashboard.compact', on ? '1' : '0');
-      });
-    }
-
-    if (motionToggle) {
-      motionToggle.checked = motionStored;
-      motionToggle.addEventListener('change', () => {
-        const on = motionToggle.checked;
-        document.body.classList.toggle('dash-reduced-motion', on);
-        localStorage.setItem('dashboard.reducedMotion', on ? '1' : '0');
-      });
-    }
   }
 
   /* ------------------------------------------------------------------ */

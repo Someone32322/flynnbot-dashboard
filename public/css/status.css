@@ -319,35 +319,34 @@
 .status-history-bar {
   display: grid;
   grid-template-columns: repeat(30, minmax(0, 1fr));
-  gap: 5px;
-  align-items: end;
-  height: 46px;
+  gap: 3px;
+  align-items: stretch;
+  height: 44px;
 }
 
 .status-history-segment {
-  border-radius: 999px;
-  transition: transform 0.18s ease, opacity 0.18s ease;
-  opacity: 0.95;
+  border-radius: 4px;
+  transition: transform 0.18s ease, opacity 0.18s ease, filter 0.18s ease;
+  opacity: 0.9;
+  height: 100%;
 }
 
 .status-history-segment.online {
-  background: linear-gradient(180deg, #4ade80, #22c55e);
-  min-height: 40px;
+  background: #22c55e;
 }
 
 .status-history-segment.degraded {
-  background: linear-gradient(180deg, #fbbf24, #f59e0b);
-  min-height: 28px;
+  background: #f59e0b;
 }
 
 .status-history-segment.offline {
-  background: linear-gradient(180deg, #7f8ea0, #556476);
-  min-height: 16px;
+  background: #475569;
 }
 
 .status-history-segment:hover {
   opacity: 1;
-  transform: translateY(-2px);
+  transform: scaleY(1.06);
+  filter: brightness(1.2);
 }
 
 .status-history-meta {

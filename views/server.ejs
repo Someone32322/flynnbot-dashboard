@@ -106,22 +106,6 @@
     <!-- ===== MAIN CONTENT ===== -->
     <main class="dash-main" id="dashMain">
 
-      <header class="dash-command-bar">
-        <div class="dash-command-meta">
-          <div class="dash-command-guild">
-            <% if (iconUrl) { %>
-              <img src="<%= iconUrl %>" alt="<%= guild.name %>" class="dash-command-guild-icon">
-            <% } else { %>
-              <img src="/images/flynn.png" alt="Flynn default icon" class="dash-command-guild-icon">
-            <% } %>
-            <div>
-              <div class="dash-command-label">Active Server</div>
-              <div class="dash-command-name"><%= guild.name %></div>
-            </div>
-          </div>
-        </div>
-      </header>
-
       <!-- ── HOME SECTION ── -->
       <section class="dash-section" id="section-home" data-section="home">
 
@@ -220,28 +204,6 @@
 
         </div>
 
-        <div class="workspace-prefs animate-in">
-          <div class="workspace-prefs-head">
-            <h3>Workspace Preferences</h3>
-            <p>Customize how your dashboard feels without affecting bot behavior.</p>
-          </div>
-          <div class="workspace-prefs-grid">
-            <label class="workspace-pref-item">
-              <input type="checkbox" id="prefCompactMode">
-              <span>
-                <strong>Compact Layout</strong>
-                <small>Fit more controls on screen with tighter spacing.</small>
-              </span>
-            </label>
-            <label class="workspace-pref-item">
-              <input type="checkbox" id="prefReducedMotion">
-              <span>
-                <strong>Reduce Motion</strong>
-                <small>Use minimal animation for distraction-free admin work.</small>
-              </span>
-            </label>
-          </div>
-        </div>
       </section>
 
       <!-- ── APPLICATIONS SECTION ── -->

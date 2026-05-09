@@ -74,10 +74,6 @@
           <span class="status-component-name">📊 Dashboard</span>
           <span class="status-component-label online" id="comp-dashboard">Operational</span>
         </div>
-        <div class="status-component">
-          <span class="status-component-name">🗄️ Database (MongoDB)</span>
-          <span class="status-component-label online" id="comp-db">Operational</span>
-        </div>
       </div>
     </div>
 
@@ -148,8 +144,10 @@ function renderHistory() {
   const bar = document.getElementById('status-history');
   if (!bar) return;
   bar.innerHTML = '';
-  // Pad with offline segments if we have fewer than HISTORY_SIZE entries
-  const padded = Array(Math.max(0, HISTORY_SIZE - history.length)).fill('offline').concat(history);
+  // Pad older slots with the earliest known status (not 'offline') to avoid
+  // showing false outages before monitoring began this session.
+  const padStatus = history[0] || '<%= s.status %>';
+  const padded = Array(Math.max(0, HISTORY_SIZE - history.length)).fill(padStatus).concat(history);
   padded.forEach((s) => {
     const seg = document.createElement('div');
     seg.className = `status-history-segment ${s}`;
@@ -195,13 +193,6 @@ function applyStatus(data) {
   // Component labels
   const botComp = document.getElementById('comp-bot');
   if (botComp) { botComp.textContent = label; botComp.className = `status-component-label ${status}`; }
-
-  const dbComp = document.getElementById('comp-db');
-  if (dbComp) {
-    const dbState = status === 'offline' ? 'degraded' : 'online';
-    dbComp.textContent = status === 'offline' ? 'Reachability Unknown' : 'Operational';
-    dbComp.className = `status-component-label ${dbState}`;
-  }
 
   const dashboardComp = document.getElementById('comp-dashboard');
   if (dashboardComp) {
