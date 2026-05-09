@@ -317,18 +317,18 @@
 }
 
 .status-history-bar {
-  display: grid;
-  grid-template-columns: repeat(30, minmax(0, 1fr));
+  display: flex;
   gap: 3px;
-  align-items: stretch;
   height: 44px;
+  align-items: stretch;
 }
 
 .status-history-segment {
+  flex: 1;
   border-radius: 4px;
-  transition: transform 0.18s ease, opacity 0.18s ease, filter 0.18s ease;
+  height: 44px;
+  transition: opacity 0.18s ease, filter 0.18s ease;
   opacity: 0.9;
-  height: 100%;
 }
 
 .status-history-segment.online {
@@ -345,7 +345,6 @@
 
 .status-history-segment:hover {
   opacity: 1;
-  transform: scaleY(1.06);
   filter: brightness(1.2);
 }
 

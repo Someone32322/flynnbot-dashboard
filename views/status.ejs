@@ -216,7 +216,7 @@ function applyStatus(data) {
 }
 
 // ─── Initial history seed ─────────────────────────────────────
-pushHistory('<%= s.status %>');
+for (let _i = 0; _i < HISTORY_SIZE; _i++) pushHistory('<%= s.status %>');
 renderHistory();
 
 // ─── Polling ─────────────────────────────────────────────────

@@ -2272,17 +2272,17 @@ link[rel~="icon"] {
 
 /* Stats strip */
 .home-stats-strip {
-  border-top: 1px solid var(--card-border);
-  border-bottom: 1px solid var(--card-border);
-  background: rgba(9, 18, 44, 0.6);
+  border-top: 1px solid rgba(59, 130, 246, 0.15);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+  background: rgba(7, 16, 40, 0.7);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  padding: 32px 2rem;
 }
 
 .home-stats-inner {
-  max-width: 1120px;
+  max-width: 900px;
   margin: 0 auto;
-  padding: 28px 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2294,27 +2294,26 @@ link[rel~="icon"] {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 0 48px;
+  gap: 5px;
+  padding: 0 40px;
+  text-align: center;
 }
 
 .home-stat-value {
   font-size: 1.8rem;
   font-weight: 800;
   letter-spacing: -1px;
-  background: linear-gradient(135deg, #fff 30%, #93c5fd 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #f0f4ff;
   line-height: 1;
 }
 
 .home-stat-label {
-  font-size: 0.78rem;
-  color: var(--text-3);
+  font-size: 0.75rem;
+  color: var(--text-2);
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.8px;
+  white-space: nowrap;
 }
 
 .home-stat-divider {
