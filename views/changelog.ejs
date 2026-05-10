@@ -1,27 +1,20 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <%- include('partials/head', { title: 'Changelog' }) %>
-    <link rel="stylesheet" href="/css/changelog.css">
-</head>
+<%- include('partials/head', { title: 'Changelog' }) %>
 <body class="dashboard-body dark-theme">
     <%- include('partials/nav') %>
     
-    <div style="max-width: 1000px; margin: 0 auto; padding: 40px 20px;">
+    <div class="cl-page-wrap">
         <main>
-            <header class="page-header section-enter" style="margin-bottom: 40px; text-align: center;">
-                <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
-                    <div style="background: rgba(88,101,242,0.15); color: #5865f2; width: 60px; height: 60px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 24px;">
-                        <i class="fa-solid fa-list-ul"></i>
-                    </div>
-                    <div>
-                        <h1 style="font-size: 2.5rem; margin-bottom: 8px;">Changelog</h1>
-                        <p style="color: var(--text-3); font-size: 1.1rem;">Latest updates, features and fixes to the dashboard.</p>
-                    </div>
+            <header class="cl-page-header">
+                <div class="cl-header-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="26" height="26"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                </div>
+                <div>
+                    <h1>Changelog</h1>
+                    <p>Latest updates, features and fixes to the dashboard.</p>
                 </div>
             </header>
 
-            <div class="changelog-container section-enter" style="animation-delay: 0.1s;">
+            <div class="changelog-container">
                 <div class="timeline">
                     <% if (changelog && changelog.length > 0) { %>
                         <% changelog.forEach((release) => { %>
@@ -66,7 +59,7 @@
                         <% }) %>
                     <% } else { %>
                         <div class="empty-state">
-                            <i class="fa-solid fa-clipboard-list"></i>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="opacity:.4"><rect x="9" y="2" width="6" height="4" rx="1"/><path d="M17 2h2a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
                             <h3>No changelogs yet.</h3>
                         </div>
                     <% } %>

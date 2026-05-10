@@ -16,8 +16,7 @@ function requireOwner(req, res, next) {
   res.status(403).render('error', { code: 403, message: 'You do not have permission to access this page.' });
 }
 
-// GET /owner/changelog — show editor
-router.get('/owner/changelog', requireAuth, requireOwner, (req, res) => {
+function renderEditor(req, res) {
   let changelogData = { changelog: [] };
   try {
     if (fs.existsSync(changelogFilePath)) {
@@ -32,21 +31,28 @@ router.get('/owner/changelog', requireAuth, requireOwner, (req, res) => {
     saved: req.query.saved === '1',
     parseError: req.query.error === 'invalid_json'
   });
-});
+}
 
-// POST /owner/changelog — save changes
-router.post('/owner/changelog', requireAuth, requireOwner, (req, res) => {
+function saveChangelog(req, res, redirectBase) {
   const { changelogJson } = req.body;
   try {
     const parsed = JSON.parse(changelogJson);
     fs.mkdirSync(path.dirname(changelogFilePath), { recursive: true });
     fs.writeFileSync(changelogFilePath, JSON.stringify(parsed, null, 2), 'utf8');
-    res.redirect('/owner/changelog?saved=1');
+    res.redirect(redirectBase + '?saved=1');
   } catch (e) {
     console.error('Invalid changelog JSON:', e.message);
-    res.redirect('/owner/changelog?error=invalid_json');
+    res.redirect(redirectBase + '?error=invalid_json');
   }
-});
+}
+
+// Primary URL: /changelogeditor
+router.get('/changelogeditor', requireAuth, requireOwner, (req, res) => renderEditor(req, res));
+router.post('/changelogeditor', requireAuth, requireOwner, (req, res) => saveChangelog(req, res, '/changelogeditor'));
+
+// Legacy alias: /owner/changelog
+router.get('/owner/changelog', requireAuth, requireOwner, (req, res) => renderEditor(req, res));
+router.post('/owner/changelog', requireAuth, requireOwner, (req, res) => saveChangelog(req, res, '/owner/changelog'));
 
 module.exports = router;
 
