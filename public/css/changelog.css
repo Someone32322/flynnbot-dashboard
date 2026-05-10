@@ -138,6 +138,9 @@
     letter-spacing: 0.5px;
     margin-bottom: 12px;
     font-weight: 700;
+    /* Override any collision with global classes (e.g. .features from design.css) */
+    padding: 0 !important;
+    max-width: none !important;
 }
 
 .category-title.new,
