@@ -15,6 +15,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const apiRoutes = require('./routes/api');
 const statusRoutes = require('./routes/status');
 const changelogRoutes = require('./routes/changelog');
+const ownerRoutes = require('./routes/owner');
 const { ApplicationForm } = require('./models/ApplicationForm');
 
 const app = express();
@@ -109,6 +110,7 @@ app.use('/api', apiLimiter, apiRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/status', statusRoutes);
 app.use('/changelog', changelogRoutes);
+app.use('/', ownerRoutes);
 
 // Home
 app.get('/', (req, res) => res.render('index'));

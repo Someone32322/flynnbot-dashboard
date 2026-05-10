@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('../partials/head', { title: 'Changelog Editor' }) %>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material-darker.min.css">
+    <style>
+        .CodeMirror {
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            height: 500px;
+            font-family: 'Fira Code', monospace;
+        }
+    </style>
+</head>
+<body class="dashboard-body dark-theme">
+    <%- include('../partials/nav') %>
+    
+    <div class="dashboard-container">
+        <%- include('../partials/sidebar', { active: 'owner' }) %>
+        
+        <main class="main-content">
+            <header class="page-header section-enter">
+                <h1>Changelog Editor</h1>
+            </header>
+
+            <% if (success && success.length > 0) { %>
+                <div class="alert alert-success"><%= success %></div>
+            <% } %>
+            <% if (error && error.length > 0) { %>
+                <div class="alert alert-danger"><%= error %></div>
+            <% } %>
+
+            <form action="/owner/changelog" method="POST">
+                <div class="card">
+                    <textarea id="changelogEditor" name="changelogJson"><%= JSON.stringify(changelogData, null, 2) %></textarea>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 20px;">Save Changelog</button>
+                </div>
+            </form>
+        </main>
+    </div>
+    
+    <%- include('../partials/footer') %>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            CodeMirror.fromTextArea(document.getElementById('changelogEditor'), {
+                lineNumbers: true,
+                theme: 'material-darker',
+                mode: { name: 'javascript', json: true }
+            });
+        });
+    </script>
+</body>
+</html>
