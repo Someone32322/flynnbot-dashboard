@@ -2,7 +2,8 @@
 .cl-page-wrap {
     max-width: 1000px;
     margin: 0 auto;
-    padding: 100px 20px 60px; /* 100px top = 60px nav + 40px breathing room */
+    padding: 0 20px 60px;
+    padding-top: 120px; /* fixed nav = 60px, +60px breathing room */
 }
 
 .cl-page-header {

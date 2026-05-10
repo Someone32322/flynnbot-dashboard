@@ -44,31 +44,12 @@
                 </div>
             </article>
 
-            <!-- Prev / Next navigation -->
-            <nav class="cl-entry-nav" style="max-width: 800px; margin: 32px auto 0; display: flex; justify-content: space-between; gap: 16px;">
-                <% if (older) { %>
-                    <a href="/changelog/<%= older.id %>" class="cl-entry-nav-btn" style="text-align: left;">
-                        <span class="cl-entry-nav-label">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="15 18 9 12 15 6"/></svg>
-                            Older
-                        </span>
-                        <span class="cl-entry-nav-version"><%= older.version %></span>
-                    </a>
-                <% } else { %>
-                    <span></span>
-                <% } %>
-                <% if (newer) { %>
-                    <a href="/changelog/<%= newer.id %>" class="cl-entry-nav-btn" style="text-align: right;">
-                        <span class="cl-entry-nav-label" style="justify-content: flex-end;">
-                            Newer
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="9 18 15 12 9 6"/></svg>
-                        </span>
-                        <span class="cl-entry-nav-version"><%= newer.version %></span>
-                    </a>
-                <% } else { %>
-                    <span></span>
-                <% } %>
-            </nav>
+            <div style="max-width: 800px; margin: 32px auto 0;">
+                <a href="/changelog" class="cl-back-link" style="font-size: 0.9rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+                    Back to Changelog
+                </a>
+            </div>
         </main>
     </div>
 
