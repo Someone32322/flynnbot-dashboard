@@ -1,0 +1,77 @@
+<%- include('partials/head', { title: entry.version + ' — Changelog' }) %>
+<body class="dashboard-body dark-theme">
+    <%- include('partials/nav') %>
+
+    <div class="cl-page-wrap">
+        <main>
+            <a href="/changelog" class="cl-back-link">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+                All Changelogs
+            </a>
+
+            <article class="release-card card" style="max-width: 800px; margin: 0 auto; padding: 36px;">
+                <div class="release-header">
+                    <div class="release-meta">
+                        <h1 class="version-link" style="font-size: 2rem; font-weight: 700; color: var(--text); margin: 0;"><%= entry.version %></h1>
+                        <% if (entry.type === 'major') { %>
+                            <span class="badge major">MAJOR</span>
+                        <% } else if (entry.type === 'minor') { %>
+                            <span class="badge minor">MINOR</span>
+                        <% } else { %>
+                            <span class="badge patch">PATCH</span>
+                        <% } %>
+                        <span class="release-date"><%= entry.releaseDate %></span>
+                    </div>
+                    <h2 class="release-title" style="font-size: 1.4rem; margin-top: 12px;"><%= entry.title %></h2>
+                    <% if (entry.description) { %>
+                        <p class="release-desc" style="margin-top: 8px;"><%= entry.description %></p>
+                    <% } %>
+                </div>
+
+                <div class="release-body">
+                    <% entry.features.forEach((featGroup) => { %>
+                        <div class="feature-group">
+                            <h4 class="category-title <%= featGroup.category.toLowerCase() %>">
+                                <%= featGroup.category %>
+                            </h4>
+                            <ul class="feature-list">
+                                <% featGroup.items.forEach((item) => { %>
+                                    <li><%= item %></li>
+                                <% }) %>
+                            </ul>
+                        </div>
+                    <% }) %>
+                </div>
+            </article>
+
+            <!-- Prev / Next navigation -->
+            <nav class="cl-entry-nav" style="max-width: 800px; margin: 32px auto 0; display: flex; justify-content: space-between; gap: 16px;">
+                <% if (older) { %>
+                    <a href="/changelog/<%= older.id %>" class="cl-entry-nav-btn" style="text-align: left;">
+                        <span class="cl-entry-nav-label">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="15 18 9 12 15 6"/></svg>
+                            Older
+                        </span>
+                        <span class="cl-entry-nav-version"><%= older.version %></span>
+                    </a>
+                <% } else { %>
+                    <span></span>
+                <% } %>
+                <% if (newer) { %>
+                    <a href="/changelog/<%= newer.id %>" class="cl-entry-nav-btn" style="text-align: right;">
+                        <span class="cl-entry-nav-label" style="justify-content: flex-end;">
+                            Newer
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><polyline points="9 18 15 12 9 6"/></svg>
+                        </span>
+                        <span class="cl-entry-nav-version"><%= newer.version %></span>
+                    </a>
+                <% } else { %>
+                    <span></span>
+                <% } %>
+            </nav>
+        </main>
+    </div>
+
+    <%- include('partials/footer') %>
+</body>
+</html>
