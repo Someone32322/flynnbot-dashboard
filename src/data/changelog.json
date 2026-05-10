@@ -1,0 +1,57 @@
+{
+  "changelog": [
+    {
+      "id": "v2.5.0",
+      "version": "2.5.0",
+      "releaseDate": "2026-05-10",
+      "type": "major",
+      "title": "Performance Overhaul & New Settings",
+      "description": "Significant performance improvements across the dashboard and newly updated centralized settings module.",
+      "features": [
+        {
+          "category": "New",
+          "items": [
+            "Complete dashboard layout redesign with a unified system",
+            "Animated toggles and fully resolved states",
+            "Dedicated Changelog page to track updates"
+          ]
+        },
+        {
+          "category": "Improved",
+          "items": [
+            "Card hover states and elevation design",
+            "Toggle switches are now correctly anchored in both disabled and checked states",
+            "Theme colors are far more consistent"
+          ]
+        },
+        {
+          "category": "Fixed",
+          "items": [
+            "Resolved visual shifting bugs for off-state toggle switches",
+            "Fixed padding in `.badge` component to ensure even scaling",
+            "Resolved a few visual z-index conflicts on the header overlay"
+          ]
+        }
+      ],
+      "breaking": false
+    },
+    {
+      "id": "v2.4.1",
+      "version": "2.4.1",
+      "releaseDate": "2026-05-02",
+      "type": "patch",
+      "title": "Minor Adjustments to Animations",
+      "description": "Small animation fixes for the sidebar loading.",
+      "features": [
+        {
+          "category": "Fixed",
+          "items": [
+            "Optimized CSS size and reduced duplications",
+            "Sidebar transition lag fixed by applying uniform timing"
+          ]
+        }
+      ],
+      "breaking": false
+    }
+  ]
+}

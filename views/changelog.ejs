@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('partials/head', { title: 'Changelog' }) %>
+    <link rel="stylesheet" href="/css/changelog.css">
+</head>
+<body class="dashboard-body dark-theme">
+    <%- include('partials/nav') %>
+    
+    <div style="max-width: 1000px; margin: 0 auto; padding: 40px 20px;">
+        <main>
+            <header class="page-header section-enter" style="margin-bottom: 40px; text-align: center;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+                    <div style="background: rgba(88,101,242,0.15); color: #5865f2; width: 60px; height: 60px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 24px;">
+                        <i class="fa-solid fa-list-ul"></i>
+                    </div>
+                    <div>
+                        <h1 style="font-size: 2.5rem; margin-bottom: 8px;">Changelog</h1>
+                        <p style="color: var(--text-3); font-size: 1.1rem;">Latest updates, features and fixes to the dashboard.</p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="changelog-container section-enter" style="animation-delay: 0.1s;">
+                <div class="timeline">
+                    <% if (changelog && changelog.length > 0) { %>
+                        <% changelog.forEach((release) => { %>
+                            <article class="release-card card" id="<%= release.id %>">
+                                <div class="release-header">
+                                    <div class="release-meta">
+                                        <h2>
+                                            <a href="#<%= release.id %>" class="version-link">
+                                                <%= release.version %>
+                                            </a>
+                                        </h2>
+                                        <% if (release.type === 'major') { %>
+                                            <span class="badge major">MAJOR</span>
+                                        <% } else if (release.type === 'minor') { %>
+                                            <span class="badge minor">MINOR</span>
+                                        <% } else { %>
+                                            <span class="badge patch">PATCH</span>
+                                        <% } %>
+                                        <span class="release-date"><%= release.releaseDate %></span>
+                                    </div>
+                                    <h3 class="release-title"><%= release.title %></h3>
+                                    <% if (release.description) { %>
+                                        <p class="release-desc"><%= release.description %></p>
+                                    <% } %>
+                                </div>
+
+                                <div class="release-body">
+                                    <% release.features.forEach((featGroup) => { %>
+                                        <div class="feature-group">
+                                            <h4 class="category-title <%= featGroup.category.toLowerCase() %>">
+                                                <%= featGroup.category %>
+                                            </h4>
+                                            <ul class="feature-list">
+                                                <% featGroup.items.forEach((item) => { %>
+                                                    <li><%= item %></li>
+                                                <% }) %>
+                                            </ul>
+                                        </div>
+                                    <% }) %>
+                                </div>
+                            </article>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="empty-state">
+                            <i class="fa-solid fa-clipboard-list"></i>
+                            <h3>No changelogs yet.</h3>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <%- include('partials/footer') %>
+</body>
+</html>

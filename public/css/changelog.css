@@ -1,0 +1,138 @@
+.changelog-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px 0;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 20px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 2px;
+    height: 100%;
+    background: var(--border);
+    border-radius: 2px;
+}
+
+.release-card {
+    position: relative;
+    margin-bottom: 40px;
+    padding: 30px;
+}
+
+.release-card::before {
+    content: '';
+    position: absolute;
+    top: 30px;
+    left: -25px; /* Pull it to the timeline */
+    width: 12px;
+    height: 12px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 0 4px var(--bg);
+}
+
+.release-header {
+    margin-bottom: 24px;
+}
+
+.release-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.version-link {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    text-decoration: none;
+    transition: color var(--dur-fast) var(--ease);
+}
+
+.version-link:hover {
+    color: var(--accent);
+}
+
+.release-date {
+    font-size: 0.85rem;
+    color: var(--text-3);
+}
+
+.release-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-2);
+    margin-bottom: 8px;
+}
+
+.release-desc {
+    color: var(--text-3);
+    line-height: 1.5;
+}
+
+.feature-group {
+    margin-bottom: 20px;
+}
+
+.category-title {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+
+.category-title.new { color: var(--success); }
+.category-title.improved { color: var(--warning); }
+.category-title.fixed { color: var(--danger); }
+
+.feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.feature-list li {
+    position: relative;
+    padding-left: 20px;
+    margin-bottom: 8px;
+    color: var(--text-2);
+    line-height: 1.5;
+}
+
+.feature-list li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: var(--text-4);
+}
+
+.badge {
+    padding: 4px 8px;
+    border-radius: var(--r-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge.major {
+    background: rgba(235, 69, 158, 0.15);
+    color: #eb459e;
+}
+
+.badge.minor {
+    background: rgba(250, 166, 26, 0.15);
+    color: #faa61a;
+}
+
+.badge.patch {
+    background: rgba(88, 101, 242, 0.15);
+    color: #5865f2;
+}

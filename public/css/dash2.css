@@ -1513,6 +1513,10 @@ textarea:focus {
   opacity: 0.38;
   cursor: not-allowed;
 }
+.toggle-switch input:disabled:checked + .toggle-slider,
+.lv-toggle input:disabled:checked + .lv-toggle-slider {
+  opacity: 0.38;
+}
 .toggle-switch:has(input:disabled),
 .lv-toggle:has(input:disabled) {
   cursor: not-allowed;
