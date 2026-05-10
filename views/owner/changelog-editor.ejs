@@ -137,104 +137,95 @@
   </aside>
 
   <main class="op-main">
-    <div class="op-ph">
-      <div>
-        <h1 class="op-ph-title">Changelog Editor</h1>
-        <p class="op-ph-desc">Edit the public changelog JSON. Changes are reflected at <a href="/changelog" target="_blank" style="color:#6366f1">/changelog</a> immediately.</p>
+    <div class="op-panel op-panel--active">
+      <div class="op-ph">
+        <div>
+          <h1 class="op-ph-title">Changelog Editor</h1>
+          <p class="op-ph-desc">Edit the public changelog JSON. Changes are reflected at <a href="/changelog" target="_blank" style="color:#4f8ef7">/changelog</a> immediately.</p>
+        </div>
+        <div class="op-ph-actions">
+          <a href="/changelog" target="_blank" class="op-btn op-btn--ghost">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            View Public Page
+          </a>
+        </div>
       </div>
-      <div class="op-ph-actions">
-        <a href="/changelog" target="_blank" class="op-btn op-btn--ghost">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          View Public Page
-        </a>
-      </div>
-    </div>
 
-    <div class="cl-editor-wrap">
+      <div class="cl-editor-wrap">
 
-      <% if (saved) { %>
-        <div class="cl-notice cl-notice--success">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Changelog saved successfully. The public page has been updated.
-        </div>
-      <% } %>
+        <% if (saved) { %>
+          <div class="cl-notice cl-notice--success">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            Changelog saved successfully. The public page has been updated.
+          </div>
+        <% } %>
 
-      <% if (parseError) { %>
-        <div class="cl-notice cl-notice--error">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Invalid JSON. Please fix the syntax errors and try again.
-        </div>
-      <% } %>
+        <% if (parseError) { %>
+          <div class="cl-notice cl-notice--error">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Invalid JSON. Please fix the syntax errors and try again.
+          </div>
+        <% } %>
 
-      <form method="POST" action="/owner/changelog" id="changelogForm">
-        <textarea
-          class="cl-textarea"
-          name="changelogJson"
-          id="changelogJson"
-          spellcheck="false"
-          autocomplete="off"
-        ><%= changelogJson %></textarea>
+        <form method="POST" action="/owner/changelog" id="changelogForm">
+          <textarea
+            class="cl-textarea"
+            name="changelogJson"
+            id="changelogJson"
+            spellcheck="false"
+            autocomplete="off"
+          ><%= changelogJson %></textarea>
 
-        <div class="cl-actions" style="margin-top: 12px;">
-          <button type="submit" class="op-btn op-btn--primary">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-            Save Changelog
-          </button>
-          <button type="button" class="op-btn op-btn--ghost" onclick="formatJson()">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-            Format JSON
-          </button>
-          <span class="cl-hint">Ctrl+S to save</span>
-        </div>
-      </form>
+          <div class="cl-actions" style="margin-top: 12px;">
+            <button type="submit" class="op-btn op-btn--primary">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save Changelog
+            </button>
+            <button type="button" class="op-btn op-btn--ghost" id="formatBtn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+              Format JSON
+            </button>
+            <span class="cl-hint">Ctrl+S to save</span>
+          </div>
+        </form>
 
-      <div class="cl-schema">
-        <h4>JSON Schema Reference</h4>
-        <pre>{
+        <div class="cl-schema">
+          <h4>JSON Schema Reference</h4>
+          <pre>{
   "changelog": [
     {
-      "id": "v2.5.0",            // used as anchor: /changelog#v2.5.0
+      "id": "v2.5.0",
       "version": "2.5.0",
       "releaseDate": "2026-05-10",
-      "type": "major",           // "major" | "minor" | "patch"
+      "type": "major",
       "title": "Release title",
-      "description": "Short description shown under title.",
+      "description": "Short summary shown under the title.",
       "features": [
         {
-          "category": "New",     // "New" | "Improved" | "Fixed"
-          "items": [
-            "Feature description here",
-            "Another feature"
-          ]
+          "category": "New",
+          "items": ["Feature description", "Another feature"]
+        },
+        {
+          "category": "Improved",
+          "items": ["Something improved"]
+        },
+        {
+          "category": "Fixed",
+          "items": ["Bug fixed"]
         }
       ],
       "breaking": false
     }
   ]
 }</pre>
+        </div>
+
       </div>
     </div>
   </main>
 </div>
 
-<script>
-  function formatJson() {
-    const ta = document.getElementById('changelogJson');
-    try {
-      const parsed = JSON.parse(ta.value);
-      ta.value = JSON.stringify(parsed, null, 2);
-    } catch (e) {
-      alert('Cannot format: invalid JSON.\n\n' + e.message);
-    }
-  }
-
-  document.addEventListener('keydown', function(e) {
-    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-      e.preventDefault();
-      document.getElementById('changelogForm').submit();
-    }
-  });
-</script>
+<script src="/js/owner-changelog.js"></script>
 </body>
 </html>
 
