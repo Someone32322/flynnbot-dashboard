@@ -132,23 +132,20 @@
     margin-bottom: 20px;
 }
 
-.category-title {
+.cl-cat-title {
     font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 12px;
     font-weight: 700;
-    /* Override any collision with global classes (e.g. .features from design.css) */
-    padding: 0 !important;
-    max-width: none !important;
+    padding: 0;
+    max-width: none;
+    color: var(--text-2);
 }
 
-.category-title.new,
-.category-title--new { color: var(--success); }
-.category-title.improved,
-.category-title--improved { color: var(--warning); }
-.category-title.fixed,
-.category-title--fixed { color: var(--danger); }
+.cl-cat-title--new { color: var(--success); }
+.cl-cat-title--improved { color: var(--warning); }
+.cl-cat-title--fixed { color: var(--danger); }
 
 .feature-list {
     list-style: none;
