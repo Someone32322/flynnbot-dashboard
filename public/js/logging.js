@@ -512,13 +512,18 @@ function renderLogging(guildId) {
       <div class="logging-toolbar-right">
         <label class="logging-bulk-channel-wrap" for="loggingBulkChannel">
           <span>Bulk Channel</span>
-          <select class="logging-channel-select" id="loggingBulkChannel">${bulkChannelOptions}</select>
+          <select class="logging-channel-select" data-cs id="loggingBulkChannel">${bulkChannelOptions}</select>
         </label>
         <button class="btn btn-sm btn-primary" id="loggingBulkApplyBtn" type="button" disabled>Apply to Selected</button>
       </div>
     </div>
     <div class="logging-categories">${categoryHtml}</div>
   `;
+
+  // Initialize all custom selects within the logging container
+  if (typeof window.initAllCustomSelects === 'function') {
+    window.initAllCustomSelects(container);
+  }
 
   const bulkModeBtn = container.querySelector('#loggingBulkModeBtn');
   const selectAllBtn = container.querySelector('#loggingSelectAllBtn');
@@ -563,6 +568,10 @@ function renderLogging(guildId) {
       if (eventSelect) eventSelect.value = channelId || '';
     });
 
+    // Sync custom-select display after programmatic value changes
+    if (typeof window.refreshCustomSelects === 'function') {
+      window.refreshCustomSelects(container);
+    }
     updateBulkSelectionState(container);
     markLoggingDirty();
   });
@@ -603,8 +612,7 @@ function renderEventRow(event) {
       </label>
       <span class="logging-event-label" title="${escapeHtml(event.description || event.name)}">${escapeHtml(event.name)}</span>
       <div class="logging-row-actions">
-        <select class="logging-channel-select" data-event-key="${escapeHtml(event.key)}">${options}</select>
-
+        <select class="logging-channel-select" data-cs data-event-key="${escapeHtml(event.key)}">${options}</select>
       </div>
     </div>
   `;

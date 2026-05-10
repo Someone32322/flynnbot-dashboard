@@ -464,15 +464,11 @@
               </label>
             </div>
           </div>
-          <div class="logging-save-row" style="margin-top:1rem">
-            <button class="btn btn-primary" id="logSettingsSaveBtn">Save Settings</button>
-            <span class="save-status" id="logSettingsSaveStatus"></span>
-          </div>
+          <!-- Save hint — changes are saved via the global save bar -->
+          <p class="logging-settings-hint">Changes are saved using the global save bar that appears at the bottom.</p>
         </div>
-        <div class="logging-save-row" id="loggingSaveRow" style="display:none">
-          <button class="btn btn-primary" id="loggingSaveBtn">Save Logging Config</button>
-          <span class="save-status" id="loggingSaveStatus"></span>
-        </div>
+        <!-- loggingSaveRow kept for JS compatibility (hidden, global save bar used instead) -->
+        <div id="loggingSaveRow" style="display:none" aria-hidden="true"></div>
       </section>
 
       <!-- ── MESSAGE BUILDER SECTION ── -->
