@@ -95,6 +95,10 @@
   <!-- ── UPTIME TIMELINE ── -->
   <div class="status-section">
     <p class="status-section-title">30-Point Uptime Timeline</p>
+    <p style="font-size:0.78rem;color:var(--text-4);margin-bottom:14px">
+      Each bar represents one 15-second polling interval.
+      Hover to see status details.
+    </p>
     <div class="uptime-bar-wrap">
       <div class="uptime-bar-label">
         <span>~7.5 min ago</span>
@@ -102,10 +106,27 @@
       </div>
       <div class="uptime-bar" id="status-history"></div>
     </div>
-    <div style="font-size:0.75rem;color:var(--text-4);margin-top:6px;display:flex;gap:16px;flex-wrap:wrap">
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--green);display:inline-block"></span> Operational</span>
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--yellow);display:inline-block"></span> Degraded</span>
-      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:var(--red);display:inline-block"></span> Outage</span>
+    <div class="uptime-legend">
+      <span class="uptime-legend-item">
+        <span class="uptime-legend-dot" style="background:linear-gradient(180deg,#4ade80,#16a34a)"></span>
+        Operational
+      </span>
+      <span class="uptime-legend-item">
+        <span class="uptime-legend-dot" style="background:linear-gradient(180deg,#fbbf24,#d97706)"></span>
+        Degraded
+      </span>
+      <span class="uptime-legend-item">
+        <span class="uptime-legend-dot" style="background:linear-gradient(180deg,#f87171,#dc2626)"></span>
+        Outage
+      </span>
+      <span class="uptime-legend-item">
+        <span class="uptime-legend-dot" style="background:linear-gradient(180deg,#818cf8,#4f46e5)"></span>
+        Maintenance
+      </span>
+      <span class="uptime-legend-item">
+        <span class="uptime-legend-dot" style="background:rgba(255,255,255,0.08);border:1px dashed rgba(255,255,255,0.2)"></span>
+        No data
+      </span>
     </div>
   </div>
 
@@ -146,7 +167,18 @@ const LABEL_MAP = {
   degraded: 'Degraded Performance',
   offline:  'Service Disruption',
 };
-const SEG_MAP = { online: 'seg-ok', degraded: 'seg-warn', offline: 'seg-bad' };
+const SEG_MAP = {
+  online:      'seg-ok',
+  degraded:    'seg-warn',
+  offline:     'seg-bad',
+  maintenance: 'seg-maintenance',
+};
+const SEG_LABEL = {
+  online:      'Operational',
+  degraded:    'Degraded Performance',
+  offline:     'Outage',
+  maintenance: 'Maintenance',
+};
 
 let lastSuccessfulPollAt = Date.now();
 let staleApplied = false;
@@ -177,12 +209,30 @@ function renderHistory() {
   bar.innerHTML = '';
   const padSt  = history[0] || '<%= s.status %>';
   const padded = Array(Math.max(0, HISTORY_SIZE - history.length)).fill(padSt).concat(history);
-  padded.forEach((st) => {
+  const now = Date.now();
+
+  padded.forEach((st, idx) => {
+    const isReal   = idx >= (HISTORY_SIZE - history.length);
+    const cssClass = SEG_MAP[st] || (isReal ? 'seg-empty' : 'seg-empty');
+    const label    = SEG_LABEL[st] || 'No data';
+
+    // Approximate time offset: each slot = 15s, oldest = idx=0
+    const secsAgo  = (HISTORY_SIZE - 1 - idx) * 15;
+    const timeStr  = secsAgo === 0
+      ? 'Now'
+      : secsAgo < 60
+        ? `${secsAgo}s ago`
+        : `${Math.round(secsAgo / 60)}m ago`;
+
     const seg = document.createElement('div');
-    seg.className = `uptime-seg ${SEG_MAP[st] || 'seg-empty'}`;
-    const tip = document.createElement('span');
+    seg.className = `uptime-seg ${cssClass}`;
+    // Stagger entrance: 8ms per bar
+    seg.style.animationDelay = `${idx * 8}ms`;
+
+    // Tooltip content
+    const tip = document.createElement('div');
     tip.className = 'uptime-tooltip';
-    tip.textContent = LABEL_MAP[st] || 'Unknown';
+    tip.innerHTML = `<div class="tt-status">${label}</div><div class="tt-time">${timeStr}</div>`;
     seg.appendChild(tip);
     bar.appendChild(seg);
   });
