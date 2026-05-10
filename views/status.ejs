@@ -19,7 +19,16 @@
   const csLabel  = labelMap[s.status] || 'Unknown';
 %>
 
-<div class="status-page" id="status-page" data-status="<%= s.status %>">
+<div class="status-page" id="status-page"
+  data-status="<%= s.status %>"
+  data-status-message="<%- encodeURIComponent(s.statusMessage || '') %>"
+  data-latency-ms="<%= s.latencyMs !== null ? s.latencyMs : '' %>"
+  data-uptime-seconds="<%= s.uptimeSeconds !== null ? s.uptimeSeconds : '' %>"
+  data-guild-count="<%= s.guildCount !== null ? s.guildCount : '' %>"
+  data-memory-mb="<%= s.memoryMB !== null ? s.memoryMB : '' %>"
+  data-high-latency="<%= s.highLatency ? 'true' : 'false' %>"
+  data-updated-at="<%= s.updatedAt ? new Date(s.updatedAt).toISOString() : '' %>"
+  data-last-heartbeat="<%= s.lastHeartbeat ? new Date(s.lastHeartbeat).toISOString() : '' %>">
 
   <!-- ── HERO ── -->
   <section class="status-hero">
@@ -149,180 +158,6 @@
 
 <%- include('partials/footer') %>
 
-<script>
-// ── Helpers ───────────────────────────────────────────────────
-function formatUptime(sec) {
-  if (sec === null || sec === undefined) return '—';
-  const d = Math.floor(sec / 86400);
-  const h = Math.floor((sec % 86400) / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  if (d > 0) return `${d}d ${h}h`;
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
-}
-
-const CSS_MAP = { online: 'operational', degraded: 'degraded', offline: 'outage' };
-const LABEL_MAP = {
-  online:   'All Systems Operational',
-  degraded: 'Degraded Performance',
-  offline:  'Service Disruption',
-};
-const SEG_MAP = {
-  online:      'seg-ok',
-  degraded:    'seg-warn',
-  offline:     'seg-bad',
-  maintenance: 'seg-maintenance',
-};
-const SEG_LABEL = {
-  online:      'Operational',
-  degraded:    'Degraded Performance',
-  offline:     'Outage',
-  maintenance: 'Maintenance',
-};
-
-let lastSuccessfulPollAt = Date.now();
-let staleApplied = false;
-let latestStatus = {
-  status: '<%= s.status %>',
-  statusMessage: <%- JSON.stringify(String(s.statusMessage || '')).replace(/</g, '\\u003c').replace(/>/g, '\\u003e') %>,
-  latencyMs:     <%= s.latencyMs     === null ? 'null' : Number(s.latencyMs)     %>,
-  uptimeSeconds: <%= s.uptimeSeconds === null ? 'null' : Number(s.uptimeSeconds) %>,
-  guildCount:    <%= s.guildCount    === null ? 'null' : Number(s.guildCount)    %>,
-  memoryMB:      <%= s.memoryMB      === null ? 'null' : Number(s.memoryMB)      %>,
-  highLatency:   <%= s.highLatency ? 'true' : 'false' %>,
-  updatedAt:     <%= s.updatedAt    ? `'${new Date(s.updatedAt).toISOString()}'`    : 'null' %>,
-  lastHeartbeat: <%= s.lastHeartbeat? `'${new Date(s.lastHeartbeat).toISOString()}'`: 'null' %>,
-};
-
-// ── History ring buffer ────────────────────────────────────────
-const HISTORY_SIZE = 30;
-const history = [];
-
-function pushHistory(st) {
-  history.push(st);
-  if (history.length > HISTORY_SIZE) history.shift();
-}
-
-function renderHistory() {
-  const bar = document.getElementById('status-history');
-  if (!bar) return;
-  bar.innerHTML = '';
-  const padSt  = history[0] || '<%= s.status %>';
-  const padded = Array(Math.max(0, HISTORY_SIZE - history.length)).fill(padSt).concat(history);
-  const now = Date.now();
-
-  padded.forEach((st, idx) => {
-    const isReal   = idx >= (HISTORY_SIZE - history.length);
-    const cssClass = SEG_MAP[st] || (isReal ? 'seg-empty' : 'seg-empty');
-    const label    = SEG_LABEL[st] || 'No data';
-
-    // Approximate time offset: each slot = 15s, oldest = idx=0
-    const secsAgo  = (HISTORY_SIZE - 1 - idx) * 15;
-    const timeStr  = secsAgo === 0
-      ? 'Now'
-      : secsAgo < 60
-        ? `${secsAgo}s ago`
-        : `${Math.round(secsAgo / 60)}m ago`;
-
-    const seg = document.createElement('div');
-    seg.className = `uptime-seg ${cssClass}`;
-    // Stagger entrance: 8ms per bar
-    seg.style.animationDelay = `${idx * 8}ms`;
-
-    // Tooltip content
-    const tip = document.createElement('div');
-    tip.className = 'uptime-tooltip';
-    tip.innerHTML = `<div class="tt-status">${label}</div><div class="tt-time">${timeStr}</div>`;
-    seg.appendChild(tip);
-    bar.appendChild(seg);
-  });
-}
-
-// ── DOM update ─────────────────────────────────────────────────
-function applyStatus(data) {
-  const st     = data.status || 'offline';
-  const cssCls = CSS_MAP[st]   || 'outage';
-  const label  = LABEL_MAP[st] || 'Unknown';
-  latestStatus = { ...latestStatus, ...data, status: st, statusMessage: data.statusMessage || '' };
-
-  // Badge
-  const badgeEl = document.getElementById('status-badge');
-  if (badgeEl) badgeEl.className = `overall-status-badge ${cssCls}`;
-  const labelEl = document.getElementById('status-label');
-  if (labelEl) labelEl.textContent = label;
-
-  // Message
-  const msgEl = document.getElementById('status-message');
-  if (msgEl) msgEl.textContent = data.statusMessage || '';
-
-  // Metrics
-  const isHigh = !!data.highLatency || (typeof data.latencyMs === 'number' && data.latencyMs >= 300);
-  const latEl = document.getElementById('metric-latency');
-  if (latEl) {
-    latEl.innerHTML = data.latencyMs !== null
-      ? `${data.latencyMs}<span style="font-size:1rem;font-weight:600;color:var(--text-3)"> ms</span>`
-      : '—';
-    latEl.className = `metric-value${isHigh ? ' warn' : ''}`;
-  }
-  const uptEl = document.getElementById('metric-uptime');
-  if (uptEl) uptEl.textContent = data.uptimeSeconds !== null ? formatUptime(data.uptimeSeconds) : '—';
-  const gldEl = document.getElementById('metric-guilds');
-  if (gldEl) gldEl.textContent = data.guildCount !== null ? Number(data.guildCount).toLocaleString() : '—';
-  const memEl = document.getElementById('metric-memory');
-  if (memEl) {
-    memEl.innerHTML = data.memoryMB !== null
-      ? `${data.memoryMB}<span style="font-size:1rem;font-weight:600;color:var(--text-3)"> MB</span>`
-      : '—';
-  }
-
-  // Components
-  const botDot = document.getElementById('comp-bot-dot');
-  if (botDot) botDot.className = `component-indicator ci-${cssCls}`;
-  const botComp = document.getElementById('comp-bot');
-  if (botComp) { botComp.textContent = label; botComp.className = `component-status cs-${cssCls}`; }
-  const botLat = document.getElementById('comp-bot-latency');
-  if (botLat) botLat.textContent = data.latencyMs !== null ? `${data.latencyMs} ms` : '—';
-
-  // Timestamps
-  const updEl = document.getElementById('status-last-updated-time');
-  if (updEl && data.updatedAt) updEl.textContent = new Date(data.updatedAt).toUTCString();
-  const hbEl = document.getElementById('status-heartbeat');
-  if (hbEl) hbEl.textContent = data.lastHeartbeat ? new Date(data.lastHeartbeat).toUTCString() : 'No heartbeat yet';
-
-  // Page state
-  const page = document.getElementById('status-page');
-  if (page) page.dataset.status = st;
-
-  pushHistory(st);
-  renderHistory();
-}
-
-// ── Init ───────────────────────────────────────────────────────
-for (let _i = 0; _i < HISTORY_SIZE; _i++) pushHistory('<%= s.status %>');
-renderHistory();
-
-// ── Polling ───────────────────────────────────────────────────
-async function poll() {
-  try {
-    const res = await fetch('/status/api');
-    if (!res.ok) return;
-    const data = await res.json();
-    lastSuccessfulPollAt = Date.now();
-    staleApplied = false;
-    applyStatus(data);
-  } catch (_) { /* silent */ }
-}
-
-setInterval(poll, 15_000);
-setInterval(() => {
-  if (Date.now() - lastSuccessfulPollAt <= 90_000 || staleApplied) return;
-  staleApplied = true;
-  applyStatus({ ...latestStatus, status: 'offline', statusMessage: 'Live telemetry is stale. Waiting for the next heartbeat.' });
-}, 5_000);
-
-// ── Nav scroll effect ──────────────────────────────────────────
-const nav = document.getElementById('nav');
-if (nav) window.addEventListener('scroll', () => { nav.classList.toggle('scrolled', window.scrollY > 10); }, { passive: true });
-</script>
+<script src="/js/status-page.js"></script>
 </body>
 </html>

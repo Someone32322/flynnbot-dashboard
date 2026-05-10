@@ -13,20 +13,6 @@
   let currentLogFilter = 'all';
   let spotlightIdx = -1;
   const SUPPORTED_PANELS = new Set(['overview', 'servers', 'users', 'database', 'deploy', 'security']);
-  const DISABLED_OWNER_ACTIONS = new Set([
-    'maintenance',
-    'sync-commands',
-    'reload-modules',
-    'check-updates',
-    'create-task',
-    'run-task',
-    'backup-db',
-    'create-api-key',
-    'add-webhook',
-    'refresh-logs',
-    'export-logs',
-    'emergency-shutdown',
-  ]);
 
   /* ═══════════════════════════════════════════════════
      PANEL NAVIGATION
@@ -40,42 +26,8 @@
     });
 
     panels.forEach((panel) => {
-      if (!SUPPORTED_PANELS.has(panel.dataset.panel)) {
-        panel.remove();
-        return;
-      }
-
-      panel.querySelectorAll('[data-action]').forEach((el) => {
-        if (!DISABLED_OWNER_ACTIONS.has(el.dataset.action)) return;
-        const removable = el.closest('.op-action-row, .op-ph-actions, .op-filter-bar') || el;
-        removable.remove();
-      });
+      if (!SUPPORTED_PANELS.has(panel.dataset.panel)) panel.remove();
     });
-
-    document.querySelectorAll('[data-module="economy"]').forEach((btn) => {
-      const row = btn.closest('.op-action-row');
-      if (row) row.remove();
-    });
-
-    document.querySelectorAll('.op-stat').forEach((stat) => {
-      const label = stat.querySelector('.op-stat-label')?.textContent || '';
-      if (/economy/i.test(label)) stat.remove();
-    });
-
-    document.querySelectorAll('.op-table tbody tr').forEach((row) => {
-      if (/EconomyProfiles/i.test(row.textContent || '')) row.remove();
-    });
-
-    const usersPanel = document.querySelector('.op-panel[data-panel="users"]');
-    const usersDesc = usersPanel?.querySelector('.op-ph-desc');
-    if (usersDesc) usersDesc.textContent = 'Search users globally — XP and infractions';
-    const usersEmptyDesc = usersPanel?.querySelector('#userLookupResult .op-empty-desc');
-    if (usersEmptyDesc) usersEmptyDesc.textContent = 'XP and infraction history will appear here';
-    const resetUserDesc = usersPanel
-      ?.querySelector('[data-action="reset-user"]')
-      ?.closest('.op-action-row')
-      ?.querySelector('.op-action-row-desc');
-    if (resetUserDesc) resetUserDesc.textContent = 'Wipe all XP and infractions for a user';
   }
 
   function normalizePanelName(name) {
@@ -84,12 +36,15 @@
 
   stripPlaceholderControls();
 
+  let _blacklistLoaded = false;
+
   function showPanel(name) {
     const panelName = normalizePanelName(name);
     panels.forEach(p => p.classList.toggle('op-panel--active', p.dataset.panel === panelName));
     navItems.forEach(n => n.classList.toggle('op-nav-item--active', n.dataset.panel === panelName));
     window.location.hash = panelName;
     if (panelName === 'servers') fetchServers();
+    if (panelName === 'users' && !_blacklistLoaded) { _blacklistLoaded = true; fetchBlacklist(); }
   }
 
   navItems.forEach(n => {
@@ -254,6 +209,15 @@
     return res.json();
   }
 
+  async function apiFetch(path, options = {}) {
+    const res = await fetch(path, options);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return res.json();
+  }
+
   async function apiGet(path) {
     const res = await fetch(path);
     if (!res.ok) {
@@ -407,6 +371,34 @@
   }
 
   /* ═══════════════════════════════════════════════════
+     BLACKLIST
+  ═══════════════════════════════════════════════════ */
+  const blacklistList    = document.getElementById('blacklistList');
+  const blacklistEntries = document.getElementById('blacklistEntries');
+
+  async function fetchBlacklist() {
+    if (!blacklistEntries) return;
+    try {
+      const data = await apiGet('/api/owner/blacklist');
+      const entries = data.entries || [];
+      if (!entries.length) {
+        if (blacklistList) blacklistList.style.display = 'none';
+        return;
+      }
+      if (blacklistList) blacklistList.style.display = '';
+      blacklistEntries.innerHTML = entries.map(e => `
+        <div style="display:flex;gap:0.75rem;align-items:center;padding:0.35rem 0.6rem;background:var(--op-bg-2);border-radius:6px;font-size:0.8rem">
+          <span style="font-family:monospace;flex:1">${escHtml(e.userId)}</span>
+          ${e.reason ? `<span style="color:var(--op-text-3)">${escHtml(e.reason)}</span>` : ''}
+          <span style="color:var(--op-text-3);font-size:0.72rem">${new Date(e.addedAt).toLocaleDateString()}</span>
+          <button class="op-btn op-btn--xs op-btn--ghost" data-action="unblacklist-user" data-user-id="${escHtml(e.userId)}">Remove</button>
+        </div>`).join('');
+    } catch (_) { /* silent fail */ }
+  }
+
+  // Fetch blacklist when users panel is first opened (triggered by showPanel)
+
+  /* ═══════════════════════════════════════════════════
      ACTION HANDLERS
   ═══════════════════════════════════════════════════ */
   async function handleAction(action, el) {
@@ -423,61 +415,37 @@
         }
         break;
 
-      case 'emergency-shutdown':
-        if (await opConfirm({ title: 'Emergency Shutdown', desc: 'This will immediately kill the process with no graceful exit. It cannot be undone until the process is manually restarted.', type: 'danger', btnLabel: 'SHUTDOWN' })) {
-          try {
-            await apiPost('/api/owner/restart');
-            opToast('Shutdown signal sent', 'error');
-            logAction('Emergency shutdown triggered');
-          } catch (err) { opToast(err.message, 'error'); }
-        }
-        break;
-
-      case 'maintenance':
-        // Handled by the toggle's change event via data-action, no-op here
-        opToast('Maintenance mode updated', 'info');
-        logAction('Maintenance mode toggled');
-        break;
-
-      case 'sync-commands':
-        if (await opConfirm({ title: 'Force Sync Commands', desc: 'This will re-register all slash commands with Discord globally. It may take up to 1 hour to propagate.', type: 'warn', btnLabel: 'Sync' })) {
-          opToast('Command sync is managed by the bot process — trigger it there', 'info');
-          logAction('Force sync commands requested (bot-side action)');
-        }
-        break;
-
-      case 'reload-modules':
-        opToast('Module reload is managed by the bot process', 'info');
-        logAction('Hot reload modules requested (bot-side action)');
-        break;
-
       case 'refresh':
+      case 'refresh-stats': {
+        if (el) { el.disabled = true; el.style.opacity = '0.6'; }
+        try {
+          const data = await apiGet('/api/owner/stats');
+          const fmt = (v) => v != null ? Number(v).toLocaleString() : '—';
+          const map = {
+            opStatGuilds:         data.totalGuilds,
+            opStatCases:          data.totalCases,
+            opStatApplications:   data.totalApplications,
+            opStatSubmissions:    data.totalSubmissions,
+            opStatLevelProfiles:  data.totalLevelProfiles,
+            opStatEconomy:        data.totalEconomyProfiles,
+          };
+          Object.entries(map).forEach(([id, val]) => {
+            const statEl = document.getElementById(id);
+            if (statEl) statEl.textContent = fmt(val);
+          });
+          opToast('Stats refreshed', 'success');
+        } catch (err) {
+          opToast(`Refresh failed: ${err.message}`, 'error');
+        } finally {
+          if (el) { el.disabled = false; el.style.opacity = ''; }
+        }
+        break;
+      }
+
       case 'refresh-servers':
         _serversFetched = false;
         fetchServers();
         opToast('Refreshing server list…', 'info');
-        break;
-
-      case 'refresh-logs':
-        opToast('Log view refreshed', 'info');
-        break;
-
-      case 'export-logs': {
-        const lines = Array.from(document.querySelectorAll('.op-log-entry')).map(e => e.textContent.trim()).join('\n');
-        const blob = new Blob([lines || 'No logs captured'], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `logs-${Date.now()}.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
-        opToast('Logs exported', 'success');
-        break;
-      }
-
-      case 'backup-db':
-        opToast('Database backup must be triggered server-side (use mongodump)', 'info');
-        logAction('Database backup requested');
         break;
 
       case 'blacklist-user': {
@@ -490,6 +458,21 @@
             opToast(`User ${uid} blacklisted`, 'success');
             logAction(`Blacklisted user: ${uid}`);
             if (input) input.value = '';
+            fetchBlacklist();
+          } catch (err) { opToast(err.message, 'error'); }
+        }
+        break;
+      }
+
+      case 'unblacklist-user': {
+        const uid = el.dataset.userId;
+        if (!uid) return;
+        if (await opConfirm({ title: 'Remove Blacklist', desc: `User ${uid} will be allowed to use the bot again.`, type: 'warn', btnLabel: 'Remove' })) {
+          try {
+            await apiFetch(`/api/owner/blacklist/${uid}`, { method: 'DELETE' });
+            opToast(`User ${uid} removed from blacklist`, 'success');
+            logAction(`Unblacklisted user: ${uid}`);
+            fetchBlacklist();
           } catch (err) { opToast(err.message, 'error'); }
         }
         break;
@@ -523,32 +506,8 @@
         break;
       }
 
-      case 'run-task': {
-        const task = el.dataset.task || 'unknown';
-        opToast(`Task "${task}" — connect to your task runner to execute`, 'info');
-        logAction(`Manual task run requested: ${task}`);
-        break;
-      }
-
-      case 'create-task':
-        opToast('Task creation is coming soon', 'info');
-        break;
-
-      case 'check-updates':
-        opToast('Checking for updates…', 'info');
-        setTimeout(() => opToast('Bot is up to date', 'success'), 1500);
-        break;
-
-      case 'create-api-key':
-        opToast('API key creation is coming soon', 'info');
-        break;
-
-      case 'add-webhook':
-        opToast('Webhook management is coming soon', 'info');
-        break;
-
       default:
-        opToast(`Action: ${action}`, 'info');
+        opToast('That action is not available in this panel', 'warn');
     }
   }
 
@@ -556,19 +515,8 @@
     const el = e.target.closest('[data-action]');
     if (!el) return;
     const action = el.dataset.action;
-    if (action === 'maintenance') return; // handled by toggle
     handleAction(action, el);
   });
-
-  // Maintenance toggle
-  const maintenanceToggle = document.getElementById('maintenanceToggle');
-  if (maintenanceToggle) {
-    maintenanceToggle.addEventListener('change', () => {
-      const on = maintenanceToggle.checked;
-      opToast(`Maintenance mode ${on ? 'enabled' : 'disabled'}`, on ? 'warn' : 'success');
-      logAction(`Maintenance mode ${on ? 'enabled' : 'disabled'}`);
-    });
-  }
 
   /* ═══════════════════════════════════════════════════
      LOG FILTERS

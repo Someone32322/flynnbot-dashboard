@@ -117,27 +117,27 @@
       <div class="op-stats-grid">
         <div class="op-stat">
           <div class="op-stat-icon" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg></div>
-          <div><div class="op-stat-val"><%= stats.totalGuilds != null ? stats.totalGuilds.toLocaleString() : '—' %></div><div class="op-stat-label">Servers</div><div class="op-stat-sub">Configured</div></div>
+          <div><div class="op-stat-val" id="opStatGuilds"><%= stats.totalGuilds != null ? stats.totalGuilds.toLocaleString() : '—' %></div><div class="op-stat-label">Servers</div><div class="op-stat-sub">Configured</div></div>
         </div>
         <div class="op-stat">
           <div class="op-stat-icon" style="background:linear-gradient(135deg,#ef4444,#b91c1c)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg></div>
-          <div><div class="op-stat-val"><%= stats.totalCases != null ? stats.totalCases.toLocaleString() : '—' %></div><div class="op-stat-label">Mod Cases</div><div class="op-stat-sub">All time</div></div>
+          <div><div class="op-stat-val" id="opStatCases"><%= stats.totalCases != null ? stats.totalCases.toLocaleString() : '—' %></div><div class="op-stat-label">Mod Cases</div><div class="op-stat-sub">All time</div></div>
         </div>
         <div class="op-stat">
           <div class="op-stat-icon" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-          <div><div class="op-stat-val"><%= stats.totalApplications != null ? stats.totalApplications.toLocaleString() : '—' %></div><div class="op-stat-label">App Forms</div><div class="op-stat-sub">Active</div></div>
+          <div><div class="op-stat-val" id="opStatApplications"><%= stats.totalApplications != null ? stats.totalApplications.toLocaleString() : '—' %></div><div class="op-stat-label">App Forms</div><div class="op-stat-sub">Active</div></div>
         </div>
         <div class="op-stat">
           <div class="op-stat-icon" style="background:linear-gradient(135deg,#10b981,#059669)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div>
-          <div><div class="op-stat-val"><%= stats.totalSubmissions != null ? stats.totalSubmissions.toLocaleString() : '—' %></div><div class="op-stat-label">Submissions</div><div class="op-stat-sub">Responses</div></div>
+          <div><div class="op-stat-val" id="opStatSubmissions"><%= stats.totalSubmissions != null ? stats.totalSubmissions.toLocaleString() : '—' %></div><div class="op-stat-label">Submissions</div><div class="op-stat-sub">Responses</div></div>
         </div>
         <div class="op-stat">
           <div class="op-stat-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg></div>
-          <div><div class="op-stat-val"><%= stats.totalLevelProfiles != null ? stats.totalLevelProfiles.toLocaleString() : '—' %></div><div class="op-stat-label">Level Profiles</div><div class="op-stat-sub">XP tracked</div></div>
+          <div><div class="op-stat-val" id="opStatLevelProfiles"><%= stats.totalLevelProfiles != null ? stats.totalLevelProfiles.toLocaleString() : '—' %></div><div class="op-stat-label">Level Profiles</div><div class="op-stat-sub">XP tracked</div></div>
         </div>
         <div class="op-stat">
           <div class="op-stat-icon" style="background:linear-gradient(135deg,#6366f1,#4338ca)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
-          <div><div class="op-stat-val"><%= stats.totalEconomyProfiles != null ? stats.totalEconomyProfiles.toLocaleString() : '—' %></div><div class="op-stat-label">Economy</div><div class="op-stat-sub">Balances</div></div>
+          <div><div class="op-stat-val" id="opStatEconomy"><%= stats.totalEconomyProfiles != null ? stats.totalEconomyProfiles.toLocaleString() : '—' %></div><div class="op-stat-label">Economy</div><div class="op-stat-sub">Balances</div></div>
         </div>
       </div>
 
@@ -170,18 +170,6 @@
         <div class="op-card">
           <div class="op-card-head"><h3 class="op-card-title">Quick Actions</h3></div>
           <div class="op-card-body">
-            <div class="op-action-row">
-              <div class="op-action-row-info"><div class="op-action-row-label">Maintenance Mode</div><div class="op-action-row-desc">Block all commands while enabled</div></div>
-              <div class="op-action-row-ctrl"><label class="op-toggle"><input type="checkbox" id="maintenanceToggle" data-action="maintenance"><span class="op-toggle-track"></span></label></div>
-            </div>
-            <div class="op-action-row">
-              <div class="op-action-row-info"><div class="op-action-row-label">Force Sync Commands</div><div class="op-action-row-desc">Re-register all slash commands globally</div></div>
-              <div class="op-action-row-ctrl"><button class="op-btn op-btn--ghost" data-action="sync-commands"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> Sync</button></div>
-            </div>
-            <div class="op-action-row">
-              <div class="op-action-row-info"><div class="op-action-row-label">Hot Reload Modules</div><div class="op-action-row-desc">Reload commands and events without restart</div></div>
-              <div class="op-action-row-ctrl"><button class="op-btn op-btn--ghost" data-action="reload-modules"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg> Reload</button></div>
-            </div>
             <div class="op-action-row">
               <div class="op-action-row-info"><div class="op-action-row-label">Soft Restart</div><div class="op-action-row-desc">Gracefully restart the bot process</div></div>
               <div class="op-action-row-ctrl"><button class="op-btn op-btn--warning" data-action="restart"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg> Restart</button></div>
@@ -246,6 +234,10 @@
           <div class="op-action-row">
             <div class="op-action-row-info"><div class="op-action-row-label">Global Blacklist</div><div class="op-action-row-desc">Prevent a user from using the bot in all servers</div></div>
             <div class="op-action-row-ctrl"><input type="text" class="op-input" id="blacklistInput" placeholder="User ID" style="width:180px"><button class="op-btn op-btn--danger" data-action="blacklist-user">Blacklist</button></div>
+          </div>
+          <div id="blacklistList" style="margin-top:0.5rem;display:none">
+            <div style="font-size:0.78rem;color:var(--op-text-3);margin-bottom:0.4rem">Blacklisted users</div>
+            <div id="blacklistEntries" style="max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:0.3rem"></div>
           </div>
           <div class="op-action-row">
             <div class="op-action-row-info"><div class="op-action-row-label">Reset User Data</div><div class="op-action-row-desc">Wipe all XP, economy, and infractions for a user</div></div>
@@ -414,9 +406,6 @@
       <div class="op-card">
         <div class="op-card-body">
           <div class="op-action-row"><div class="op-action-row-info"><div class="op-action-row-label">Soft Restart</div><div class="op-action-row-desc">Gracefully restart the bot. Active operations finish first.</div></div><div class="op-action-row-ctrl"><button class="op-btn op-btn--warning" data-action="restart">Restart Bot</button></div></div>
-          <div class="op-action-row"><div class="op-action-row-info"><div class="op-action-row-label">Hot Reload Modules</div><div class="op-action-row-desc">Reload all command and event handlers without a full restart.</div></div><div class="op-action-row-ctrl"><button class="op-btn op-btn--ghost" data-action="reload-modules">Reload</button></div></div>
-          <div class="op-action-row"><div class="op-action-row-info"><div class="op-action-row-label">Force Sync Commands</div><div class="op-action-row-desc">Re-register all slash commands with Discord's API.</div></div><div class="op-action-row-ctrl"><button class="op-btn op-btn--ghost" data-action="sync-commands">Sync</button></div></div>
-          <div class="op-action-row"><div class="op-action-row-info"><div class="op-action-row-label">Check for Updates</div><div class="op-action-row-desc">Check if a newer version is available.</div></div><div class="op-action-row-ctrl"><button class="op-btn op-btn--primary" data-action="check-updates">Check</button></div></div>
         </div>
       </div>
     </div>
@@ -439,10 +428,7 @@
       <div class="op-danger-zone">
         <div class="op-danger-zone-head"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg><span class="op-danger-zone-title">Danger Zone</span></div>
         <div class="op-danger-zone-body">
-          <div class="op-action-row">
-            <div class="op-action-row-info"><div class="op-action-row-label">Emergency Shutdown</div><div class="op-action-row-desc">Immediately terminate the bot process. No graceful shutdown.</div></div>
-            <div class="op-action-row-ctrl"><button class="op-btn op-btn--danger" data-action="emergency-shutdown"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><rect x="9" y="9" width="6" height="6"/></svg> SHUTDOWN</button></div>
-          </div>
+          <div class="op-empty"><div class="op-empty-title">No destructive actions exposed</div><div class="op-empty-desc">Use host-level process controls for emergency operations.</div></div>
         </div>
       </div>
     </div>
@@ -507,10 +493,11 @@
 <!-- Toast container -->
 <div class="op-toast-container" id="opToasts"></div>
 
-<script>
-  window._opStats = <%- JSON.stringify(stats).replace(/</g,'\\u003c').replace(/>/g,'\\u003e') %>;
-  window._opUser  = <%- JSON.stringify({id:user.id,username:user.username}).replace(/</g,'\\u003c').replace(/>/g,'\\u003e') %>;
-</script>
+<div id="op-data"
+  data-stats="<%- encodeURIComponent(JSON.stringify(stats).replace(/</g,'\\u003c').replace(/>/g,'\\u003e')) %>"
+  data-user="<%- encodeURIComponent(JSON.stringify({id:user.id,username:user.username}).replace(/</g,'\\u003c').replace(/>/g,'\\u003e')) %>"
+  style="display:none"></div>
+
 <script src="/js/owner.js?v=20260506"></script>
 </body>
 </html>

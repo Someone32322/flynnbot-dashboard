@@ -273,7 +273,7 @@
 
 .modal {
   position: relative;
-  background: #0b1530;
+  background: var(--bg-2);
   border: 1px solid var(--card-border-h);
   border-radius: var(--radius-xl);
   padding: 32px;

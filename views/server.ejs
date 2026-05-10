@@ -1271,19 +1271,6 @@
   <!-- Mobile sidebar toggle — must appear BEFORE the wiring script -->
   <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar" aria-expanded="false">☰</button>
 
-  <script>
-    // Mobile sidebar toggle (runs after the button is in the DOM)
-    const _sidebarToggle = document.getElementById('sidebarToggle');
-    const _dashSidebar   = document.getElementById('dashSidebar');
-    if (_sidebarToggle && _dashSidebar) {
-      _sidebarToggle.addEventListener('click', () => {
-        const open = _dashSidebar.classList.toggle('open');
-        _sidebarToggle.setAttribute('aria-expanded', open);
-        _sidebarToggle.textContent = open ? '✕' : '☰';
-      });
-    }
-  </script>
-
   <script src="/js/custom-select.js?v=20260427"></script>
   <script src="/js/app.js?v=20260425"></script>
   <script src="/js/server.js?v=20260425"></script>

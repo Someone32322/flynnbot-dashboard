@@ -248,7 +248,7 @@
     var hasContent = content && content.trim();
     var hasEmbed   = embedOn && (author || title || desc || footer || (fields && fields.length));
     var h = '<div class="resp-discord-preview">';
-    h += '<div class="discord-msg-row"><div class="discord-avatar" style="background:var(--accent)">F</div>';
+    h += '<div class="discord-msg-row"><div class="discord-avatar" style="padding:0;overflow:hidden"><img src="/images/flynn.png" alt="FlynnBot" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></div>';
     h += '<div class="discord-msg-body"><div class="discord-username-row">';
     h += '<span class="discord-username">FlynnBot</span><span class="discord-bot-badge">BOT</span>';
     h += '<span class="discord-timestamp">Today at ' + fakeTime() + '</span></div>';

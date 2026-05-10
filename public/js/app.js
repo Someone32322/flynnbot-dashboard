@@ -90,6 +90,22 @@
 })();
 
 /* =============================================
+   MOBILE SIDEBAR TOGGLE
+   ============================================= */
+(function () {
+  document.addEventListener('DOMContentLoaded', function () {
+    const toggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('dashSidebar');
+    if (!toggle || !sidebar) return;
+    toggle.addEventListener('click', function () {
+      const open = sidebar.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open);
+      toggle.textContent = open ? '✕' : '☰';
+    });
+  });
+})();
+
+/* =============================================
    SMOOTH LINK TRANSITIONS
    ============================================= */
 (function () {

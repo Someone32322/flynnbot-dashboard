@@ -21,6 +21,7 @@ const { ModerationConfig } = require('../models/ModerationConfig');
 const { PredefinedReasons } = require('../models/PredefinedReasons');
 const ResponseConfig = require('../models/ResponseConfig');
 const BotMessageTemplate = require('../models/BotMessageTemplate');
+const Blacklist = require('../models/Blacklist');
 const discordApi = require('../lib/discord');
 const { canReviewSingleApplication } = require('../services/applicationAccess');
 
@@ -2937,16 +2938,46 @@ router.get('/owner/user/:userId', requireOwner, async (req, res) => {
   }
 });
 
-// POST /api/owner/blacklist — add user to a simple in-memory blacklist
-// (extend to DB if you have a Blacklist model)
-const _blacklist = new Set();
-router.post('/owner/blacklist', requireOwner, (req, res) => {
-  const { userId } = req.body || {};
+// GET /api/owner/blacklist — list all blacklisted users
+router.get('/owner/blacklist', requireOwner, async (req, res) => {
+  try {
+    const entries = await Blacklist.find().sort({ addedAt: -1 }).lean();
+    res.json({ ok: true, entries });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch blacklist' });
+  }
+});
+
+// POST /api/owner/blacklist — add user to persistent blacklist
+router.post('/owner/blacklist', requireOwner, async (req, res) => {
+  const { userId, reason } = req.body || {};
   if (!userId || !/^\d{17,20}$/.test(userId)) {
     return res.status(400).json({ error: 'Invalid userId' });
   }
-  _blacklist.add(userId);
-  res.json({ ok: true, blacklisted: userId });
+  try {
+    await Blacklist.updateOne(
+      { userId },
+      { $set: { userId, addedBy: req.user?.id || null, reason: reason || null, addedAt: new Date() } },
+      { upsert: true },
+    );
+    res.json({ ok: true, blacklisted: userId });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to save blacklist entry' });
+  }
+});
+
+// DELETE /api/owner/blacklist/:userId — remove user from blacklist
+router.delete('/owner/blacklist/:userId', requireOwner, async (req, res) => {
+  const { userId } = req.params;
+  if (!userId || !/^\d{17,20}$/.test(userId)) {
+    return res.status(400).json({ error: 'Invalid userId' });
+  }
+  try {
+    await Blacklist.deleteOne({ userId });
+    res.json({ ok: true, unblacklisted: userId });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to remove blacklist entry' });
+  }
 });
 
 // POST /api/owner/reset-user — delete all DB records for a user
