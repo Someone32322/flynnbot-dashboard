@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
-const { ensureAuthenticated, ensureIsOwner } = require('../middleware');
+const { ensureAuthenticated, ensureIsOwner } = require('../middleware/auth.js');
 
 const changelogFilePath = path.join(__dirname, '../../data/changelog.json');
 
