@@ -140,9 +140,12 @@
     font-weight: 700;
 }
 
-.category-title.new { color: var(--success); }
-.category-title.improved { color: var(--warning); }
-.category-title.fixed { color: var(--danger); }
+.category-title.new,
+.category-title--new { color: var(--success); }
+.category-title.improved,
+.category-title--improved { color: var(--warning); }
+.category-title.fixed,
+.category-title--fixed { color: var(--danger); }
 
 .feature-list {
     list-style: none;

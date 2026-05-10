@@ -41,7 +41,7 @@
                                 <div class="release-body">
                                     <% release.features.forEach((featGroup) => { %>
                                         <div class="feature-group">
-                                            <h4 class="category-title <%= featGroup.category.toLowerCase() %>">
+                                            <h4 class="category-title category-title--<%= featGroup.category.toLowerCase().replace(/\s+/g, '-') %>">
                                                 <%= featGroup.category %>
                                             </h4>
                                             <ul class="feature-list">
