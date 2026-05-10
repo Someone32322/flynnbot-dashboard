@@ -138,6 +138,8 @@
       bindSaveBar();
     } catch (err) {
       console.error('[leveling] loadAll', err);
+      const el = document.getElementById('home-levels-stats');
+      if (el && el.textContent === 'Loading…') el.textContent = '—';
     }
   }
 
@@ -163,8 +165,23 @@
     }
   }
 
+  // ── Update home card stat ─────────────────────────────────
+  function updateHomeLevelsStats(cfg) {
+    const el = document.getElementById('home-levels-stats');
+    if (!el) return;
+    if (cfg.enabled === false) {
+      el.textContent = 'Disabled';
+    } else {
+      const rewardCount = (cfg.rewards || []).length;
+      el.textContent = rewardCount
+        ? `Enabled · ${rewardCount} role reward${rewardCount !== 1 ? 's' : ''}`
+        : 'Enabled';
+    }
+  }
+
   // ── Apply config to form ──────────────────────────────────
   function applyConfig(cfg) {
+    updateHomeLevelsStats(cfg);
     const enabled = $('lvEnabled');
     if (enabled) {
       enabled.checked = cfg.enabled !== false;

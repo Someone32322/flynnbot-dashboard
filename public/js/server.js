@@ -80,6 +80,11 @@
     } catch (err) {
       document.getElementById('commandsList').innerHTML =
         `<div class="commands-loading" style="color:#f87171">Failed to load commands: ${escHtml(err.message)}</div>`;
+      // Clear "Loading…" on home stats so it doesn't hang forever
+      const cmdStat = document.getElementById('home-cmd-stats');
+      if (cmdStat) cmdStat.textContent = '—';
+      const prefixStat = document.getElementById('home-prefix-stats');
+      if (prefixStat) prefixStat.textContent = '—';
     }
   }
 

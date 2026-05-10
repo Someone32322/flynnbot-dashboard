@@ -10,9 +10,19 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet">
   <!-- Design System v2 -->
   <link rel="stylesheet" href="/css/design.css">
+  <!-- Feature-specific modules (loaded before dash2 so dash2 can override shared classes) -->
+  <link rel="stylesheet" href="/css/applications.css">
+  <link rel="stylesheet" href="/css/commands.css">
+  <link rel="stylesheet" href="/css/builder.css">
+  <link rel="stylesheet" href="/css/reactionroles.css">
+  <link rel="stylesheet" href="/css/leveling.css">
+  <link rel="stylesheet" href="/css/logging.css">
+  <link rel="stylesheet" href="/css/moderation.css">
+  <link rel="stylesheet" href="/css/responses.css">
+  <!-- Main dashboard theme (overrides feature modules for shared classes) -->
   <link rel="stylesheet" href="/css/dash2.css">
   <link rel="stylesheet" href="/css/status2.css">
-  <!-- Feature modules (kept for non-overlapping specifics) -->
+  <!-- Additional feature modules -->
   <link rel="stylesheet" href="/css/custom-select.css">
   <link rel="stylesheet" href="/css/economy.css">
   <script src="/js/branding-config.js?v=20260426"></script>

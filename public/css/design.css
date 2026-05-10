@@ -21,6 +21,19 @@
   --border:        rgba(255, 255, 255, 0.070);
   --border-hover:  rgba(255, 255, 255, 0.140);
   --border-focus:  rgba(88, 101, 242, 0.60);
+  /* Legacy alias used by older feature CSS files */
+  --card-border:   rgba(255, 255, 255, 0.070);
+  --card:          #1c1c34;
+  --card-bg:       rgba(255, 255, 255, 0.040);
+  --card-bg-deep:  #111120;
+  --card-hover:    rgba(255, 255, 255, 0.055);
+  --input-bg:      #111120;
+  --bg:            #05050d;
+  --radius:        10px;
+  --radius-lg:     14px;
+  --radius-xl:     20px;
+  --app-accent:    var(--accent);
+  --status-accent: var(--accent);
 
   /* Primary accent — Discord blurple */
   --accent:        #5865f2;
