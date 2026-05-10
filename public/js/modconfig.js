@@ -709,7 +709,7 @@ function _renderAppeals() {
         <label class="modal-label">APPEAL CHANNEL</label>
         <select id="ap-channelId" class="modal-input" data-cs data-cs-placeholder="No channel selected">
           <option value="">No channel selected</option>
-          ${_guildChannels.filter(c=>c.type===0).map(c=>`<option value="${c.id}"${c.id===ap.channelId?' selected':''}>#${_esc(c.name)}</option>`).join('')}
+          ${_guildChannels.filter(c=>c.type===0||c.type===5).map(c=>`<option value="${c.id}"${c.id===ap.channelId?' selected':''}>#${_esc(c.name)}</option>`).join('')}
         </select>
         <p class="modal-hint">Appeals will be sent to this channel for your moderation team to review.</p>
       </div>
@@ -784,7 +784,7 @@ function _renderUserReports() {
       <div class="modal-field" style="padding:0.5rem 1rem 0.75rem">
         <select id="ur-channelId" class="modal-input" data-cs data-cs-placeholder="No channel selected">
           <option value="">No channel selected</option>
-          ${_guildChannels.filter(c=>c.type===0).map(c=>`<option value="${c.id}"${c.id===ur.reportChannelId?' selected':''}>#${_esc(c.name)}</option>`).join('')}
+          ${_guildChannels.filter(c=>c.type===0||c.type===5).map(c=>`<option value="${c.id}"${c.id===ur.reportChannelId?' selected':''}>#${_esc(c.name)}</option>`).join('')}
         </select>
       </div>
     </div>
@@ -1109,7 +1109,7 @@ function _renderRolePicker(pickerId, placeholder, roles, existing) {
 }
 
 function _renderChannelPicker(pickerId, placeholder, channels, existing) {
-  const available = channels.filter(c => c.type === 0 && !existing.includes(c.id));
+  const available = channels.filter(c => (c.type === 0 || c.type === 5) && !existing.includes(c.id));
   return `<select class="mod-picker-select" id="${pickerId}" data-cs data-cs-placeholder="${placeholder}">
     <option value="">${placeholder}</option>
     ${available.map(c => `<option value="${c.id}">#${_esc(c.name)}</option>`).join('')}

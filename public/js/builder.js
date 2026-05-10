@@ -284,7 +284,7 @@
         fetch(`/api/guild/${guildId}/channels`).then((r) => r.json()),
         fetch(`/api/guild/${guildId}/roles`).then((r) => r.json()),
       ]);
-      guildChannels = Array.isArray(channels) ? channels.filter((c) => c.type === 0) : [];
+      guildChannels = Array.isArray(channels) ? channels.filter((c) => c.type === 0 || c.type === 5) : [];
       guildRoles    = Array.isArray(roles)    ? roles.filter((r) => !r.managed) : [];
       assetsLoaded  = true;
     } catch (e) {

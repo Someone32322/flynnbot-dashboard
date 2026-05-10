@@ -229,7 +229,7 @@
     const wrap = $('lvChannelsSelect');
     if (!wrap) return;
     wrap.innerHTML = '';
-    const textChannels = channels.filter((c) => c.type === 0);
+    const textChannels = channels.filter((c) => c.type === 0 || c.type === 5);
     if (!textChannels.length) {
       wrap.innerHTML = '<span class="lv-hint">No text channels available.</span>';
       return;
@@ -248,7 +248,7 @@
     const sel = $('lvLevelUpChannel');
     if (!sel) return;
     sel.innerHTML = '<option value="">Same channel as message</option>';
-    channels.filter((c) => c.type === 0).forEach((ch) => {
+    channels.filter((c) => c.type === 0 || c.type === 5).forEach((ch) => {
       const opt = document.createElement('option');
       opt.value = ch.id;
       opt.textContent = `#${ch.name}`;
