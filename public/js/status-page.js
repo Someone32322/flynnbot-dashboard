@@ -53,32 +53,64 @@
     lastHeartbeat: attr('lastHeartbeat', null),
   };
 
-  // ── History ring buffer ──────────────────────────────────────
+  // ── Daily history ─────────────────────────────────────────────
   const HISTORY_SIZE = 30;
-  const history = [];
+  let dailyHistory  = []; // 30-slot array: { date, status, note, manual }
+  let todayLiveStatus = latestStatus.status; // updated each poll
 
-  function pushHistory(st) {
-    history.push(st);
-    if (history.length > HISTORY_SIZE) history.shift();
+  function todayStr() {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  // Build a blank 30-slot skeleton (today = slot 29)
+  function buildBlankSlots() {
+    const slots = [];
+    const now = new Date();
+    for (let i = HISTORY_SIZE - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setUTCDate(d.getUTCDate() - i);
+      slots.push({ date: d.toISOString().split('T')[0], status: 'none', note: '', manual: false });
+    }
+    return slots;
+  }
+
+  async function loadHistory() {
+    try {
+      const res = await fetch('/api/status/history');
+      if (!res.ok) return;
+      const data = await res.json();
+      dailyHistory = data.history || buildBlankSlots();
+    } catch (_) {
+      dailyHistory = buildBlankSlots();
+    }
+    renderHistory();
   }
 
   function renderHistory() {
     const bar = document.getElementById('status-history');
     if (!bar) return;
     bar.innerHTML = '';
-    const padSt  = history[0] || latestStatus.status;
-    const padded = Array(Math.max(0, HISTORY_SIZE - history.length)).fill(padSt).concat(history);
 
-    padded.forEach(function (st, idx) {
-      const cssClass = SEG_MAP[st] || 'seg-empty';
-      const label    = SEG_LABEL[st] || 'No data';
+    const today  = todayStr();
+    const slots  = dailyHistory.length === HISTORY_SIZE ? dailyHistory : buildBlankSlots();
 
-      const secsAgo = (HISTORY_SIZE - 1 - idx) * 15;
-      const timeStr = secsAgo === 0
-        ? 'Now'
-        : secsAgo < 60
-          ? secsAgo + 's ago'
-          : Math.round(secsAgo / 60) + 'm ago';
+    // If loaded data doesn't cover all 30 slots, merge
+    if (dailyHistory.length > 0 && dailyHistory.length < HISTORY_SIZE) {
+      const map = {};
+      dailyHistory.forEach(function (s) { map[s.date] = s; });
+      slots.forEach(function (s, i) { if (map[s.date]) slots[i] = map[s.date]; });
+    }
+
+    slots.forEach(function (slot, idx) {
+      const isToday  = slot.date === today;
+      // Today: use live poll status unless an incident was manually set for today
+      const status   = (isToday && !slot.manual) ? todayLiveStatus : (slot.status || 'none');
+      const cssClass = SEG_MAP[status] || 'seg-empty';
+      const label    = SEG_LABEL[status] || 'No data';
+
+      const dateLabel = isToday
+        ? 'Today'
+        : new Date(slot.date + 'T12:00:00Z').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
       const seg = document.createElement('div');
       seg.className = 'uptime-seg ' + cssClass;
@@ -86,7 +118,9 @@
 
       const tip = document.createElement('div');
       tip.className = 'uptime-tooltip';
-      tip.innerHTML = '<div class="tt-status">' + label + '</div><div class="tt-time">' + timeStr + '</div>';
+      tip.innerHTML = '<div class="tt-status">' + label + '</div>'
+        + '<div class="tt-time">' + dateLabel + '</div>'
+        + (slot.note ? '<div class="tt-time" style="margin-top:2px;font-style:italic">' + slot.note + '</div>' : '');
       seg.appendChild(tip);
       bar.appendChild(seg);
     });
@@ -140,13 +174,12 @@
 
     if (pageEl) pageEl.dataset.status = st;
 
-    pushHistory(st);
+    todayLiveStatus = st;
     renderHistory();
   }
 
   // ── Init ────────────────────────────────────────────────────
-  for (var i = 0; i < HISTORY_SIZE; i++) pushHistory(latestStatus.status);
-  renderHistory();
+  loadHistory();
 
   // ── Polling ──────────────────────────────────────────────────
   function poll() {

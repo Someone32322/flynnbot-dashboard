@@ -3020,6 +3020,110 @@ router.post('/owner/reset-module', requireOwner, async (req, res) => {
   }
 });
 
+// ── Status daily history (public) ────────────────────────────
+// GET /api/status/history — last 30 days of daily snapshots
+router.get('/status/history', async (req, res) => {
+  try {
+    const StatusDailySnapshot = require('../models/StatusDailySnapshot');
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+
+    // Build list of the last 30 days (oldest first)
+    const days = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(today);
+      d.setUTCDate(d.getUTCDate() - i);
+      days.push(d);
+    }
+
+    const snapshots = await StatusDailySnapshot.find({
+      date: { $gte: days[0], $lte: days[days.length - 1] },
+    }).lean();
+
+    const snapMap = {};
+    snapshots.forEach((s) => {
+      const key = s.date.toISOString().split('T')[0];
+      snapMap[key] = s;
+    });
+
+    const history = days.map((d) => {
+      const key = d.toISOString().split('T')[0];
+      const snap = snapMap[key];
+      return {
+        date:   key,
+        status: snap ? snap.status : 'none',
+        note:   snap ? (snap.note || '') : '',
+        manual: !!snap,
+      };
+    });
+
+    res.json({ history });
+  } catch (err) {
+    console.error('[Status API] GET /status/history', err);
+    res.status(500).json({ error: 'Failed to load history' });
+  }
+});
+
+// ── Owner incident management ─────────────────────────────────
+// GET /api/owner/incidents — list all logged incidents
+router.get('/owner/incidents', requireOwner, async (req, res) => {
+  try {
+    const StatusDailySnapshot = require('../models/StatusDailySnapshot');
+    const snaps = await StatusDailySnapshot.find().sort({ date: -1 }).limit(60).lean();
+    res.json({
+      incidents: snaps.map((s) => ({
+        date:   s.date.toISOString().split('T')[0],
+        status: s.status,
+        note:   s.note || '',
+        setBy:  s.setBy || '',
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to load incidents' });
+  }
+});
+
+// POST /api/owner/incident — create or update a daily incident
+router.post('/owner/incident', requireOwner, async (req, res) => {
+  try {
+    const { date, status, note } = req.body;
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ error: 'Invalid date. Use YYYY-MM-DD.' });
+    }
+    const validStatuses = ['online', 'degraded', 'offline', 'maintenance'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status value' });
+    }
+    const d = new Date(date + 'T00:00:00.000Z');
+    const StatusDailySnapshot = require('../models/StatusDailySnapshot');
+    const snap = await StatusDailySnapshot.findOneAndUpdate(
+      { date: d },
+      { $set: { status, note: (note || '').slice(0, 200), setBy: req.user.id } },
+      { upsert: true, new: true }
+    );
+    res.json({ ok: true, incident: { date, status: snap.status, note: snap.note } });
+  } catch (err) {
+    console.error('[Owner API] POST /owner/incident', err);
+    res.status(500).json({ error: 'Failed to save incident' });
+  }
+});
+
+// DELETE /api/owner/incident/:date — remove a daily incident record
+router.delete('/owner/incident/:date', requireOwner, async (req, res) => {
+  try {
+    const { date } = req.params;
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ error: 'Invalid date format' });
+    }
+    const d = new Date(date + 'T00:00:00.000Z');
+    const StatusDailySnapshot = require('../models/StatusDailySnapshot');
+    await StatusDailySnapshot.deleteOne({ date: d });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete incident' });
+  }
+});
+
 // POST /api/owner/restart — signal the dashboard process to restart (relies on PM2 / supervisor)
 router.post('/owner/restart', requireOwner, (req, res) => {
   res.json({ ok: true, message: 'Restarting…' });

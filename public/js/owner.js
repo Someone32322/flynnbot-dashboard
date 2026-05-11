@@ -12,7 +12,7 @@
   let uptimeStart = Date.now();
   let currentLogFilter = 'all';
   let spotlightIdx = -1;
-  const SUPPORTED_PANELS = new Set(['overview', 'servers', 'users', 'database', 'deploy', 'security']);
+  const SUPPORTED_PANELS = new Set(['overview', 'servers', 'users', 'database', 'deploy', 'security', 'incidents']);
 
   /* ═══════════════════════════════════════════════════
      PANEL NAVIGATION
@@ -37,6 +37,7 @@
   stripPlaceholderControls();
 
   let _blacklistLoaded = false;
+  let _incidentsLoaded = false;
 
   function showPanel(name) {
     const panelName = normalizePanelName(name);
@@ -45,6 +46,7 @@
     window.location.hash = panelName;
     if (panelName === 'servers') fetchServers();
     if (panelName === 'users' && !_blacklistLoaded) { _blacklistLoaded = true; fetchBlacklist(); }
+    if (panelName === 'incidents' && !_incidentsLoaded) { _incidentsLoaded = true; fetchIncidents(); }
   }
 
   navItems.forEach(n => {
@@ -399,6 +401,80 @@
   // Fetch blacklist when users panel is first opened (triggered by showPanel)
 
   /* ═══════════════════════════════════════════════════
+     INCIDENTS
+  ═══════════════════════════════════════════════════ */
+  const incidentList  = document.getElementById('incidentList');
+  const incidentCount = document.getElementById('incidentCount');
+
+  // Pre-fill date input with today
+  (function () {
+    const dateEl = document.getElementById('incidentDate');
+    if (dateEl) {
+      const today = new Date().toISOString().split('T')[0];
+      dateEl.value = today;
+      dateEl.max   = today;
+    }
+  })();
+
+  const INCIDENT_LABELS = { online: 'Operational', degraded: 'Degraded', offline: 'Outage', maintenance: 'Maintenance' };
+  const INCIDENT_COLORS = { online: 'var(--op-green)', degraded: '#f5a524', offline: 'var(--op-danger)', maintenance: '#818cf8' };
+
+  async function fetchIncidents() {
+    if (!incidentList) return;
+    incidentList.innerHTML = `<div class="op-empty" style="padding:2rem"><div class="op-empty-title">Loading…</div></div>`;
+    try {
+      const data = await apiGet('/api/owner/incidents');
+      renderIncidents(data.incidents || []);
+    } catch (err) {
+      incidentList.innerHTML = `<div class="op-empty" style="padding:2rem"><div class="op-empty-title" style="color:var(--op-danger)">Failed to load</div><div class="op-empty-desc">${escHtml(err.message)}</div></div>`;
+    }
+  }
+
+  function renderIncidents(list) {
+    if (!incidentList) return;
+    if (incidentCount) incidentCount.textContent = list.length ? list.length + ' logged' : '0';
+    if (!list.length) {
+      incidentList.innerHTML = `<div class="op-empty" style="padding:2rem"><div class="op-empty-icon" style="color:var(--op-text-3)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><div class="op-empty-title">No incidents logged</div><div class="op-empty-desc">Use the form above to log a status event for any day</div></div>`;
+      return;
+    }
+    incidentList.innerHTML = `<div class="op-table-wrap" style="border:none;border-radius:0"><table class="op-table"><thead><tr><th>Date</th><th>Type</th><th>Note</th><th>Actions</th></tr></thead><tbody>${
+      list.map(inc => {
+        const color = INCIDENT_COLORS[inc.status] || 'var(--op-text)';
+        const label = INCIDENT_LABELS[inc.status] || inc.status;
+        return `<tr>
+          <td style="font-family:monospace;font-size:0.8rem">${escHtml(inc.date)}</td>
+          <td><span style="font-weight:600;color:${color}">${escHtml(label)}</span></td>
+          <td style="color:var(--op-text-3)">${inc.note ? escHtml(inc.note) : '<span style="opacity:0.4">—</span>'}</td>
+          <td><button class="op-btn op-btn--xs op-btn--ghost" data-action="edit-incident" data-incident-date="${escHtml(inc.date)}" data-incident-status="${escHtml(inc.status)}" data-incident-note="${escHtml(inc.note || '')}">Edit</button>
+          <button class="op-btn op-btn--xs op-btn--danger" data-action="delete-incident" data-incident-date="${escHtml(inc.date)}">Delete</button></td>
+        </tr>`;
+      }).join('')
+    }</tbody></table></div>`;
+  }
+
+  async function saveIncident() {
+    const dateEl   = document.getElementById('incidentDate');
+    const statusEl = document.getElementById('incidentStatus');
+    const noteEl   = document.getElementById('incidentNote');
+    const date     = dateEl ? dateEl.value.trim() : '';
+    const status   = statusEl ? statusEl.value : '';
+    const note     = noteEl ? noteEl.value.trim() : '';
+
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) { opToast('Select a valid date', 'error'); return; }
+    if (!status) { opToast('Select a status type', 'error'); return; }
+
+    try {
+      await apiPost('/api/owner/incident', { date, status, note });
+      opToast(`Incident saved for ${date}`, 'success');
+      logAction(`Logged incident: ${date} → ${INCIDENT_LABELS[status] || status}`);
+      _incidentsLoaded = false;
+      fetchIncidents();
+    } catch (err) {
+      opToast(`Save failed: ${err.message}`, 'error');
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════
      ACTION HANDLERS
   ═══════════════════════════════════════════════════ */
   async function handleAction(action, el) {
@@ -506,6 +582,43 @@
         break;
       }
 
+      case 'save-incident':
+        await saveIncident();
+        break;
+
+      case 'refresh-incidents':
+        _incidentsLoaded = false;
+        fetchIncidents();
+        opToast('Refreshing incidents…', 'info');
+        break;
+
+      case 'edit-incident': {
+        const dateEl   = document.getElementById('incidentDate');
+        const statusEl = document.getElementById('incidentStatus');
+        const noteEl   = document.getElementById('incidentNote');
+        if (dateEl)   dateEl.value   = el.dataset.incidentDate   || '';
+        if (statusEl) statusEl.value = el.dataset.incidentStatus || 'online';
+        if (noteEl)   noteEl.value   = el.dataset.incidentNote   || '';
+        document.getElementById('incidentDate')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        opToast('Fields pre-filled — edit and click Save Incident', 'info');
+        break;
+      }
+
+      case 'delete-incident': {
+        const date = el.dataset.incidentDate;
+        if (!date) return;
+        if (await opConfirm({ title: 'Delete Incident', desc: `Remove the incident record for ${date}? The status page bar will revert to "No data" for that day.`, type: 'danger', btnLabel: 'Delete' })) {
+          try {
+            await apiFetch(`/api/owner/incident/${encodeURIComponent(date)}`, { method: 'DELETE' });
+            opToast(`Incident for ${date} deleted`, 'success');
+            logAction(`Deleted incident: ${date}`);
+            _incidentsLoaded = false;
+            fetchIncidents();
+          } catch (err) { opToast(err.message, 'error'); }
+        }
+        break;
+      }
+
       default:
         opToast('That action is not available in this panel', 'warn');
     }
@@ -567,6 +680,7 @@
     { label: 'Database', desc: 'Collection stats & backup', panel: 'database' },
     { label: 'Deploy', desc: 'Restart & update controls', panel: 'deploy' },
     { label: 'Security', desc: 'Action log & emergency controls', panel: 'security' },
+    { label: 'Incidents', desc: 'Log status incidents for the timeline', panel: 'incidents' },
   ].filter((item) => SUPPORTED_PANELS.has(item.panel));
 
   const spotlightOverlay = document.getElementById('opSpotlightOverlay');
