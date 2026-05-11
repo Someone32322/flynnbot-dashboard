@@ -43,6 +43,12 @@ const welcomeConfigSchema = new mongoose.Schema({
       default: () => ({ color: '#ef4444' }),
     },
   },
+  // Pending test-send — bot picks this up, sends a test message, then clears it
+  testSend: {
+    pending: { type: Boolean, default: false },
+    type: { type: String, enum: ['welcome', 'goodbye'], default: 'welcome' },
+    channelId: { type: String, default: null },
+  },
 }, { timestamps: true });
 
 const WelcomeConfig = mongoose.models.WelcomeConfig

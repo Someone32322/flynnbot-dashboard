@@ -206,3 +206,84 @@
     width: 100%;
   }
 }
+
+/* ── Welcome / Goodbye two-column layout ──────────────────────────────────── */
+
+.welcome-pane-grid {
+  display: grid;
+  grid-template-columns: 1fr minmax(250px, 300px);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.welcome-pane-form { display: flex; flex-direction: column; }
+
+/* Discord preview wrapper */
+.welcome-dc-preview {
+  position: sticky;
+  top: 1rem;
+  background: #1e1f22;
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  font-family: 'gg sans', 'Noto Sans', Arial, sans-serif;
+}
+
+.welcome-preview-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #b5bac1;
+  margin-bottom: 0.85rem;
+}
+
+/* Test send row */
+.welcome-test-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  flex-wrap: wrap;
+}
+
+.welcome-test-row select {
+  flex: 1;
+  min-width: 130px;
+  padding: 0.35rem 0.5rem;
+  background: #2b2d31;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 5px;
+  color: #dbdee1;
+  font-size: 0.78rem;
+}
+
+.welcome-test-status {
+  font-size: 0.75rem;
+  margin-top: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 5px;
+  display: none;
+  width: 100%;
+}
+
+.welcome-test-status.success {
+  display: block;
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.welcome-test-status.error {
+  display: block;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+@media (max-width: 900px) {
+  .welcome-pane-grid { grid-template-columns: 1fr; }
+  .welcome-dc-preview { position: static; }
+}
+

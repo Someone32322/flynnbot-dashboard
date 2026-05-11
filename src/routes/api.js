@@ -3103,7 +3103,7 @@ router.post('/owner/incident', requireOwner, async (req, res) => {
     const snap = await StatusDailySnapshot.findOneAndUpdate(
       { date: d },
       { $set: { status, note: (note || '').slice(0, 200), setBy: req.user.id } },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
     res.json({ ok: true, incident: { date, status: snap.status, note: snap.note } });
   } catch (err) {
@@ -3194,7 +3194,7 @@ router.post('/guild/:guildId/automod', requireAuth, requireGuildAdmin, async (re
     const config = await AutoModConfig.findOneAndUpdate(
       { guildId },
       { $set: update },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
     );
     res.json({ ok: true, config });
   } catch (err) {
@@ -3229,7 +3229,7 @@ router.post('/guild/:guildId/welcome', requireAuth, requireGuildAdmin, async (re
     const config = await WelcomeConfig.findOneAndUpdate(
       { guildId },
       { $set: update },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
     );
     res.json({ ok: true, config });
   } catch (err) {
@@ -3264,7 +3264,7 @@ router.post('/guild/:guildId/tickets/config', requireAuth, requireGuildAdmin, as
     const config = await TicketConfig.findOneAndUpdate(
       { guildId },
       { $set: update },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
     );
     res.json({ ok: true, config });
   } catch (err) {
@@ -3302,13 +3302,54 @@ router.post('/guild/:guildId/tickets/:ticketId/close', requireAuth, requireGuild
     const ticket = await Ticket.findOneAndUpdate(
       { ticketId, guildId, status: 'open' },
       { status: 'closed', closedBy: req.user.id, closedAt: new Date(), closeReason: req.body.reason || '' },
-      { new: true },
+      { returnDocument: 'after' },
     );
     if (!ticket) return res.status(404).json({ error: 'Ticket not found or already closed' });
     res.json({ ok: true, ticket });
   } catch (err) {
     console.error('[API] POST /tickets/:id/close', err);
     res.status(500).json({ error: 'Failed to close ticket' });
+  }
+});
+
+// Deploy a ticket panel to Discord (marks panel pendingDeploy; bot scheduler picks it up)
+router.post('/guild/:guildId/tickets/panels/:panelId/deploy', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId, panelId } = req.params;
+  try {
+    const config = await TicketConfig.findOne({ guildId });
+    if (!config) return res.status(404).json({ error: 'No ticket config found' });
+    const panel = config.panels.find((p) => p.panelId === panelId);
+    if (!panel) return res.status(404).json({ error: 'Panel not found' });
+    if (!panel.channelId) return res.status(400).json({ error: 'Panel has no channel set — save the config first' });
+    panel.pendingDeploy = true;
+    await config.save();
+    res.json({ ok: true, message: 'Panel queued for deployment. It will appear in Discord within 30 seconds.' });
+  } catch (err) {
+    console.error('[API] POST /tickets/panels/:id/deploy', err);
+    res.status(500).json({ error: 'Failed to queue panel deploy' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WELCOME TEST SEND
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Queue a test send of the welcome or goodbye message to a given channel
+router.post('/guild/:guildId/welcome/test', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  const { type, channelId } = req.body;
+  if (!['welcome', 'goodbye'].includes(type)) return res.status(400).json({ error: 'Invalid type' });
+  if (!channelId) return res.status(400).json({ error: 'channelId required' });
+  try {
+    await WelcomeConfig.findOneAndUpdate(
+      { guildId },
+      { $set: { testSend: { pending: true, type, channelId } } },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
+    );
+    res.json({ ok: true, message: 'Test message queued. It will appear in Discord within 30 seconds.' });
+  } catch (err) {
+    console.error('[API] POST /welcome/test', err);
+    res.status(500).json({ error: 'Failed to queue test send' });
   }
 });
 

@@ -80,6 +80,86 @@
     }).join('');
   }
 
+  const SAMPLE_VARS = { '{user}': '@Alex', '{tag}': 'Alex#0001', '{username}': 'Alex', '{server}': 'My Server', '{count}': '1,234', '{id}': '123456789012345678', '{accountAge}': '30 days' };
+
+  function applyVars(text) {
+    if (!text) return '';
+    return String(text).replace(/\{user\}|\{tag\}|\{username\}|\{server\}|\{count\}|\{id\}|\{accountAge\}/g, (m) => SAMPLE_VARS[m] || m);
+  }
+
+  function buildWelcomePreview(cfg, type) {
+    const isW = type === 'welcome';
+    const label = isW ? 'Welcome Preview' : 'Goodbye Preview';
+    if (!cfg.enabled) {
+      return `<div class="welcome-preview-label">${label}</div><div style="font-size:.8rem;color:#b5bac1;text-align:center;padding:1.5rem 0">Enable ${isW ? 'welcome' : 'goodbye'} messages to see a preview</div>`;
+    }
+    const ch = _channels.find((c) => c.id === cfg.channelId);
+    const chLabel = ch ? `#${esc(ch.name)}` : '<span style="color:#f87171">No channel set</span>';
+    const now = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    let msgContent;
+    if (cfg.embedEnabled) {
+      const color = cfg.embed?.color || (isW ? '#5865f2' : '#ef4444');
+      const title = esc(applyVars(cfg.embed?.title || (isW ? 'Welcome to {server}!' : '{tag} left')));
+      const desc = esc(applyVars(cfg.embed?.description || (isW ? 'Hey {user}! You are member #{count}.' : '**{tag}** has left the server.')));
+      const footer = cfg.embed?.footer ? esc(applyVars(cfg.embed.footer)) : '';
+      msgContent = `<div class="dc-embed" style="border-left-color:${color}"><div class="dc-embed-title">${title}</div>${desc ? `<div class="dc-embed-desc">${desc}</div>` : ''}${footer ? `<div class="dc-embed-footer">${footer}</div>` : ''}</div>`;
+    } else {
+      const raw = applyVars(cfg.message || (isW ? 'Welcome @Alex to **My Server**!' : '**Alex#0001** has left the server.'));
+      msgContent = `<div class="dc-text">${esc(raw)}</div>`;
+    }
+    return `<div class="welcome-preview-label">${label}</div><div style="font-size:.72rem;color:#b5bac1;margin-bottom:.7rem">Posts in: ${chLabel}</div><div class="dc-msg"><div class="dc-avatar">F</div><div class="dc-msg-content"><div class="dc-msg-header"><span class="dc-msg-name">FlynnBot</span><span class="dc-msg-bot-badge">APP</span><span class="dc-msg-time">${now}</span></div>${msgContent}</div></div>`;
+  }
+
+  function refreshWelcomePreview(type) {
+    const mockEl = document.getElementById(type === 'welcome' ? 'welcome-preview-mock' : 'goodbye-preview-mock');
+    if (!mockEl) return;
+    const v = (id) => document.getElementById(id);
+    const val = (id, def = '') => v(id)?.value ?? def;
+    const chk = (id) => v(id)?.checked ?? false;
+    const cfg = type === 'welcome' ? {
+      enabled: chk('welcome-enabled'),
+      channelId: val('welcome-channel') || null,
+      embedEnabled: chk('welcome-embed-toggle'),
+      message: val('welcome-message'),
+      embed: { color: val('welcome-embed-color', '#5865f2'), title: val('welcome-embed-title'), description: val('welcome-embed-desc'), footer: val('welcome-embed-footer') },
+    } : {
+      enabled: chk('goodbye-enabled'),
+      channelId: val('goodbye-channel') || null,
+      embedEnabled: chk('goodbye-embed-toggle'),
+      message: val('goodbye-message'),
+      embed: { color: val('goodbye-embed-color', '#ef4444'), title: val('goodbye-embed-title'), description: val('goodbye-embed-desc'), footer: val('goodbye-embed-footer') },
+    };
+    mockEl.innerHTML = buildWelcomePreview(cfg, type);
+  }
+
+  async function sendWelcomeTest(type, btn) {
+    const pfx = type === 'welcome' ? 'welcome' : 'goodbye';
+    const channelId = document.getElementById(`${pfx}-test-channel`)?.value;
+    const statusEl = document.getElementById(`${pfx}-test-status`);
+    if (!channelId) {
+      if (statusEl) { statusEl.className = 'welcome-test-status error'; statusEl.textContent = 'Select a channel first'; }
+      return;
+    }
+    const origHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    try {
+      const res = await fetch(`/api/guild/${_guildId}/welcome/test`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, channelId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Send failed');
+      if (statusEl) { statusEl.className = 'welcome-test-status success'; statusEl.textContent = data.message || 'Queued — message will appear in Discord within 30 s.'; }
+    } catch (err) {
+      if (statusEl) { statusEl.className = 'welcome-test-status error'; statusEl.textContent = err.message || 'Send failed'; }
+    } finally {
+      btn.innerHTML = origHTML;
+      btn.disabled = false;
+    }
+  }
+
   function buildHTML() {
     const w = _config.welcome || {};
     const g = _config.goodbye || {};
@@ -92,6 +172,8 @@
 
       <!-- WELCOME PANE -->
       <div class="welcome-pane ${_activeTab === 'welcome' ? 'active' : ''}" id="welcome-pane-welcome">
+        <div class="welcome-pane-grid">
+        <div>
         <div class="welcome-card">
           <div class="welcome-row">
             <div class="welcome-row-info">
@@ -206,10 +288,25 @@
             </div>
           </div>
         </div>
+        </div><!-- /form column -->
+        <div class="welcome-dc-preview">
+          <div id="welcome-preview-mock">${buildWelcomePreview(w, 'welcome')}</div>
+          <div style="margin-top:1rem;border-top:1px solid #3a3c43;padding-top:.75rem">
+            <div class="welcome-preview-label" style="margin-bottom:.5rem">Test message</div>
+            <div class="welcome-test-row">
+              <select id="welcome-test-channel">${channelOptions(w.channelId)}</select>
+              <button class="btn btn-sm btn-outline" id="welcome-test-send" data-type="welcome">Send test</button>
+            </div>
+            <div class="welcome-test-status" id="welcome-test-status"></div>
+          </div>
+        </div>
+        </div><!-- /welcome-pane-grid -->
       </div>
 
       <!-- GOODBYE PANE -->
       <div class="welcome-pane ${_activeTab === 'goodbye' ? 'active' : ''}" id="welcome-pane-goodbye">
+        <div class="welcome-pane-grid">
+        <div>
         <div class="welcome-card">
           <div class="welcome-row">
             <div class="welcome-row-info">
@@ -259,6 +356,19 @@
             ${toggle('goodbye-embed-thumbnail', g.embed?.thumbnail !== false)}
           </div>
         </div>
+        </div><!-- /form column -->
+        <div class="welcome-dc-preview">
+          <div id="goodbye-preview-mock">${buildWelcomePreview(g, 'goodbye')}</div>
+          <div style="margin-top:1rem;border-top:1px solid #3a3c43;padding-top:.75rem">
+            <div class="welcome-preview-label" style="margin-bottom:.5rem">Test message</div>
+            <div class="welcome-test-row">
+              <select id="goodbye-test-channel">${channelOptions(g.channelId)}</select>
+              <button class="btn btn-sm btn-outline" id="goodbye-test-send" data-type="goodbye">Send test</button>
+            </div>
+            <div class="welcome-test-status" id="goodbye-test-status"></div>
+          </div>
+        </div>
+        </div><!-- /goodbye-pane-grid -->
       </div>`;
   }
 
@@ -298,9 +408,14 @@
       window.SaveBar?.markDirty();
     });
 
-    // Variable chips (insert into focused textarea)
+    // Variable chips (insert into focused textarea + refresh preview)
     root.addEventListener('click', (e) => {
       const chip = e.target.closest('.welcome-var-chip');
+      const testBtn = e.target.closest('#welcome-test-send, #goodbye-test-send');
+      if (testBtn) {
+        sendWelcomeTest(testBtn.dataset.type, testBtn);
+        return;
+      }
       if (!chip) return;
       const active = document.activeElement;
       if (active && active.tagName === 'TEXTAREA') {
@@ -309,6 +424,7 @@
         active.value = active.value.slice(0, start) + chip.dataset.var + active.value.slice(end);
         active.selectionStart = active.selectionEnd = start + chip.dataset.var.length;
         active.focus();
+        refreshWelcomePreview(_activeTab);
         window.SaveBar?.markDirty();
       }
     });
@@ -346,9 +462,15 @@
       window.SaveBar?.markDirty();
     });
 
-    // Generic changes
-    root.addEventListener('change', () => window.SaveBar?.markDirty());
-    root.addEventListener('input', () => window.SaveBar?.markDirty());
+    // Generic changes + live preview
+    root.addEventListener('change', () => {
+      refreshWelcomePreview(_activeTab);
+      window.SaveBar?.markDirty();
+    });
+    root.addEventListener('input', () => {
+      refreshWelcomePreview(_activeTab);
+      window.SaveBar?.markDirty();
+    });
   }
 
   function v(id) { return document.getElementById(id); }

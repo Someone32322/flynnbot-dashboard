@@ -80,70 +80,155 @@
     </select>`;
   }
 
-  function buildPanelCard(panel, idx) {
+  const BTN_COLORS = { primary: '#5865f2', secondary: '#4e5058', success: '#248046', danger: '#da373c' };
+
+  function buildPanelPreview(panel) {
+    const color = panel.embedColor || '#5865f2';
+    const title = esc(panel.name || 'Panel Name');
+    const desc = esc(panel.description || 'Click a button below to open a support ticket.');
+    const btns = (panel.buttons || []).map((btn) => {
+      const bg = BTN_COLORS[btn.style] || BTN_COLORS.primary;
+      const emoji = btn.emoji ? `<span style="font-size:.85em;margin-right:4px">${btn.emoji}</span>` : '';
+      return `<span class="dc-btn" style="background:${bg}">${emoji}${esc(btn.label || 'Open Ticket')}</span>`;
+    }).join('');
+    const ch = _channels.find((c) => c.id === panel.channelId);
+    const chLabel = ch ? `#${esc(ch.name)}` : '<span style="color:#f87171">No channel selected</span>';
+    const now = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     return `
-      <div class="tickets-panel-card" data-panel-idx="${idx}">
+      <div class="dc-preview-label">Discord Preview</div>
+      <div style="font-size:.72rem;color:#b5bac1;margin-bottom:.7rem">Posts in: ${chLabel}</div>
+      <div class="dc-msg">
+        <div class="dc-avatar">F</div>
+        <div class="dc-msg-content">
+          <div class="dc-msg-header">
+            <span class="dc-msg-name">FlynnBot</span>
+            <span class="dc-msg-bot-badge">APP</span>
+            <span class="dc-msg-time">${now}</span>
+          </div>
+          <div class="dc-embed" style="border-left-color:${color}">
+            <div class="dc-embed-title">${title}</div>
+            ${desc ? `<div class="dc-embed-desc">${desc}</div>` : ''}
+          </div>
+          ${btns ? `<div class="dc-btns">${btns}</div>` : ''}
+        </div>
+      </div>`;
+  }
+
+  function refreshPanelPreview(card, idx) {
+    const get = (f) => card.querySelector(`[data-field="${f}"]`)?.value ?? '';
+    const buttons = [];
+    card.querySelectorAll('.button-row').forEach((row) => {
+      buttons.push({
+        label: row.querySelector('[data-btn-field="label"]')?.value || 'Open Ticket',
+        emoji: row.querySelector('[data-btn-field="emoji"]')?.value || '',
+        style: row.querySelector('[data-btn-field="style"]')?.value || 'primary',
+      });
+    });
+    const panel = { name: get('name'), description: get('description'), channelId: get('channelId'), embedColor: get('embedColor'), buttons };
+    const previewEl = document.getElementById(`panel-preview-${idx}`);
+    if (!previewEl) return;
+    const oldStatus = document.getElementById(`panel-deploy-status-${idx}`)?.outerHTML || `<div class="dc-deploy-status" id="panel-deploy-status-${idx}"></div>`;
+    previewEl.innerHTML = buildPanelPreview(panel) + oldStatus;
+    const colorVal = card.querySelector('.tickets-color-val');
+    if (colorVal) colorVal.textContent = panel.embedColor;
+  }
+
+  function buildPanelCard(panel, idx) {
+    const embedColor = panel.embedColor || '#5865f2';
+    return `
+      <div class="tickets-panel-card" data-panel-idx="${idx}" data-panelid="${panel.panelId}">
         <div class="tickets-panel-card-header">
           <div class="tickets-panel-card-name">${esc(panel.name || 'Unnamed Panel')}</div>
           <div class="tickets-panel-card-actions">
-            <button class="btn btn-sm btn-outline" data-action="deploy-panel" data-panel-id="${panel.panelId}" title="Deploy panel to Discord">↑ Deploy</button>
+            <button class="btn btn-sm btn-outline" data-action="deploy-panel" data-panel-idx="${idx}" title="Save &amp; deploy panel to Discord">↑ Deploy to Discord</button>
             <button class="btn btn-sm btn-danger" data-action="delete-panel" data-panel-idx="${idx}" title="Delete panel">×</button>
           </div>
         </div>
-        <div class="tickets-panel-card-body">
-          <div class="tickets-panel-row">
-            <div class="tickets-panel-row-label">Panel name</div>
-            <div class="tickets-panel-row-value"><input type="text" data-field="name" value="${esc(panel.name)}" maxlength="80" /></div>
-          </div>
-          <div class="tickets-panel-row">
-            <div class="tickets-panel-row-label">Description</div>
-            <div class="tickets-panel-row-value"><textarea data-field="description" rows="2">${esc(panel.description)}</textarea></div>
-          </div>
-          <div class="tickets-panel-row">
-            <div class="tickets-panel-row-label">Panel channel</div>
-            <div class="tickets-panel-row-value"><select data-field="channelId">${channelOptions(panel.channelId)}</select></div>
-          </div>
-          <div class="tickets-panel-row">
-            <div class="tickets-panel-row-label">Ticket category</div>
-            <div class="tickets-panel-row-value"><select data-field="categoryId">${channelOptions(panel.categoryId, true)}</select></div>
-          </div>
-          <div class="tickets-panel-row">
-            <div class="tickets-panel-row-label">Support roles</div>
-            <div class="tickets-panel-row-value">${roleMultiSelect(`panel-support-${idx}`, panel.supportRoles)}</div>
-          </div>
-          <div class="tickets-panel-row">
-            <div class="tickets-panel-row-label">Channel name format</div>
-            <div class="tickets-panel-row-value"><input type="text" data-field="ticketNameFormat" value="${esc(panel.ticketNameFormat || 'ticket-{username}')}" maxlength="80" /></div>
-          </div>
-          <div class="tickets-panel-row">
-            <div class="tickets-panel-row-label">Welcome message</div>
-            <div class="tickets-panel-row-value"><textarea data-field="welcomeMessage" rows="2">${esc(panel.welcomeMessage || '')}</textarea></div>
-          </div>
-          <div class="tickets-panel-row">
-            <div class="tickets-panel-row-label">Max open per user</div>
-            <div class="tickets-panel-row-value"><input type="number" data-field="maxOpenPerUser" min="1" max="10" value="${panel.maxOpenPerUser || 1}" /></div>
-          </div>
-          <div class="tickets-panel-row">
-            <div class="tickets-panel-row-label">Auto-close (hours)</div>
-            <div class="tickets-panel-row-value"><input type="number" data-field="autoCloseHours" min="0" max="168" value="${panel.autoCloseHours || 0}" placeholder="0 = disabled" /></div>
-          </div>
-          <div class="tickets-panel-row">
-            <div class="tickets-panel-row-label">Transcripts</div>
-            <div class="tickets-panel-row-value">
-              <label style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-secondary);margin-bottom:.4rem">
-                <input type="checkbox" data-field="transcripts.enabled" ${panel.transcripts?.enabled ? 'checked' : ''} /> Save transcripts
-              </label>
-              <select data-field="transcripts.channelId">${channelOptions(panel.transcripts?.channelId)}</select>
+        <div class="tickets-panel-builder">
+          <div class="tickets-panel-form">
+            <div class="tickets-panel-row">
+              <div class="tickets-panel-row-label">Panel name</div>
+              <div class="tickets-panel-row-value"><input type="text" data-field="name" value="${esc(panel.name)}" maxlength="80" /></div>
             </div>
-          </div>
-
-          <!-- Buttons -->
-          <div class="tickets-panel-row" style="align-items:flex-start">
-            <div class="tickets-panel-row-label">Buttons</div>
-            <div class="tickets-panel-row-value" id="panel-buttons-${idx}">
-              ${(panel.buttons || []).map((btn, bi) => buildButtonRow(btn, idx, bi)).join('')}
-              <button class="btn btn-sm btn-outline" data-action="add-button" data-panel-idx="${idx}" style="margin-top:.5rem">+ Add button</button>
+            <div class="tickets-panel-row" style="align-items:flex-start">
+              <div class="tickets-panel-row-label" style="padding-top:.4rem">Description</div>
+              <div class="tickets-panel-row-value"><textarea data-field="description" rows="2">${esc(panel.description)}</textarea></div>
             </div>
+            <div class="tickets-panel-row">
+              <div class="tickets-panel-row-label">Panel channel</div>
+              <div class="tickets-panel-row-value"><select data-field="channelId">${channelOptions(panel.channelId)}</select></div>
+            </div>
+            <div class="tickets-panel-row">
+              <div class="tickets-panel-row-label">Embed color</div>
+              <div class="tickets-panel-row-value" style="display:flex;align-items:center;gap:.6rem">
+                <input type="color" data-field="embedColor" value="${embedColor}" style="width:42px;height:34px;padding:2px;border-radius:6px;cursor:pointer;background:var(--surface-1);border:1px solid var(--border)" />
+                <span class="tickets-color-val">${embedColor}</span>
+              </div>
+            </div>
+            <div class="tickets-panel-row" style="align-items:flex-start">
+              <div class="tickets-panel-row-label" style="padding-top:.4rem">Buttons</div>
+              <div class="tickets-panel-row-value" id="panel-buttons-${idx}">
+                ${(panel.buttons || []).map((btn, bi) => buildButtonRow(btn, idx, bi)).join('')}
+                <button class="btn btn-sm btn-outline" data-action="add-button" data-panel-idx="${idx}" style="margin-top:.4rem">+ Add button</button>
+              </div>
+            </div>
+            <details class="tickets-advanced">
+              <summary class="tickets-advanced-toggle">Advanced settings</summary>
+              <div class="tickets-advanced-body">
+                <div class="tickets-panel-row">
+                  <div class="tickets-panel-row-label">Ticket category</div>
+                  <div class="tickets-panel-row-value"><select data-field="categoryId">${channelOptions(panel.categoryId, true)}</select></div>
+                </div>
+                <div class="tickets-panel-row" style="align-items:flex-start">
+                  <div class="tickets-panel-row-label" style="padding-top:.4rem">Support roles</div>
+                  <div class="tickets-panel-row-value">${roleMultiSelect(`panel-support-${idx}`, panel.supportRoles)}</div>
+                </div>
+                <div class="tickets-panel-row">
+                  <div class="tickets-panel-row-label">Channel name format</div>
+                  <div class="tickets-panel-row-value">
+                    <input type="text" data-field="ticketNameFormat" value="${esc(panel.ticketNameFormat || 'ticket-{username}')}" maxlength="80" />
+                    <div class="tickets-panel-hint">Variables: {username}, {id}, {count}</div>
+                  </div>
+                </div>
+                <div class="tickets-panel-row" style="align-items:flex-start">
+                  <div class="tickets-panel-row-label" style="padding-top:.4rem">Welcome message</div>
+                  <div class="tickets-panel-row-value">
+                    <textarea data-field="welcomeMessage" rows="2">${esc(panel.welcomeMessage || '')}</textarea>
+                    <div class="tickets-panel-hint">Sent in the new ticket channel. Supports {user}, {tag}</div>
+                  </div>
+                </div>
+                <div class="tickets-panel-row">
+                  <div class="tickets-panel-row-label">Close message</div>
+                  <div class="tickets-panel-row-value">
+                    <input type="text" data-field="closeMessage" value="${esc(panel.closeMessage || 'This ticket has been closed.')}" maxlength="200" />
+                  </div>
+                </div>
+                <div class="tickets-panel-row">
+                  <div class="tickets-panel-row-label">Max open per user</div>
+                  <div class="tickets-panel-row-value"><input type="number" data-field="maxOpenPerUser" min="1" max="10" value="${panel.maxOpenPerUser || 1}" /></div>
+                </div>
+                <div class="tickets-panel-row">
+                  <div class="tickets-panel-row-label">Auto-close (hours)</div>
+                  <div class="tickets-panel-row-value">
+                    <input type="number" data-field="autoCloseHours" min="0" max="168" value="${panel.autoCloseHours || 0}" />
+                    <div class="tickets-panel-hint">0 = disabled. Max 168 h (7 days)</div>
+                  </div>
+                </div>
+                <div class="tickets-panel-row" style="align-items:flex-start">
+                  <div class="tickets-panel-row-label" style="padding-top:.4rem">Transcripts</div>
+                  <div class="tickets-panel-row-value">
+                    <label style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-secondary);margin-bottom:.4rem">
+                      <input type="checkbox" data-field="transcripts.enabled" ${panel.transcripts?.enabled ? 'checked' : ''} /> Save transcript on close
+                    </label>
+                    <select data-field="transcripts.channelId">${channelOptions(panel.transcripts?.channelId)}</select>
+                  </div>
+                </div>
+              </div>
+            </details>
+          </div>
+          <div class="dc-preview" id="panel-preview-${idx}">
+            ${buildPanelPreview(panel)}
+            <div class="dc-deploy-status" id="panel-deploy-status-${idx}"></div>
           </div>
         </div>
       </div>`;
@@ -291,8 +376,9 @@
       const newPanel = {
         panelId: Math.random().toString(36).slice(2, 8),
         name: 'Support',
-        description: '',
+        description: 'Need help? Click a button below to open a support ticket.',
         channelId: '',
+        embedColor: '#5865f2',
         categoryId: null,
         supportRoles: [],
         ticketNameFormat: 'ticket-{username}',
@@ -326,7 +412,7 @@
       }
 
       if (btn.dataset.action === 'deploy-panel') {
-        deployPanel(btn.dataset.panelId, btn);
+        deployPanel(parseInt(btn.dataset.panelIdx, 10), btn);
       }
 
       if (btn.dataset.action === 'add-button') {
@@ -341,6 +427,8 @@
           div.innerHTML = buildButtonRow(newBtn, idx, bi);
           container.insertBefore(div.firstElementChild, btn);
         }
+        const addCard = btn.closest('.tickets-panel-card');
+        if (addCard) refreshPanelPreview(addCard, idx);
         window.SaveBar?.markDirty();
       }
 
@@ -348,7 +436,9 @@
         const pi = parseInt(btn.dataset.panelIdx, 10);
         const bi = parseInt(btn.dataset.btnIdx, 10);
         _config.panels[pi]?.buttons?.splice(bi, 1);
+        const removeCard = btn.closest('.tickets-panel-card');
         btn.closest('.button-row')?.remove();
+        if (removeCard) refreshPanelPreview(removeCard, pi);
         window.SaveBar?.markDirty();
       }
 
@@ -357,20 +447,72 @@
       }
     });
 
-    // Generic change listener
-    root.addEventListener('change', () => window.SaveBar?.markDirty());
-    root.addEventListener('input', () => window.SaveBar?.markDirty());
+    // Generic change/input — also refreshes Discord preview
+    root.addEventListener('change', (e) => {
+      const card = e.target.closest('.tickets-panel-card');
+      if (card && e.target.closest('.tickets-panel-form, .tickets-advanced-body')) {
+        refreshPanelPreview(card, parseInt(card.dataset.panelIdx, 10));
+      }
+      window.SaveBar?.markDirty();
+    });
+    root.addEventListener('input', (e) => {
+      const card = e.target.closest('.tickets-panel-card');
+      if (card && e.target.closest('.tickets-panel-form, .tickets-advanced-body, .button-row')) {
+        refreshPanelPreview(card, parseInt(card.dataset.panelIdx, 10));
+      }
+      window.SaveBar?.markDirty();
+    });
   }
 
-  async function deployPanel(panelId, btn) {
+  function showDeployStatus(idx, type, msg) {
+    const el = document.getElementById(`panel-deploy-status-${idx}`);
+    if (!el) return;
+    el.className = `dc-deploy-status ${type}`;
+    el.textContent = msg;
+  }
+
+  async function deployPanel(idx, btn) {
+    // Capture panelId from card data attribute (stable, not affected by array re-indexing)
+    const card = btn.closest('.tickets-panel-card');
+    const panelId = card?.dataset.panelid;
+    if (!panelId) return;
+
+    const panels = collectPanels();
+    const panel = panels.find((p) => p.panelId === panelId);
+    if (!panel) return;
+    if (!panel.channelId) {
+      showDeployStatus(idx, 'error', 'Set a Panel channel before deploying.');
+      return;
+    }
+    const origHTML = btn.innerHTML;
     btn.disabled = true;
-    btn.textContent = 'Deploying…';
+    btn.textContent = 'Saving…';
     try {
-      const res = await fetch(`/api/guild/${_guildId}/tickets/config`);
-      btn.textContent = 'Saved first — deploying via bot on next start';
-      btn.disabled = false;
+      // 1. Save config
+      const saveBody = collect();
+      const saveRes = await fetch(`/api/guild/${_guildId}/tickets/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(saveBody),
+      });
+      if (!saveRes.ok) throw new Error('Config save failed');
+      _config = saveBody;
+      window.SaveBar?.markClean();
+
+      // 2. Queue deploy
+      btn.textContent = 'Deploying…';
+      // panelId was captured above from card data attribute — safe after _config reassign
+      const depRes = await fetch(`/api/guild/${_guildId}/tickets/panels/${panelId}/deploy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await depRes.json();
+      if (!depRes.ok) throw new Error(data.error || 'Deploy failed');
+      showDeployStatus(idx, 'pending', data.message || 'Queued — panel will appear in Discord within 30 s.');
     } catch (err) {
-      btn.textContent = 'Failed';
+      showDeployStatus(idx, 'error', err.message || 'Deploy failed — try again');
+    } finally {
+      btn.innerHTML = origHTML;
       btn.disabled = false;
     }
   }
@@ -399,8 +541,8 @@
     const panels = [];
     const cards = document.querySelectorAll('#tickets-panel-list .tickets-panel-card');
     cards.forEach((card) => {
-      const idx = parseInt(card.dataset.panelIdx, 10);
-      const base = _config.panels?.[idx] || {};
+      const panelId = card.dataset.panelid;
+      const base = _config.panels?.find((p) => p.panelId === panelId) || {};
       const field = (f) => card.querySelector(`[data-field="${f}"]`)?.value ?? '';
       const checkedF = (f) => card.querySelector(`[data-field="${f}"]`)?.checked ?? false;
       const supportRolesEl = card.querySelector(`#panel-support-${idx}`);
@@ -422,6 +564,7 @@
         name: field('name'),
         description: field('description'),
         channelId: field('channelId'),
+        embedColor: field('embedColor') || '#5865f2',
         categoryId: field('categoryId') || null,
         supportRoles,
         ticketNameFormat: field('ticketNameFormat'),
