@@ -629,7 +629,7 @@
   /* ------------------------------------------------------------------ */
   function initSectionNav() {
     const hash = window.location.hash.replace('#', '');
-    const valid = ['home', 'commands', 'applications', 'logging', 'embeds', 'reaction-roles', 'levels', 'cases', 'responses', 'moderation', 'welcome', 'leveling', 'automod'];
+    const valid = ['home', 'commands', 'applications', 'logging', 'embeds', 'reaction-roles', 'levels', 'cases', 'responses', 'moderation', 'welcome', 'leveling', 'automod', 'tickets'];
     const initial = valid.includes(hash) ? hash : 'home';
 
     document.querySelectorAll('.sidebar-nav-item[data-section]').forEach((btn) => {

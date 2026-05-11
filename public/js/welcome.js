@@ -1,0 +1,421 @@
+/**
+ * Welcome / Goodbye dashboard module.
+ */
+(function () {
+  'use strict';
+
+  let _guildId = null;
+  let _config = {};
+  let _channels = [];
+  let _roles = [];
+  let _loaded = false;
+  let _activeTab = 'welcome';
+
+  function init(guildId) {
+    _guildId = guildId;
+    document.addEventListener('sectionActivated', (e) => {
+      if (e.detail?.section === 'welcome') {
+        if (!_loaded) load();
+        window.SaveBar?.setHandlers(save, reset);
+      }
+    });
+    const sec = document.getElementById('section-welcome');
+    if (sec && sec.style.display !== 'none') {
+      if (!_loaded) load();
+      window.SaveBar?.setHandlers(save, reset);
+    }
+  }
+
+  async function load() {
+    if (_loaded) return;
+    _loaded = true;
+    try {
+      const [cfg, channelData, roleData] = await Promise.all([
+        fetch(`/api/guild/${_guildId}/welcome`).then((r) => r.json()),
+        fetch(`/api/guild/${_guildId}/channels`).then((r) => r.json()).catch(() => []),
+        fetch(`/api/guild/${_guildId}/roles`).then((r) => r.json()).catch(() => []),
+      ]);
+      _config = cfg || {};
+      _channels = Array.isArray(channelData) ? channelData : [];
+      _roles = Array.isArray(roleData) ? roleData : [];
+      render();
+    } catch (err) {
+      console.error('[Welcome] load error', err);
+    }
+  }
+
+  function render() {
+    const root = document.getElementById('welcome-root');
+    if (!root) return;
+    root.innerHTML = buildHTML();
+    root.style.display = '';
+    const loading = document.getElementById('welcome-loading');
+    if (loading) loading.style.display = 'none';
+    attachEvents(root);
+  }
+
+  function channelOptions(selectedId) {
+    return '<option value="">Not set</option>' + _channels
+      .filter((c) => c.type === 0)
+      .map((c) => `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>#${esc(c.name)}</option>`)
+      .join('');
+  }
+
+  function toggle(id, checked) {
+    return `<label class="toggle-switch"><input type="checkbox" id="${id}" ${checked ? 'checked' : ''}><span class="toggle-slider"></span></label>`;
+  }
+
+  const VARS = ['{user}', '{tag}', '{username}', '{server}', '{count}', '{id}', '{accountAge}'];
+  const VARS_GOODBYE = ['{tag}', '{username}', '{server}', '{id}'];
+
+  function varChips(list) {
+    return list.map((v) => `<button class="welcome-var-chip" type="button" data-var="${v}">${v}</button>`).join('');
+  }
+
+  function roleChips(roleIds) {
+    return (roleIds || []).map((id) => {
+      const role = _roles.find((r) => r.id === id);
+      const name = role ? role.name : id;
+      return `<span class="welcome-role-chip">${esc(name)}<button class="welcome-role-chip-remove" data-role-id="${id}" title="Remove">×</button></span>`;
+    }).join('');
+  }
+
+  function buildHTML() {
+    const w = _config.welcome || {};
+    const g = _config.goodbye || {};
+
+    return `
+      <div class="welcome-tabs">
+        <button class="welcome-tab ${_activeTab === 'welcome' ? 'active' : ''}" data-tab="welcome">Welcome</button>
+        <button class="welcome-tab ${_activeTab === 'goodbye' ? 'active' : ''}" data-tab="goodbye">Goodbye</button>
+      </div>
+
+      <!-- WELCOME PANE -->
+      <div class="welcome-pane ${_activeTab === 'welcome' ? 'active' : ''}" id="welcome-pane-welcome">
+        <div class="welcome-card">
+          <div class="welcome-row">
+            <div class="welcome-row-info">
+              <div class="welcome-row-label">Enable welcome messages</div>
+              <div class="welcome-row-hint">Post a message when new members join the server</div>
+            </div>
+            ${toggle('welcome-enabled', w.enabled)}
+          </div>
+
+          <div class="welcome-row">
+            <div class="welcome-row-info">
+              <div class="welcome-row-label">Welcome channel</div>
+            </div>
+            <div class="welcome-row-control">
+              <select id="welcome-channel">${channelOptions(w.channelId)}</select>
+            </div>
+          </div>
+
+          <div class="welcome-row">
+            <div class="welcome-row-info">
+              <div class="welcome-row-label">Use embed</div>
+              <div class="welcome-row-hint">Send message as a rich embed instead of plain text</div>
+            </div>
+            ${toggle('welcome-embed-toggle', w.embedEnabled)}
+          </div>
+        </div>
+
+        <!-- Plain message -->
+        <div class="welcome-card" id="welcome-plain-section" ${w.embedEnabled ? 'style="display:none"' : ''}>
+          <div class="welcome-row-label" style="margin-bottom:.5rem">Welcome message</div>
+          <textarea class="welcome-textarea" id="welcome-message" rows="3">${esc(w.message || 'Welcome {user} to **{server}**!')}</textarea>
+          <div class="welcome-vars">${varChips(VARS)}</div>
+        </div>
+
+        <!-- Embed message -->
+        <div class="welcome-card" id="welcome-embed-section" ${!w.embedEnabled ? 'style="display:none"' : ''}>
+          <div class="welcome-row">
+            <div class="welcome-row-info"><div class="welcome-row-label">Embed color</div></div>
+            <div class="welcome-row-control"><input type="color" id="welcome-embed-color" value="${esc(w.embed?.color || '#5865f2')}" /></div>
+          </div>
+          <div class="welcome-row">
+            <div class="welcome-row-info"><div class="welcome-row-label">Embed title</div></div>
+            <div class="welcome-row-control"><input type="text" id="welcome-embed-title" value="${esc(w.embed?.title || 'Welcome to {server}!')}" maxlength="256" /></div>
+          </div>
+          <div class="welcome-row-label" style="margin-bottom:.5rem">Description</div>
+          <textarea class="welcome-textarea" id="welcome-embed-desc" rows="3">${esc(w.embed?.description || 'Hey {user}! You are member #{count}.')}</textarea>
+          <div class="welcome-vars">${varChips(VARS)}</div>
+          <div class="welcome-row" style="margin-top:.5rem">
+            <div class="welcome-row-info"><div class="welcome-row-label">Footer text</div></div>
+            <div class="welcome-row-control"><input type="text" id="welcome-embed-footer" value="${esc(w.embed?.footer || '')}" maxlength="2048" /></div>
+          </div>
+          <div class="welcome-row">
+            <div class="welcome-row-info">
+              <div class="welcome-row-label">Show user avatar as thumbnail</div>
+            </div>
+            ${toggle('welcome-embed-thumbnail', w.embed?.thumbnail !== false)}
+          </div>
+        </div>
+
+        <!-- DM on join -->
+        <div class="welcome-card">
+          <div class="welcome-row">
+            <div class="welcome-row-info">
+              <div class="welcome-row-label">Send DM on join</div>
+              <div class="welcome-row-hint">Direct message the user when they join</div>
+            </div>
+            ${toggle('welcome-dm-enabled', w.dmEnabled)}
+          </div>
+          <div id="welcome-dm-section" ${!w.dmEnabled ? 'style="display:none"' : ''}>
+            <div class="welcome-row-label" style="margin:.5rem 0">DM message</div>
+            <textarea class="welcome-textarea" id="welcome-dm-message" rows="3">${esc(w.dmMessage || 'Welcome to **{server}**!')}</textarea>
+            <div class="welcome-vars">${varChips(['{server}', '{tag}', '{username}'])}</div>
+          </div>
+        </div>
+
+        <!-- Auto-roles -->
+        <div class="welcome-card">
+          <div class="welcome-row">
+            <div class="welcome-row-info">
+              <div class="welcome-row-label">Auto-roles on join</div>
+              <div class="welcome-row-hint">Automatically assign these roles when someone joins</div>
+            </div>
+          </div>
+          <div class="welcome-role-list" id="welcome-auto-roles">
+            ${roleChips(w.autoRoles)}
+          </div>
+          <div style="margin-top:.5rem">
+            <select id="welcome-role-add" style="padding:.4rem .6rem;background:var(--surface-1);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:.82rem">
+              <option value="">— Add role —</option>
+              ${_roles.filter((r) => r.id !== _guildId).map((r) => `<option value="${r.id}">${esc(r.name)}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+
+        <!-- Account age check -->
+        <div class="welcome-card">
+          <div class="welcome-row">
+            <div class="welcome-row-info">
+              <div class="welcome-row-label">Account age check</div>
+              <div class="welcome-row-hint">Warn staff when very new Discord accounts join</div>
+            </div>
+            ${toggle('welcome-agecheck-enabled', w.accountAgeCheck?.enabled)}
+          </div>
+          <div id="welcome-agecheck-section" ${!w.accountAgeCheck?.enabled ? 'style="display:none"' : ''}>
+            <div class="welcome-row" style="margin-top:.75rem">
+              <div class="welcome-row-info"><div class="welcome-row-label">Minimum account age (days)</div></div>
+              <div class="welcome-row-control"><input type="number" id="welcome-agecheck-days" min="1" max="365" value="${w.accountAgeCheck?.minDays || 7}" /></div>
+            </div>
+            <div class="welcome-row">
+              <div class="welcome-row-info"><div class="welcome-row-label">Warning channel</div></div>
+              <div class="welcome-row-control"><select id="welcome-agecheck-channel">${channelOptions(w.accountAgeCheck?.warnChannelId)}</select></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GOODBYE PANE -->
+      <div class="welcome-pane ${_activeTab === 'goodbye' ? 'active' : ''}" id="welcome-pane-goodbye">
+        <div class="welcome-card">
+          <div class="welcome-row">
+            <div class="welcome-row-info">
+              <div class="welcome-row-label">Enable goodbye messages</div>
+              <div class="welcome-row-hint">Post a message when a member leaves or is removed</div>
+            </div>
+            ${toggle('goodbye-enabled', g.enabled)}
+          </div>
+          <div class="welcome-row">
+            <div class="welcome-row-info"><div class="welcome-row-label">Goodbye channel</div></div>
+            <div class="welcome-row-control"><select id="goodbye-channel">${channelOptions(g.channelId)}</select></div>
+          </div>
+          <div class="welcome-row">
+            <div class="welcome-row-info">
+              <div class="welcome-row-label">Use embed</div>
+            </div>
+            ${toggle('goodbye-embed-toggle', g.embedEnabled)}
+          </div>
+        </div>
+
+        <div class="welcome-card" id="goodbye-plain-section" ${g.embedEnabled ? 'style="display:none"' : ''}>
+          <div class="welcome-row-label" style="margin-bottom:.5rem">Goodbye message</div>
+          <textarea class="welcome-textarea" id="goodbye-message" rows="3">${esc(g.message || '**{tag}** has left the server.')}</textarea>
+          <div class="welcome-vars">${varChips(VARS_GOODBYE)}</div>
+        </div>
+
+        <div class="welcome-card" id="goodbye-embed-section" ${!g.embedEnabled ? 'style="display:none"' : ''}>
+          <div class="welcome-row">
+            <div class="welcome-row-info"><div class="welcome-row-label">Embed color</div></div>
+            <div class="welcome-row-control"><input type="color" id="goodbye-embed-color" value="${esc(g.embed?.color || '#ef4444')}" /></div>
+          </div>
+          <div class="welcome-row">
+            <div class="welcome-row-info"><div class="welcome-row-label">Embed title</div></div>
+            <div class="welcome-row-control"><input type="text" id="goodbye-embed-title" value="${esc(g.embed?.title || '{tag} left')}" maxlength="256" /></div>
+          </div>
+          <div class="welcome-row-label" style="margin-bottom:.5rem">Description</div>
+          <textarea class="welcome-textarea" id="goodbye-embed-desc" rows="3">${esc(g.embed?.description || '**{tag}** has left the server.')}</textarea>
+          <div class="welcome-vars">${varChips(VARS_GOODBYE)}</div>
+          <div class="welcome-row" style="margin-top:.5rem">
+            <div class="welcome-row-info"><div class="welcome-row-label">Footer text</div></div>
+            <div class="welcome-row-control"><input type="text" id="goodbye-embed-footer" value="${esc(g.embed?.footer || '')}" maxlength="2048" /></div>
+          </div>
+          <div class="welcome-row">
+            <div class="welcome-row-info">
+              <div class="welcome-row-label">Show user avatar as thumbnail</div>
+            </div>
+            ${toggle('goodbye-embed-thumbnail', g.embed?.thumbnail !== false)}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function attachEvents(root) {
+    // Tab switching
+    root.querySelectorAll('.welcome-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        _activeTab = btn.dataset.tab;
+        root.querySelectorAll('.welcome-tab').forEach((b) => b.classList.toggle('active', b === btn));
+        root.querySelectorAll('.welcome-pane').forEach((p) => p.classList.toggle('active', p.id === `welcome-pane-${_activeTab}`));
+      });
+    });
+
+    // Embed toggle — welcome
+    root.querySelector('#welcome-embed-toggle')?.addEventListener('change', (e) => {
+      document.getElementById('welcome-plain-section').style.display = e.target.checked ? 'none' : '';
+      document.getElementById('welcome-embed-section').style.display = e.target.checked ? '' : 'none';
+      window.SaveBar?.markDirty();
+    });
+
+    // Embed toggle — goodbye
+    root.querySelector('#goodbye-embed-toggle')?.addEventListener('change', (e) => {
+      document.getElementById('goodbye-plain-section').style.display = e.target.checked ? 'none' : '';
+      document.getElementById('goodbye-embed-section').style.display = e.target.checked ? '' : 'none';
+      window.SaveBar?.markDirty();
+    });
+
+    // DM toggle
+    root.querySelector('#welcome-dm-enabled')?.addEventListener('change', (e) => {
+      document.getElementById('welcome-dm-section').style.display = e.target.checked ? '' : 'none';
+      window.SaveBar?.markDirty();
+    });
+
+    // Age check toggle
+    root.querySelector('#welcome-agecheck-enabled')?.addEventListener('change', (e) => {
+      document.getElementById('welcome-agecheck-section').style.display = e.target.checked ? '' : 'none';
+      window.SaveBar?.markDirty();
+    });
+
+    // Variable chips (insert into focused textarea)
+    root.addEventListener('click', (e) => {
+      const chip = e.target.closest('.welcome-var-chip');
+      if (!chip) return;
+      const active = document.activeElement;
+      if (active && active.tagName === 'TEXTAREA') {
+        const start = active.selectionStart;
+        const end = active.selectionEnd;
+        active.value = active.value.slice(0, start) + chip.dataset.var + active.value.slice(end);
+        active.selectionStart = active.selectionEnd = start + chip.dataset.var.length;
+        active.focus();
+        window.SaveBar?.markDirty();
+      }
+    });
+
+    // Auto-role add
+    root.querySelector('#welcome-role-add')?.addEventListener('change', (e) => {
+      const id = e.target.value;
+      if (!id) return;
+      e.target.value = '';
+      if (!_config.welcome) _config.welcome = {};
+      if (!_config.welcome.autoRoles) _config.welcome.autoRoles = [];
+      if (_config.welcome.autoRoles.includes(id)) return;
+      _config.welcome.autoRoles.push(id);
+
+      const list = document.getElementById('welcome-auto-roles');
+      if (list) {
+        const role = _roles.find((r) => r.id === id);
+        const span = document.createElement('span');
+        span.className = 'welcome-role-chip';
+        span.innerHTML = `${esc(role?.name || id)}<button class="welcome-role-chip-remove" data-role-id="${id}" title="Remove">×</button>`;
+        list.appendChild(span);
+      }
+      window.SaveBar?.markDirty();
+    });
+
+    // Auto-role remove (delegated)
+    root.querySelector('#welcome-auto-roles')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.welcome-role-chip-remove');
+      if (!btn) return;
+      const id = btn.dataset.roleId;
+      if (_config.welcome?.autoRoles) {
+        _config.welcome.autoRoles = _config.welcome.autoRoles.filter((r) => r !== id);
+      }
+      btn.closest('.welcome-role-chip')?.remove();
+      window.SaveBar?.markDirty();
+    });
+
+    // Generic changes
+    root.addEventListener('change', () => window.SaveBar?.markDirty());
+    root.addEventListener('input', () => window.SaveBar?.markDirty());
+  }
+
+  function v(id) { return document.getElementById(id); }
+  function val(id, def = '') { return v(id)?.value ?? def; }
+  function checked(id) { return v(id)?.checked ?? false; }
+
+  function collect() {
+    return {
+      welcome: {
+        enabled: checked('welcome-enabled'),
+        channelId: val('welcome-channel') || null,
+        message: val('welcome-message'),
+        embedEnabled: checked('welcome-embed-toggle'),
+        embed: {
+          color: val('welcome-embed-color', '#5865f2'),
+          title: val('welcome-embed-title'),
+          description: val('welcome-embed-desc'),
+          footer: val('welcome-embed-footer'),
+          thumbnail: checked('welcome-embed-thumbnail'),
+        },
+        dmEnabled: checked('welcome-dm-enabled'),
+        dmMessage: val('welcome-dm-message'),
+        autoRoles: _config.welcome?.autoRoles || [],
+        accountAgeCheck: {
+          enabled: checked('welcome-agecheck-enabled'),
+          minDays: parseInt(val('welcome-agecheck-days', '7'), 10) || 7,
+          warnChannelId: val('welcome-agecheck-channel') || null,
+        },
+      },
+      goodbye: {
+        enabled: checked('goodbye-enabled'),
+        channelId: val('goodbye-channel') || null,
+        message: val('goodbye-message'),
+        embedEnabled: checked('goodbye-embed-toggle'),
+        embed: {
+          color: val('goodbye-embed-color', '#ef4444'),
+          title: val('goodbye-embed-title'),
+          description: val('goodbye-embed-desc'),
+          footer: val('goodbye-embed-footer'),
+          thumbnail: checked('goodbye-embed-thumbnail'),
+        },
+      },
+    };
+  }
+
+  async function save() {
+    const body = collect();
+    const res = await fetch(`/api/guild/${_guildId}/welcome`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error('Failed to save Welcome config');
+    _config = body;
+  }
+
+  function reset() {
+    _loaded = false;
+    load();
+  }
+
+  function esc(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  const pd = document.getElementById('pageData');
+  if (pd?.dataset.guildId) init(pd.dataset.guildId);
+
+  window.WelcomeModule = { init, load, save, reset };
+})();

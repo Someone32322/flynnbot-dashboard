@@ -22,6 +22,10 @@ const { PredefinedReasons } = require('../models/PredefinedReasons');
 const ResponseConfig = require('../models/ResponseConfig');
 const BotMessageTemplate = require('../models/BotMessageTemplate');
 const Blacklist = require('../models/Blacklist');
+const { AutoModConfig } = require('../models/AutoModConfig');
+const { WelcomeConfig } = require('../models/WelcomeConfig');
+const { TicketConfig } = require('../models/TicketConfig');
+const { Ticket } = require('../models/Ticket');
 const discordApi = require('../lib/discord');
 const { canReviewSingleApplication } = require('../services/applicationAccess');
 
@@ -3158,6 +3162,153 @@ router.get('/owner/stats', requireOwner, async (req, res) => {
   } catch (err) {
     console.error('[Owner API] GET /owner/stats', err);
     res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// AUTO-MOD ROUTES
+// ═══════════════════════════════════════════════════════════════════════════
+
+router.get('/guild/:guildId/automod', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const config = await AutoModConfig.findOne({ guildId }).lean() || {};
+    res.json(config);
+  } catch (err) {
+    console.error('[API] GET /automod', err);
+    res.status(500).json({ error: 'Failed to fetch AutoMod config' });
+  }
+});
+
+router.post('/guild/:guildId/automod', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const allowed = ['enabled', 'alertChannelId', 'exemptRoles', 'exemptChannels', 'discordRules', 'botRules'];
+    const update = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) update[key] = req.body[key];
+    }
+    // Mark as needing Discord-side sync whenever Discord rules change
+    if (update.discordRules !== undefined) update.syncNeeded = true;
+
+    const config = await AutoModConfig.findOneAndUpdate(
+      { guildId },
+      { $set: update },
+      { upsert: true, new: true },
+    );
+    res.json({ ok: true, config });
+  } catch (err) {
+    console.error('[API] POST /automod', err);
+    res.status(500).json({ error: 'Failed to save AutoMod config' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WELCOME / GOODBYE ROUTES
+// ═══════════════════════════════════════════════════════════════════════════
+
+router.get('/guild/:guildId/welcome', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const config = await WelcomeConfig.findOne({ guildId }).lean() || {};
+    res.json(config);
+  } catch (err) {
+    console.error('[API] GET /welcome', err);
+    res.status(500).json({ error: 'Failed to fetch Welcome config' });
+  }
+});
+
+router.post('/guild/:guildId/welcome', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const allowed = ['welcome', 'goodbye'];
+    const update = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) update[key] = req.body[key];
+    }
+    const config = await WelcomeConfig.findOneAndUpdate(
+      { guildId },
+      { $set: update },
+      { upsert: true, new: true },
+    );
+    res.json({ ok: true, config });
+  } catch (err) {
+    console.error('[API] POST /welcome', err);
+    res.status(500).json({ error: 'Failed to save Welcome config' });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// TICKET ROUTES
+// ═══════════════════════════════════════════════════════════════════════════
+
+router.get('/guild/:guildId/tickets/config', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const config = await TicketConfig.findOne({ guildId }).lean() || {};
+    res.json(config);
+  } catch (err) {
+    console.error('[API] GET /tickets/config', err);
+    res.status(500).json({ error: 'Failed to fetch Ticket config' });
+  }
+});
+
+router.post('/guild/:guildId/tickets/config', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const allowed = ['enabled', 'panels', 'logChannelId'];
+    const update = {};
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) update[key] = req.body[key];
+    }
+    const config = await TicketConfig.findOneAndUpdate(
+      { guildId },
+      { $set: update },
+      { upsert: true, new: true },
+    );
+    res.json({ ok: true, config });
+  } catch (err) {
+    console.error('[API] POST /tickets/config', err);
+    res.status(500).json({ error: 'Failed to save Ticket config' });
+  }
+});
+
+// List open tickets for a guild (dashboard view)
+router.get('/guild/:guildId/tickets', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  const { status = 'open', page = 1, limit = 25 } = req.query;
+  try {
+    const filter = { guildId };
+    if (['open', 'closed', 'archived'].includes(status)) filter.status = status;
+
+    const total = await Ticket.countDocuments(filter);
+    const tickets = await Ticket.find(filter)
+      .sort({ openedAt: -1 })
+      .skip((Number(page) - 1) * Number(limit))
+      .limit(Number(limit))
+      .lean();
+
+    res.json({ tickets, total, page: Number(page), limit: Number(limit) });
+  } catch (err) {
+    console.error('[API] GET /tickets', err);
+    res.status(500).json({ error: 'Failed to fetch tickets' });
+  }
+});
+
+// Close a ticket from dashboard
+router.post('/guild/:guildId/tickets/:ticketId/close', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId, ticketId } = req.params;
+  try {
+    const ticket = await Ticket.findOneAndUpdate(
+      { ticketId, guildId, status: 'open' },
+      { status: 'closed', closedBy: req.user.id, closedAt: new Date(), closeReason: req.body.reason || '' },
+      { new: true },
+    );
+    if (!ticket) return res.status(404).json({ error: 'Ticket not found or already closed' });
+    res.json({ ok: true, ticket });
+  } catch (err) {
+    console.error('[API] POST /tickets/:id/close', err);
+    res.status(500).json({ error: 'Failed to close ticket' });
   }
 });
 
