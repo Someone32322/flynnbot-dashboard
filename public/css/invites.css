@@ -1,0 +1,11 @@
+/* ── Invite Tracker ──────────────────────────────────────────── */
+.invites-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+@media (max-width: 768px) { .invites-grid { grid-template-columns: 1fr; } }
+.invites-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+.invites-card-title { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); margin-bottom: 1rem; }
+.invites-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.invites-table th { text-align: left; color: var(--text-3); font-size: 0.75rem; text-transform: uppercase; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--border); }
+.invites-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--border-light, rgba(255,255,255,.04)); }
+.invites-table tr:last-child td { border-bottom: none; }
+.invites-table code { background: var(--input-bg); border-radius: 4px; padding: 0.1rem 0.3rem; font-size: 0.8rem; }
+.invites-empty { text-align: center; padding: 2rem 1rem; color: var(--text-3); font-size: 0.875rem; }

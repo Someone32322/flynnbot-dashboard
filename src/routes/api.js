@@ -26,6 +26,18 @@ const { AutoModConfig } = require('../models/AutoModConfig');
 const { WelcomeConfig } = require('../models/WelcomeConfig');
 const { TicketConfig } = require('../models/TicketConfig');
 const { Ticket } = require('../models/Ticket');
+const { StarboardConfig } = require('../models/StarboardConfig');
+const { StarboardEntry } = require('../models/StarboardEntry');
+const { Giveaway } = require('../models/Giveaway');
+const { Poll } = require('../models/Poll');
+const { StatsConfig } = require('../models/StatsConfig');
+const { AnalyticsEvent } = require('../models/AnalyticsEvent');
+const { CommandAnalytics } = require('../models/CommandAnalytics');
+const { UserNote } = require('../models/UserNote');
+const { InviteTracker, InviteJoin } = require('../models/InviteTracker');
+const { EscalationConfig } = require('../models/EscalationConfig');
+const { AFKEntry } = require('../models/AFKEntry');
+const { SlowmodeConfig } = require('../models/SlowmodeConfig');
 const discordApi = require('../lib/discord');
 const { canReviewSingleApplication } = require('../services/applicationAccess');
 
@@ -3350,6 +3362,336 @@ router.post('/guild/:guildId/welcome/test', requireAuth, requireGuildAdmin, asyn
   } catch (err) {
     console.error('[API] POST /welcome/test', err);
     res.status(500).json({ error: 'Failed to queue test send' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  Feature 4: Starboard
+// ══════════════════════════════════════════════════════════════════
+
+router.get('/guild/:guildId/starboard', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const config = await StarboardConfig.findOne({ guildId }).lean() || {};
+    res.json({ config });
+  } catch (err) {
+    console.error('[API] GET /starboard', err);
+    res.status(500).json({ error: 'Failed to load starboard config' });
+  }
+});
+
+router.post('/guild/:guildId/starboard', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  const { enabled, channelId, threshold, emoji, ignoreSelfStars, ignoreNsfw, ignoredChannels } = req.body;
+  try {
+    const config = await StarboardConfig.findOneAndUpdate(
+      { guildId },
+      {
+        $set: {
+          enabled: Boolean(enabled),
+          channelId: channelId || null,
+          threshold: Math.max(1, Math.min(100, parseInt(threshold) || 3)),
+          emoji: String(emoji || '⭐').slice(0, 64),
+          ignoreSelfStars: Boolean(ignoreSelfStars),
+          ignoreNsfw: Boolean(ignoreNsfw),
+          ignoredChannels: Array.isArray(ignoredChannels) ? ignoredChannels.filter((id) => /^\d+$/.test(id)).slice(0, 50) : [],
+        },
+      },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+    );
+    res.json({ ok: true, config });
+  } catch (err) {
+    console.error('[API] POST /starboard', err);
+    res.status(500).json({ error: 'Failed to save starboard config' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  Feature 5: Giveaways
+// ══════════════════════════════════════════════════════════════════
+
+router.get('/guild/:guildId/giveaways', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  const page = Math.max(0, parseInt(req.query.page) || 0);
+  const limit = 20;
+  try {
+    const [active, ended] = await Promise.all([
+      Giveaway.find({ guildId, status: 'active' }).sort({ endsAt: 1 }).lean(),
+      Giveaway.find({ guildId, status: 'ended' }).sort({ endedAt: -1 }).skip(page * limit).limit(limit).lean(),
+    ]);
+    res.json({ active, ended });
+  } catch (err) {
+    console.error('[API] GET /giveaways', err);
+    res.status(500).json({ error: 'Failed to load giveaways' });
+  }
+});
+
+router.delete('/guild/:guildId/giveaways/:id', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId, id } = req.params;
+  try {
+    await Giveaway.deleteOne({ guildId, _id: id });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[API] DELETE /giveaways/:id', err);
+    res.status(500).json({ error: 'Failed to delete giveaway' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  Feature 6: Polls
+// ══════════════════════════════════════════════════════════════════
+
+router.get('/guild/:guildId/polls', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const [active, ended] = await Promise.all([
+      Poll.find({ guildId, status: 'active' }).sort({ createdAt: -1 }).lean(),
+      Poll.find({ guildId, status: 'ended' }).sort({ endedAt: -1 }).limit(20).lean(),
+    ]);
+    res.json({ active, ended });
+  } catch (err) {
+    console.error('[API] GET /polls', err);
+    res.status(500).json({ error: 'Failed to load polls' });
+  }
+});
+
+router.delete('/guild/:guildId/polls/:id', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId, id } = req.params;
+  try {
+    await Poll.deleteOne({ guildId, _id: id });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[API] DELETE /polls/:id', err);
+    res.status(500).json({ error: 'Failed to delete poll' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  Feature 7: Stats Channels
+// ══════════════════════════════════════════════════════════════════
+
+router.get('/guild/:guildId/stats', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const config = await StatsConfig.findOne({ guildId }).lean() || {};
+    res.json({ config });
+  } catch (err) {
+    console.error('[API] GET /stats', err);
+    res.status(500).json({ error: 'Failed to load stats config' });
+  }
+});
+
+router.post('/guild/:guildId/stats', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  const { enabled, channels, updateInterval } = req.body;
+  const VALID_TYPES = new Set(['members', 'online', 'bots', 'boosts', 'channels', 'roles', 'custom']);
+  try {
+    const sanitizedChannels = Array.isArray(channels)
+      ? channels.filter((c) => c.channelId && VALID_TYPES.has(c.type)).map((c) => ({
+          channelId: String(c.channelId),
+          type: String(c.type),
+          template: String(c.template || '').slice(0, 100),
+          lastValue: '',
+        })).slice(0, 10)
+      : [];
+
+    const config = await StatsConfig.findOneAndUpdate(
+      { guildId },
+      {
+        $set: {
+          enabled: Boolean(enabled),
+          channels: sanitizedChannels,
+          updateInterval: Math.max(5, Math.min(1440, parseInt(updateInterval) || 10)),
+        },
+      },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+    );
+    res.json({ ok: true, config });
+  } catch (err) {
+    console.error('[API] POST /stats', err);
+    res.status(500).json({ error: 'Failed to save stats config' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  Feature 8: Analytics
+// ══════════════════════════════════════════════════════════════════
+
+router.get('/guild/:guildId/analytics', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  const range = Math.min(90, Math.max(1, parseInt(req.query.days) || 7));
+  const since = new Date(Date.now() - range * 86_400_000);
+  try {
+    const [events, commands] = await Promise.all([
+      AnalyticsEvent.aggregate([
+        { $match: { guildId, timestamp: { $gte: since } } },
+        { $group: { _id: { type: '$type', day: { $dateToString: { format: '%Y-%m-%d', date: '$timestamp' } } }, count: { $sum: 1 } } },
+        { $sort: { '_id.day': 1 } },
+      ]),
+      CommandAnalytics.aggregate([
+        { $match: { guildId, timestamp: { $gte: since } } },
+        { $group: { _id: '$command', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: 10 },
+      ]),
+    ]);
+    res.json({ events, commands, range });
+  } catch (err) {
+    console.error('[API] GET /analytics', err);
+    res.status(500).json({ error: 'Failed to load analytics' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  Feature 10: User Notes (per-user notes viewer)
+// ══════════════════════════════════════════════════════════════════
+
+router.get('/guild/:guildId/notes', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  const { userId } = req.query;
+  try {
+    const query = { guildId };
+    if (userId && /^\d+$/.test(userId)) query.targetUserId = userId;
+    const notes = await UserNote.find(query).sort({ createdAt: -1 }).limit(100).lean();
+    res.json({ notes });
+  } catch (err) {
+    console.error('[API] GET /notes', err);
+    res.status(500).json({ error: 'Failed to load notes' });
+  }
+});
+
+router.delete('/guild/:guildId/notes/:noteId', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId, noteId } = req.params;
+  try {
+    await UserNote.deleteOne({ guildId, _id: noteId });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[API] DELETE /notes/:noteId', err);
+    res.status(500).json({ error: 'Failed to delete note' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  Feature 20: Invite Tracker
+// ══════════════════════════════════════════════════════════════════
+
+router.get('/guild/:guildId/invites', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const [invites, joins] = await Promise.all([
+      InviteTracker.find({ guildId }).sort({ uses: -1 }).limit(50).lean(),
+      InviteJoin.find({ guildId }).sort({ joinedAt: -1 }).limit(50).lean(),
+    ]);
+    res.json({ invites, joins });
+  } catch (err) {
+    console.error('[API] GET /invites', err);
+    res.status(500).json({ error: 'Failed to load invite data' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  Feature 22: Moderation Escalation
+// ══════════════════════════════════════════════════════════════════
+
+router.get('/guild/:guildId/escalation', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const config = await EscalationConfig.findOne({ guildId }).lean() || {};
+    res.json({ config });
+  } catch (err) {
+    console.error('[API] GET /escalation', err);
+    res.status(500).json({ error: 'Failed to load escalation config' });
+  }
+});
+
+router.post('/guild/:guildId/escalation', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  const { enabled, rules } = req.body;
+  const VALID_ACTIONS = new Set(['mute', 'kick', 'ban', 'tempmute']);
+  try {
+    const sanitizedRules = Array.isArray(rules)
+      ? rules.filter((r) => r.warnCount > 0 && VALID_ACTIONS.has(r.action)).map((r) => ({
+          warnCount: Math.max(1, parseInt(r.warnCount)),
+          action: String(r.action),
+          duration: Math.max(0, parseInt(r.duration) || 0),
+        })).slice(0, 10)
+      : [];
+
+    const config = await EscalationConfig.findOneAndUpdate(
+      { guildId },
+      { $set: { enabled: Boolean(enabled), rules: sanitizedRules } },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+    );
+    res.json({ ok: true, config });
+  } catch (err) {
+    console.error('[API] POST /escalation', err);
+    res.status(500).json({ error: 'Failed to save escalation config' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  Feature 23: AFK Management (view who is AFK)
+// ══════════════════════════════════════════════════════════════════
+
+router.get('/guild/:guildId/afk', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const afkList = await AFKEntry.find({ guildId }).sort({ setAt: -1 }).lean();
+    res.json({ afkList });
+  } catch (err) {
+    console.error('[API] GET /afk', err);
+    res.status(500).json({ error: 'Failed to load AFK list' });
+  }
+});
+
+router.delete('/guild/:guildId/afk/:userId', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId, userId } = req.params;
+  if (!/^\d+$/.test(userId)) return res.status(400).json({ error: 'Invalid user ID' });
+  try {
+    await AFKEntry.deleteOne({ guildId, userId });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[API] DELETE /afk/:userId', err);
+    res.status(500).json({ error: 'Failed to clear AFK' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  Feature 27: Slowmode Automation
+// ══════════════════════════════════════════════════════════════════
+
+router.get('/guild/:guildId/slowmode', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const config = await SlowmodeConfig.findOne({ guildId }).lean() || {};
+    res.json({ config });
+  } catch (err) {
+    console.error('[API] GET /slowmode', err);
+    res.status(500).json({ error: 'Failed to load slowmode config' });
+  }
+});
+
+router.post('/guild/:guildId/slowmode', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  const { enabled, rules } = req.body;
+  try {
+    const sanitizedRules = Array.isArray(rules)
+      ? rules.filter((r) => r.channelId && /^\d+$/.test(r.channelId)).map((r) => ({
+          channelId: String(r.channelId),
+          threshold: Math.max(1, Math.min(200, parseInt(r.threshold) || 10)),
+          slowmodeSeconds: Math.max(0, Math.min(21600, parseInt(r.slowmodeSeconds) || 5)),
+          cooldownMinutes: Math.max(1, Math.min(1440, parseInt(r.cooldownMinutes) || 5)),
+        })).slice(0, 20)
+      : [];
+    const config = await SlowmodeConfig.findOneAndUpdate(
+      { guildId },
+      { $set: { enabled: Boolean(enabled), rules: sanitizedRules } },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+    );
+    res.json({ ok: true, config });
+  } catch (err) {
+    console.error('[API] POST /slowmode', err);
+    res.status(500).json({ error: 'Failed to save slowmode config' });
   }
 });
 

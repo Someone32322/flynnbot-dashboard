@@ -1,0 +1,14 @@
+/* ── Slowmode Automation ─────────────────────────────────────── */
+.slowmode-enable-row { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
+.slowmode-enable-label { font-weight: 600; color: var(--text-1); }
+.slowmode-enable-sub { font-size: 0.8rem; color: var(--text-3); }
+.slowmode-rules-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem; }
+.slowmode-rule-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
+.slowmode-rule-row { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr auto; gap: 0.75rem; align-items: end; }
+@media (max-width: 900px) { .slowmode-rule-row { grid-template-columns: 1fr 1fr; } }
+.slowmode-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); display: block; margin-bottom: 0.35rem; }
+.slowmode-input, .slowmode-select { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; color: var(--text-1); font-size: 0.875rem; }
+.slowmode-input:focus, .slowmode-select:focus { outline: none; border-color: var(--accent); }
+.slowmode-rule-remove { color: var(--danger, #ed4245); background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0.25rem; border-radius: 6px; align-self: flex-end; }
+.slowmode-rule-remove:hover { background: rgba(237,66,69,.1); }
+.slowmode-empty { text-align: center; padding: 2rem 1rem; color: var(--text-3); font-size: 0.875rem; }

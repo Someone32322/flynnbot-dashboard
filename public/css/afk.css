@@ -1,0 +1,11 @@
+/* ── AFK Manager ─────────────────────────────────────────────── */
+.afk-table-wrap { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-top: 1.5rem; }
+.afk-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.afk-table th { text-align: left; color: var(--text-3); font-size: 0.75rem; text-transform: uppercase; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); background: var(--input-bg); }
+.afk-table td { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border-light, rgba(255,255,255,.04)); }
+.afk-table tr:last-child td { border-bottom: none; }
+.afk-table tr:hover td { background: var(--input-bg); }
+.afk-clear-btn { background: none; border: 1px solid var(--danger, #ed4245); color: var(--danger, #ed4245); border-radius: 6px; padding: 0.2rem 0.6rem; font-size: 0.75rem; cursor: pointer; transition: all 0.15s; }
+.afk-clear-btn:hover { background: rgba(237,66,69,.15); }
+.afk-empty { text-align: center; padding: 3rem 1rem; color: var(--text-3); font-size: 0.9rem; }
+.afk-user-tag { font-family: monospace; font-size: 0.8rem; color: var(--text-3); }

@@ -1,0 +1,14 @@
+/* ── Stats Channels ─────────────────────────────────────────── */
+.stats-enable-row { display: flex; align-items: center; justify-content: space-between; background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
+.stats-enable-label { font-weight: 600; color: var(--text-1); }
+.stats-enable-sub { font-size: 0.8rem; color: var(--text-3); }
+.stats-channels-list { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem; }
+.stats-channel-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
+.stats-channel-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 0.75rem; align-items: end; }
+@media (max-width: 768px) { .stats-channel-row { grid-template-columns: 1fr 1fr; } }
+.stats-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); display: block; margin-bottom: 0.35rem; }
+.stats-input, .stats-select { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.75rem; color: var(--text-1); font-size: 0.875rem; }
+.stats-input:focus, .stats-select:focus { outline: none; border-color: var(--accent); }
+.stats-channel-remove { color: var(--danger, #ed4245); background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 0.25rem; border-radius: 6px; }
+.stats-channel-remove:hover { background: rgba(237,66,69,.1); }
+.stats-add-btn { margin-top: 0.5rem; }
