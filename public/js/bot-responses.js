@@ -13,7 +13,7 @@
 (function () {
   'use strict';
 
-  var state = { guildId: null, types: [], templates: {}, loaded: false };
+  var state = { guildId: null, types: [], templates: {}, theme: {}, loaded: false };
 
   var GROUP_ICON = {
     'Punishment Responses': '🔨', 'Logging': '📋',
@@ -57,11 +57,16 @@
     var container = document.getElementById('botResponsesContainer');
     if (!container) return;
     container.innerHTML = '<div class="loading-state"><div class="spinner"></div>Loading response templates...</div>';
-    fetch('/api/guild/' + state.guildId + '/bot-messages')
-      .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
-      .then(function(data) {
+    Promise.all([
+      fetch('/api/guild/' + state.guildId + '/bot-messages').then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }),
+      fetch('/api/guild/' + state.guildId + '/theme').then(function(r) { return r.ok ? r.json() : {}; }).catch(function() { return {}; }),
+    ])
+      .then(function(results) {
+        var data = results[0];
+        var theme = results[1];
         state.types     = Array.isArray(data.types) ? data.types : [];
         state.templates = (data.templates && typeof data.templates === 'object') ? data.templates : {};
+        state.theme     = theme || {};
         state.loaded    = true;
         render(container);
       })
@@ -81,7 +86,7 @@
       if (!groups[t.group]) groups[t.group] = [];
       groups[t.group].push({ key: t.key, label: t.label, tpl: state.templates[t.key] || null });
     });
-    var html = '';
+    var html = buildThemeCardHtml();
     Object.keys(groups).forEach(function(groupName) {
       var icon = GROUP_ICON[groupName] || 'note';
       var vars = GROUP_VARS[groupName] || {};
@@ -92,6 +97,93 @@
     });
     container.innerHTML = html;
     attachListeners(container);
+  }
+
+  /* --- embed theme card --- */
+  function buildThemeCardHtml() {
+    var t = state.theme || {};
+    var color = t.embedColor || '#0f52ba';
+    return '<div class="responses-group" id="resp-theme-card">' +
+      '<div class="responses-group-title">🎨 Global Embed Theme</div>' +
+      '<div class="response-item" style="border:none;background:transparent;padding:0">' +
+        '<div class="resp-form-col" style="max-width:100%;width:100%">' +
+          '<p style="font-size:0.82rem;color:var(--text-2);margin:0 0 1rem">These defaults apply to all bot embeds (moderation, logging, etc.) when no per-message override is set.</p>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">' +
+            '<div class="resp-field-group">' +
+              '<label class="resp-field-label">Accent Color</label>' +
+              '<div style="display:flex;align-items:center;gap:10px">' +
+                '<input type="color" id="theme-embedColor" class="resp-color-input" value="' + esc(color) + '">' +
+                '<span id="theme-color-val">' + esc(color) + '</span>' +
+              '</div>' +
+            '</div>' +
+            '<div class="resp-field-group">' +
+              '<label class="resp-field-label">Show Timestamp</label>' +
+              '<label class="toggle-switch">' +
+                '<input type="checkbox" id="theme-showTimestamp" ' + (t.showTimestamp !== false ? 'checked' : '') + '>' +
+                '<span class="toggle-slider"></span>' +
+              '</label>' +
+            '</div>' +
+            '<div class="resp-field-group">' +
+              '<label class="resp-field-label">Author Name</label>' +
+              '<input type="text" id="theme-embedAuthorName" class="resp-input" maxlength="200" placeholder="e.g. FlynnBot" value="' + esc(t.embedAuthorName || '') + '">' +
+            '</div>' +
+            '<div class="resp-field-group">' +
+              '<label class="resp-field-label">Author Icon URL</label>' +
+              '<input type="url" id="theme-embedAuthorIconUrl" class="resp-input" maxlength="400" placeholder="https://…" value="' + esc(t.embedAuthorIconUrl || '') + '">' +
+            '</div>' +
+            '<div class="resp-field-group">' +
+              '<label class="resp-field-label">Footer Text</label>' +
+              '<input type="text" id="theme-embedFooterText" class="resp-input" maxlength="200" placeholder="e.g. FlynnBot • {guild}" value="' + esc(t.embedFooterText || '') + '">' +
+            '</div>' +
+            '<div class="resp-field-group">' +
+              '<label class="resp-field-label">Footer Icon URL</label>' +
+              '<input type="url" id="theme-embedFooterIconUrl" class="resp-input" maxlength="400" placeholder="https://…" value="' + esc(t.embedFooterIconUrl || '') + '">' +
+            '</div>' +
+            '<div class="resp-field-group">' +
+              '<label class="resp-field-label">Use Server Icon <span class="resp-field-hint">as thumbnail</span></label>' +
+              '<label class="toggle-switch">' +
+                '<input type="checkbox" id="theme-useServerIcon" ' + (t.useServerIcon ? 'checked' : '') + '>' +
+                '<span class="toggle-slider"></span>' +
+              '</label>' +
+            '</div>' +
+          '</div>' +
+          '<div class="resp-actions" style="margin-top:1rem">' +
+            '<button class="btn btn-primary btn-sm" id="theme-save-btn">Save Theme</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  /* --- save theme --- */
+  function saveTheme() {
+    var btn = document.getElementById('theme-save-btn');
+    if (btn) btn.disabled = true;
+    var body = {
+      embedColor: document.getElementById('theme-embedColor')?.value || '#0f52ba',
+      embedAuthorName: document.getElementById('theme-embedAuthorName')?.value?.trim() || '',
+      embedAuthorIconUrl: document.getElementById('theme-embedAuthorIconUrl')?.value?.trim() || '',
+      embedFooterText: document.getElementById('theme-embedFooterText')?.value?.trim() || '',
+      embedFooterIconUrl: document.getElementById('theme-embedFooterIconUrl')?.value?.trim() || '',
+      useServerIcon: !!document.getElementById('theme-useServerIcon')?.checked,
+      showTimestamp: !!document.getElementById('theme-showTimestamp')?.checked,
+    };
+    fetch('/api/guild/' + state.guildId + '/theme', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(function(r) { return r.json(); }).then(function(data) {
+      if (data && data.embedColor) {
+        state.theme = data;
+        window.showToast?.('Embed theme saved.', 'success');
+      } else {
+        window.showToast?.('Failed to save theme.', 'error');
+      }
+    }).catch(function() {
+      window.showToast?.('Network error — theme not saved.', 'error');
+    }).finally(function() {
+      if (btn) btn.disabled = false;
+    });
   }
 
   /* --- build single item --- */
@@ -332,6 +424,14 @@
 
   /* --- attach all listeners --- */
   function attachListeners(container) {
+    // Theme card
+    document.getElementById('theme-save-btn')?.addEventListener('click', saveTheme);
+    var themeColor = document.getElementById('theme-embedColor');
+    var themeColorVal = document.getElementById('theme-color-val');
+    if (themeColor && themeColorVal) {
+      themeColor.addEventListener('input', function() { themeColorVal.textContent = themeColor.value; });
+    }
+
     container.querySelectorAll('.resp-expand-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
         var sk     = btn.dataset.type.replace(/_/g, '-');

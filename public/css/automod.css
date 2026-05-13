@@ -1,11 +1,11 @@
-/* ── AutoMod Section ─────────────────────────────────────────────────────── */
+﻿/* ── AutoMod Section ─────────────────────────────────────────────────────── */
 
 .automod-master-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  background: var(--surface-2);
+  background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 10px;
   margin-bottom: 1.5rem;
@@ -19,7 +19,7 @@
 
 .automod-master-sub {
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: var(--text-2);
   margin-top: 2px;
 }
 
@@ -31,7 +31,7 @@
 }
 
 .automod-group {
-  background: var(--surface-2);
+  background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
@@ -42,7 +42,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.9rem 1.25rem;
-  background: var(--surface-3);
+  background: var(--bg-3);
   border-bottom: 1px solid var(--border);
 }
 
@@ -60,8 +60,8 @@
   letter-spacing: 0.05em;
   padding: 2px 7px;
   border-radius: 20px;
-  background: var(--accent-dim);
-  color: var(--accent-light);
+  background: rgba(59,130,246,0.12);
+  color: var(--accent);
 }
 
 .automod-group-badge.badge-bot {
@@ -95,7 +95,7 @@
 
 .automod-rule-hint {
   font-size: 0.78rem;
-  color: var(--text-muted);
+  color: var(--text-2);
   margin-top: 2px;
 }
 
@@ -103,7 +103,7 @@
 .automod-rule-detail {
   grid-column: 1 / -1;
   padding: 0.85rem;
-  background: var(--surface-1);
+  background: var(--bg-1);
   border: 1px solid var(--border);
   border-radius: 8px;
   display: none;
@@ -125,7 +125,7 @@
 
 .automod-detail-label {
   font-size: 0.82rem;
-  color: var(--text-muted);
+  color: var(--text-2);
   font-weight: 500;
   min-width: 120px;
 }
@@ -140,7 +140,7 @@
 .automod-detail-control input[type="text"] {
   width: 100%;
   padding: 0.4rem 0.6rem;
-  background: var(--surface-2);
+  background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text);
@@ -153,7 +153,7 @@
   flex-wrap: wrap;
   gap: 0.35rem;
   padding: 0.5rem;
-  background: var(--surface-2);
+  background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 6px;
   min-height: 42px;
@@ -165,10 +165,10 @@
   align-items: center;
   gap: 0.3rem;
   padding: 2px 8px;
-  background: var(--accent-dim);
+  background: rgba(59,130,246,0.12);
   border-radius: 20px;
   font-size: 0.78rem;
-  color: var(--accent-light);
+  color: var(--accent);
   font-weight: 500;
 }
 
@@ -176,7 +176,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--accent-light);
+  color: var(--accent);
   font-size: 0.7rem;
   padding: 0;
   line-height: 1;
@@ -202,7 +202,7 @@
 .automod-exempt-section {
   margin-top: 1.5rem;
   padding: 1rem 1.25rem;
-  background: var(--surface-2);
+  background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 10px;
 }
@@ -230,3 +230,4 @@
     grid-template-columns: 1fr auto;
   }
 }
+

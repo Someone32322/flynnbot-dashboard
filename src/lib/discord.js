@@ -38,8 +38,9 @@ async function getGuildRoles(guildId) {
   return discordFetch(`/guilds/${guildId}/roles`);
 }
 
-async function getGuildChannels(guildId) {
+async function getGuildChannels(guildId, { includeVoice = false } = {}) {
   const channels = await discordFetch(`/guilds/${guildId}/channels`);
+  if (includeVoice) return channels;
   // Only return text/forum channels useful for channel restrictions
   // 0=text, 5=announcement, 10=announcementThread, 11=publicThread, 12=privateThread, 15=forum
   return channels.filter((c) => [0, 5, 10, 11, 12, 15].includes(c.type));

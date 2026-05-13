@@ -163,11 +163,17 @@
   function buildHTML() {
     const w = _config.welcome || {};
     const g = _config.goodbye || {};
+    const ar = _config.antiRaid || {};
+    const vr = _config.verification || {};
+    const roleOptions = _roles.filter((r) => r.id !== _guildId)
+      .map((r) => `<option value="${esc(r.id)}">${esc(r.name)}</option>`).join('');
 
     return `
       <div class="welcome-tabs">
         <button class="welcome-tab ${_activeTab === 'welcome' ? 'active' : ''}" data-tab="welcome">Welcome</button>
         <button class="welcome-tab ${_activeTab === 'goodbye' ? 'active' : ''}" data-tab="goodbye">Goodbye</button>
+        <button class="welcome-tab ${_activeTab === 'antiraid' ? 'active' : ''}" data-tab="antiraid">Anti-Raid</button>
+        <button class="welcome-tab ${_activeTab === 'verification' ? 'active' : ''}" data-tab="verification">Verification</button>
       </div>
 
       <!-- WELCOME PANE -->
@@ -261,7 +267,7 @@
             ${roleChips(w.autoRoles)}
           </div>
           <div style="margin-top:.5rem">
-            <select id="welcome-role-add" style="padding:.4rem .6rem;background:var(--surface-1);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:.82rem">
+            <select id="welcome-role-add" style="padding:.4rem .6rem;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.82rem">
               <option value="">— Add role —</option>
               ${_roles.filter((r) => r.id !== _guildId).map((r) => `<option value="${r.id}">${esc(r.name)}</option>`).join('')}
             </select>
@@ -369,6 +375,148 @@
           </div>
         </div>
         </div><!-- /goodbye-pane-grid -->
+      </div>
+
+      <!-- ANTI-RAID PANE -->
+      <div class="welcome-pane ${_activeTab === 'antiraid' ? 'active' : ''}" id="welcome-pane-antiraid">
+        <div class="welcome-pane-single">
+
+          <div class="welcome-card">
+            <div class="welcome-row">
+              <div class="welcome-row-info">
+                <div class="welcome-row-label">Enable Anti-Raid</div>
+                <div class="welcome-row-hint">Automatically detect and respond to raid attempts</div>
+              </div>
+              ${toggle('ar-enabled', ar.enabled)}
+            </div>
+          </div>
+
+          <div class="welcome-card">
+            <div class="welcome-row-label" style="margin-bottom:.75rem;font-size:.8rem;color:var(--text-2)">JOIN RATE DETECTION</div>
+            <div class="welcome-row">
+              <div class="welcome-row-info">
+                <div class="welcome-row-label">Max joins per minute</div>
+                <div class="welcome-row-hint">Trigger lockdown when this many users join within 60 seconds</div>
+              </div>
+              <div class="welcome-row-control"><input type="number" id="ar-max-joins" min="2" max="100" value="${ar.maxJoinsPerMinute || 10}" /></div>
+            </div>
+            <div class="welcome-row">
+              <div class="welcome-row-info">
+                <div class="welcome-row-label">Minimum account age (days)</div>
+                <div class="welcome-row-hint">Auto-kick accounts newer than this during a raid</div>
+              </div>
+              <div class="welcome-row-control"><input type="number" id="ar-min-age" min="0" max="365" value="${ar.minAccountAgeDays ?? 7}" /></div>
+            </div>
+            <div class="welcome-row">
+              <div class="welcome-row-info">
+                <div class="welcome-row-label">Action on new joins during raid</div>
+              </div>
+              <div class="welcome-row-control">
+                <select id="ar-action">
+                  <option value="kick" ${ar.action === 'kick' ? 'selected' : ''}>Kick</option>
+                  <option value="ban" ${ar.action === 'ban' ? 'selected' : ''}>Ban</option>
+                  <option value="restrict" ${(!ar.action || ar.action === 'restrict') ? 'selected' : ''}>Restrict (remove roles)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="welcome-card">
+            <div class="welcome-row-label" style="margin-bottom:.75rem;font-size:.8rem;color:var(--text-2)">LOCKDOWN</div>
+            <div class="welcome-row">
+              <div class="welcome-row-info">
+                <div class="welcome-row-label">Auto-unlock after (minutes)</div>
+                <div class="welcome-row-hint">0 = stay locked until manually unlocked</div>
+              </div>
+              <div class="welcome-row-control"><input type="number" id="ar-auto-unlock" min="0" max="1440" value="${ar.autoUnlockMinutes ?? 30}" /></div>
+            </div>
+            <div class="welcome-row">
+              <div class="welcome-row-info">
+                <div class="welcome-row-label">Alert channel</div>
+                <div class="welcome-row-hint">Notify staff when a raid is detected</div>
+              </div>
+              <div class="welcome-row-control"><select id="ar-alert-channel">${channelOptions(ar.alertChannelId)}</select></div>
+            </div>
+            <div class="welcome-row">
+              <div class="welcome-row-info">
+                <div class="welcome-row-label">DM alert to server owner</div>
+              </div>
+              ${toggle('ar-dm-owner', ar.dmOwner !== false)}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- VERIFICATION PANE -->
+      <div class="welcome-pane ${_activeTab === 'verification' ? 'active' : ''}" id="welcome-pane-verification">
+        <div class="welcome-pane-single">
+
+          <div class="welcome-card">
+            <div class="welcome-row">
+              <div class="welcome-row-info">
+                <div class="welcome-row-label">Enable Verification</div>
+                <div class="welcome-row-hint">Require new members to verify before accessing the server</div>
+              </div>
+              ${toggle('vr-enabled', vr.enabled)}
+            </div>
+            <div class="welcome-row" style="margin-top:.5rem">
+              <div class="welcome-row-info"><div class="welcome-row-label">Verification type</div></div>
+              <div class="welcome-row-control">
+                <select id="vr-type">
+                  <option value="button" ${(!vr.type || vr.type === 'button') ? 'selected' : ''}>Button click</option>
+                  <option value="reaction" ${vr.type === 'reaction' ? 'selected' : ''}>Reaction</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="welcome-card">
+            <div class="welcome-row-label" style="margin-bottom:.75rem;font-size:.8rem;color:var(--text-2)">ROLES</div>
+            <div class="welcome-row">
+              <div class="welcome-row-info">
+                <div class="welcome-row-label">Unverified role</div>
+                <div class="welcome-row-hint">Assigned on join — removed after verification</div>
+              </div>
+              <div class="welcome-row-control">
+                <select id="vr-unverified-role">
+                  <option value="">None</option>
+                  ${roleOptions}
+                </select>
+              </div>
+            </div>
+            <div class="welcome-row">
+              <div class="welcome-row-info">
+                <div class="welcome-row-label">Verified role</div>
+                <div class="welcome-row-hint">Assigned after user verifies</div>
+              </div>
+              <div class="welcome-row-control">
+                <select id="vr-verified-role">
+                  <option value="">None</option>
+                  ${roleOptions}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="welcome-card">
+            <div class="welcome-row-label" style="margin-bottom:.75rem;font-size:.8rem;color:var(--text-2)">VERIFICATION MESSAGE</div>
+            <div class="welcome-row">
+              <div class="welcome-row-info"><div class="welcome-row-label">Verification channel</div></div>
+              <div class="welcome-row-control"><select id="vr-channel">${channelOptions(vr.channelId)}</select></div>
+            </div>
+            <div style="margin-top:.75rem">
+              <div class="welcome-row-label" style="margin-bottom:.4rem">Button / reaction label</div>
+              <input type="text" id="vr-button-label" class="welcome-input" maxlength="80"
+                value="${esc(vr.buttonLabel || '✅  I agree to the rules')}" placeholder="Button label or emoji for reaction" />
+            </div>
+            <div style="margin-top:.75rem">
+              <div class="welcome-row-label" style="margin-bottom:.4rem">Verification message text</div>
+              <textarea class="welcome-textarea" id="vr-message" rows="3" maxlength="2000">${esc(vr.message || 'Welcome! Please click the button below to verify and gain access to the server.')}</textarea>
+            </div>
+          </div>
+
+        </div>
       </div>`;
   }
 
@@ -512,6 +660,24 @@
           footer: val('goodbye-embed-footer'),
           thumbnail: checked('goodbye-embed-thumbnail'),
         },
+      },
+      antiRaid: {
+        enabled: checked('ar-enabled'),
+        maxJoinsPerMinute: parseInt(val('ar-max-joins', '10'), 10) || 10,
+        minAccountAgeDays: parseInt(val('ar-min-age', '7'), 10) || 0,
+        action: val('ar-action', 'restrict'),
+        autoUnlockMinutes: parseInt(val('ar-auto-unlock', '30'), 10) || 0,
+        alertChannelId: val('ar-alert-channel') || null,
+        dmOwner: checked('ar-dm-owner'),
+      },
+      verification: {
+        enabled: checked('vr-enabled'),
+        type: val('vr-type', 'button'),
+        channelId: val('vr-channel') || null,
+        unverifiedRoleId: val('vr-unverified-role') || null,
+        verifiedRoleId: val('vr-verified-role') || null,
+        buttonLabel: val('vr-button-label'),
+        message: val('vr-message'),
       },
     };
   }

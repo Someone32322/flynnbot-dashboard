@@ -385,7 +385,8 @@ router.get('/guild/:guildId/emojis', requireAuth, requireGuildAdmin, async (req,
 // ── GET /api/guild/:guildId/channels ──────────────────────────
 router.get('/guild/:guildId/channels', requireAuth, requireGuildAdmin, async (req, res) => {
   try {
-    const channels = await discordApi.getGuildChannels(req.params.guildId);
+    const includeVoice = req.query.voice === '1';
+    const channels = await discordApi.getGuildChannels(req.params.guildId, { includeVoice });
     const mapped = channels
       .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
       .map((c) => ({ id: c.id, name: c.name, type: c.type }));
@@ -2253,7 +2254,10 @@ router.get('/guild/:guildId/ai', requireAuth, requireGuildAdmin, async (req, res
       { $setOnInsert: { guildId: req.params.guildId } },
       { upsert: true, returnDocument: 'after' }
     ).lean();
-    res.json(cfg);
+    // Mask API key — never send raw key to client
+    const safe = { ...cfg };
+    if (safe.apiKey) safe.apiKey = '••••••••••••••••••••';
+    res.json(safe);
   } catch (err) {
     console.error('[API] GET ai config', err);
     res.status(500).json({ error: 'Failed to fetch AI config' });
@@ -2263,22 +2267,52 @@ router.get('/guild/:guildId/ai', requireAuth, requireGuildAdmin, async (req, res
 // ── PATCH /api/guild/:guildId/ai ──────────────────────────────
 router.patch('/guild/:guildId/ai', requireAuth, requireGuildAdmin, async (req, res) => {
   try {
-    const allowed = ['enabled', 'allowedChannels', 'systemPrompt', 'model', 'temperature', 'maxTokens', 'requireMention'];
+    const allowed = ['enabled', 'allowedChannels', 'systemPrompt', 'model', 'temperature', 'maxTokens', 'requireMention', 'rememberContext', 'apiKey'];
     const update = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) update[key] = req.body[key];
     }
     // Sanitize systemPrompt
     if (update.systemPrompt) update.systemPrompt = String(update.systemPrompt).slice(0, 2000);
+    // Sanitize apiKey — basic format check
+    if (update.apiKey !== undefined) {
+      const key = String(update.apiKey || '').trim();
+      if (key.length > 0 && key.length < 20) return res.status(400).json({ error: 'Invalid API key format' });
+      update.apiKey = key.slice(0, 200);
+    }
     const cfg = await AIConfig.findOneAndUpdate(
       { guildId: req.params.guildId },
       { $set: update },
       { upsert: true, returnDocument: 'after' }
     ).lean();
-    res.json(cfg);
+    // Mask API key in response
+    const safe = { ...cfg };
+    if (safe.apiKey) safe.apiKey = '••••••••••••••••••••';
+    res.json(safe);
   } catch (err) {
     console.error('[API] PATCH ai config', err);
     res.status(500).json({ error: 'Failed to save AI config' });
+  }
+});
+
+// ── POST /api/guild/:guildId/ai/validate-key ──────────────────
+router.post('/guild/:guildId/ai/validate-key', requireAuth, requireGuildAdmin, async (req, res) => {
+  try {
+    const apiKey = String(req.body.apiKey || '').trim();
+    if (!apiKey || apiKey.length < 20) return res.status(400).json({ valid: false, error: 'Key too short' });
+    // Attempt a minimal Groq API call to test the key
+    const testRes = await fetch('https://api.groq.com/openai/v1/models', {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (testRes.ok) {
+      res.json({ valid: true });
+    } else {
+      const body = await testRes.json().catch(() => ({}));
+      res.json({ valid: false, error: body?.error?.message || 'Authentication failed' });
+    }
+  } catch (err) {
+    console.error('[API] validate Groq key', err);
+    res.status(500).json({ valid: false, error: 'Validation request failed' });
   }
 });
 

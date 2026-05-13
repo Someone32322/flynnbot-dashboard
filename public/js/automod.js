@@ -241,13 +241,13 @@
               <div class="automod-detail-row">
                 <span class="automod-detail-label">Presets</span>
                 <div class="automod-detail-control">
-                  <label style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-secondary)">
+                  <label style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-2)">
                     <input type="checkbox" id="automod-profanity-PROFANITY" ${(dr.profanity?.presets || []).includes('PROFANITY') ? 'checked' : ''} /> Profanity
                   </label>
-                  <label style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-secondary);margin-top:.4rem">
+                  <label style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-2);margin-top:.4rem">
                     <input type="checkbox" id="automod-profanity-SEXUAL_CONTENT" ${(dr.profanity?.presets || []).includes('SEXUAL_CONTENT') ? 'checked' : ''} /> Sexual content
                   </label>
-                  <label style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-secondary);margin-top:.4rem">
+                  <label style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-2);margin-top:.4rem">
                     <input type="checkbox" id="automod-profanity-SLURS" ${(dr.profanity?.presets || []).includes('SLURS') ? 'checked' : ''} /> Slurs
                   </label>
                 </div>

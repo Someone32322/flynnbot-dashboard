@@ -40,10 +40,10 @@
     try {
       const [data, channelData] = await Promise.all([
         fetch(`/api/guild/${_guildId}/stats`).then((r) => r.json()),
-        fetch(`/api/guild/${_guildId}/channels`).then((r) => r.json()).catch(() => []),
+        fetch(`/api/guild/${_guildId}/channels?voice=1`).then((r) => r.json()).catch(() => []),
       ]);
       _config = data.config || {};
-      _channels = Array.isArray(channelData) ? channelData.filter((c) => c.type === 2) : []; // voice channels
+      _channels = Array.isArray(channelData) ? channelData.filter((c) => c.type === 2 || c.type === 13) : []; // voice + stage channels
       render();
     } catch (err) {
       console.error('[Stats] load error', err);

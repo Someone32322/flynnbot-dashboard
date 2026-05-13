@@ -67,8 +67,8 @@ window.NotesModule = (() => {
     const content = document.getElementById('noteContent')?.value?.trim();
     const caseId = document.getElementById('noteCaseId')?.value?.trim();
 
-    if (!userId || !/^\d+$/.test(userId)) { showToast('Enter a valid user ID', 'error'); return; }
-    if (!content) { showToast('Note content is required', 'error'); return; }
+    if (!userId || !/^\d+$/.test(userId)) { window.showToast?.('Enter a valid user ID', 'error'); return; }
+    if (!content) { window.showToast?.('Note content is required', 'error'); return; }
 
     const btn = document.getElementById('addNoteBtn');
     if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
@@ -81,40 +81,35 @@ window.NotesModule = (() => {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to save');
-      showToast('Note added', 'success');
+      window.showToast?.('Note added', 'success');
       document.getElementById('noteUserId').value = '';
       document.getElementById('noteContent').value = '';
       if (document.getElementById('noteCaseId')) document.getElementById('noteCaseId').value = '';
       // Reload notes for this user
       load(document.getElementById('noteSearchId')?.value?.trim() || '');
     } catch (err) {
-      showToast(err.message, 'error');
+      window.showToast?.(err.message, 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = 'Add Note'; }
     }
   }
 
   async function deleteNote(noteId) {
-    if (!await window.showConfirm('Delete this note?', { title: 'Delete Note', confirmText: 'Delete' })) return;
+    if (!await window.showConfirm?.('Delete this note?', { title: 'Delete Note', confirmText: 'Delete' })) return;
     try {
       const res = await fetch(`/api/guild/${guildId}/notes/${noteId}`, { method: 'DELETE' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to delete');
-      showToast('Note deleted', 'success');
+      window.showToast?.('Note deleted', 'success');
       notes = notes.filter(n => n._id !== noteId);
       renderNotes(notes);
     } catch (err) {
-      showToast(err.message, 'error');
+      window.showToast?.(err.message, 'error');
     }
   }
 
   function showToast(msg, type = 'info') {
-    const container = document.getElementById('toastContainer') || document.body;
-    const t = document.createElement('div');
-    t.className = `toast toast--${type}`;
-    t.textContent = msg;
-    container.appendChild(t);
-    setTimeout(() => t.remove(), 3500);
+    window.showToast?.(msg, type);
   }
 
   function init(id) {

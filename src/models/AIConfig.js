@@ -11,12 +11,13 @@ const aiConfigSchema = new mongoose.Schema({
   },
   model: {
     type: String,
-    default: 'llama3-8b-8192',
-    enum: ['llama3-8b-8192', 'llama3-70b-8192', 'mixtral-8x7b-32768', 'gemma2-9b-it'],
+    default: 'llama-3.3-70b-versatile',
   },
   temperature: { type: Number, default: 0.7, min: 0, max: 2 },
-  maxTokens: { type: Number, default: 512, min: 50, max: 2048 },
+  maxTokens: { type: Number, default: 512, min: 50, max: 4096 },
   requireMention: { type: Boolean, default: false },
+  rememberContext: { type: Boolean, default: true },
+  apiKey: { type: String, default: '', maxlength: 200 },
 }, { timestamps: true });
 
 module.exports = mongoose.models.AIConfig || mongoose.model('AIConfig', aiConfigSchema);
