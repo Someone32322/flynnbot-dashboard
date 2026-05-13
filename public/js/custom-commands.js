@@ -27,8 +27,6 @@ async function refreshCustomCommands(guildId) {
 
 function renderCustomCommands(container, guildId) {
   container.innerHTML = `
-    <div id="ccSaveStatus" class="save-status" style="display:none"></div>
-
     <div class="ec-card">
       <div class="ec-card-header">
         <h3>Your Custom Commands (${_ccCmds.length})</h3>
@@ -136,7 +134,7 @@ function wireCCListButtons(guildId) {
           }
         } catch {}
       } else if (action === 'delete') {
-        if (!confirm('Delete this custom command?')) return;
+        if (!await window.showConfirm('Delete this custom command?', { title: 'Delete Command', confirmText: 'Delete' })) return;
         try {
           const res = await fetch(`/api/guild/${guildId}/custom-commands/${id}`, { method: 'DELETE' });
           if (res.ok) {
@@ -190,7 +188,7 @@ async function submitCCModal(guildId) {
   const name = document.getElementById('ccName').value.trim();
   const trigger = document.getElementById('ccTrigger').value.trim();
   const response = document.getElementById('ccResponse').value.trim();
-  if (!name || !trigger || !response) { alert('Name, trigger, and response are required.'); return; }
+  if (!name || !trigger || !response) { window.showToast?.('Name, trigger, and response are required.', 'warning'); return; }
 
   const body = {
     name,
@@ -231,7 +229,7 @@ async function submitCCModal(guildId) {
     wireCCListButtons(guildId);
     closeCCModal();
   } catch (e) {
-    alert('Error: ' + e.message);
+    window.showToast?.('Error: ' + e.message, 'error');
   } finally {
     btn.disabled = false;
   }
@@ -252,3 +250,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.initCustomCommands = initCustomCommands;
+

@@ -58,7 +58,7 @@
     $('lvAddRewardBtn')?.addEventListener('click', () => {
       openRewardModal().catch((err) => {
         console.error('[leveling] openRewardModal', err);
-        alert('Could not open reward modal. Please try again.');
+        window.showToast?.('Could not open reward modal. Please try again.', 'error');
       });
     });
     $('lvRewardClose')?.addEventListener('click', closeRewardModal);
@@ -84,7 +84,7 @@
       e.preventDefault();
       openRewardModal().catch((err) => {
         console.error('[leveling] delegated openRewardModal', err);
-        alert('Could not open reward modal. Please try again.');
+        window.showToast?.('Could not open reward modal. Please try again.', 'error');
       });
     });
 
@@ -299,7 +299,7 @@
   async function openRewardModal() {
     await ensureCoreData();
     if (!roles.length) {
-      alert('No roles were found for this server yet. Please check bot permissions and try again.');
+      window.showToast?.('No roles found. Please check bot permissions and try again.', 'warning');
       return;
     }
     const bd = $('lvRewardBackdrop');
@@ -319,7 +319,7 @@
   function addRewardFromModal() {
     const level = parseInt($('lvRewardLevel')?.value);
     const roleId = $('lvRewardRole')?.value;
-    if (!level || level < 1 || !roleId) { alert('Please enter a valid level and select a role.'); return; }
+    if (!level || level < 1 || !roleId) { window.showToast?.('Please enter a valid level and select a role.', 'warning'); return; }
     rewards = rewards.filter((r) => r.level !== level);
     rewards.push({ level, roleId });
     rewards.sort((a, b) => a.level - b.level);
@@ -370,15 +370,15 @@
 
   // ── Reset ─────────────────────────────────────────────────
   async function confirmReset() {
-    if (!confirm('Are you sure you want to permanently delete ALL XP data for this server? This cannot be undone.')) return;
+    if (!await window.showConfirm('Permanently delete ALL XP data for this server? This cannot be undone.', { title: 'Reset Leaderboard', confirmText: 'Reset All XP' })) return;
     try {
       const res = await fetch(`/api/guild/${guildId}/levels/reset`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || res.statusText);
-      alert(`Deleted ${data.deleted} user record${data.deleted !== 1 ? 's' : ''}. Leaderboard has been reset.`);
+      window.showToast?.(`Deleted ${data.deleted} user records. Leaderboard reset.`, 'success');
       loadLeaderboard(1);
     } catch (err) {
-      alert('Reset failed: ' + err.message);
+      window.showToast?.('Reset failed: ' + err.message, 'error');
     }
   }
 
@@ -468,3 +468,4 @@
     }
   });
 })();
+

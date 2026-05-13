@@ -232,7 +232,7 @@
   // ── Save embed ───────────────────────────────────────────────
   async function saveEmbed() {
     const name = document.getElementById('embedName').value.trim();
-    if (!name) { alert('Embed name is required.'); return; }
+    if (!name) { window.showToast?.('Embed name is required.', 'warning'); return; }
 
     const fields = Array.from(document.querySelectorAll('.embed-field-row')).map((row) => ({
       name: row.querySelector('.field-name').value.trim(),
@@ -279,7 +279,7 @@
       closeEditor();
       await loadEmbeds();
     } catch (err) {
-      alert('Error: ' + err.message);
+      window.showToast?.('Error: ' + err.message, 'error');
     } finally {
       saveBtn.disabled = false;
       saveBtn.textContent = 'Save Embed';
@@ -290,14 +290,14 @@
   async function deleteEmbed(embedId) {
     const emb = allEmbeds.find((e) => e._id === embedId);
     if (!emb) return;
-    if (!confirm(`Delete embed "${emb.name}"? This cannot be undone.`)) return;
+    if (!await window.showConfirm(`Delete embed "${emb.name}"? This cannot be undone.`, { title: 'Delete Embed', confirmText: 'Delete' })) return;
 
     try {
       const res = await fetch(`/api/guild/${guildId}/embeds/${embedId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete embed');
       await loadEmbeds();
     } catch (err) {
-      alert('Error: ' + err.message);
+      window.showToast?.('Error: ' + err.message, 'error');
     }
   }
 
@@ -306,3 +306,4 @@
     if (e.detail?.section === 'embeds') initEmbeds();
   });
 })();
+

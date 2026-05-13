@@ -28,8 +28,6 @@ async function refreshTheme(guildId) {
 function renderTheme(container, guildId) {
   const t = _themeCfg || {};
   container.innerHTML = `
-    <div id="themeSaveStatus" class="save-status" style="display:none"></div>
-
     <div class="ec-card">
       <div class="ec-card-header"><h3>Embed Appearance</h3></div>
       <div class="ec-card-body">
@@ -98,7 +96,6 @@ function renderTheme(container, guildId) {
 
 async function saveTheme(guildId) {
   const btn = document.getElementById('themeSaveBtn');
-  const status = document.getElementById('themeSaveStatus');
   btn.disabled = true;
   try {
     const body = {
@@ -116,20 +113,12 @@ async function saveTheme(guildId) {
     });
     if (!res.ok) throw new Error((await res.json()).error || 'Failed');
     _themeCfg = await res.json();
-    setThemeSaveStatus(status, true);
+    window.showToast?.('Theme saved!', 'success');
   } catch (e) {
-    setThemeSaveStatus(status, false, e.message);
+    window.showToast?.('Failed to save: ' + e.message, 'error');
   } finally {
     btn.disabled = false;
   }
-}
-
-function setThemeSaveStatus(el, ok, msg) {
-  if (!el) return;
-  el.style.display = '';
-  el.className = `save-status ${ok ? 'save-ok' : 'save-error'}`;
-  el.textContent = ok ? '✅ Theme saved!' : `❌ ${msg || 'Failed to save'}`;
-  setTimeout(() => { if (el) el.style.display = 'none'; }, 4000);
 }
 
 function escT(v) {

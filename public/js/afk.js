@@ -86,14 +86,14 @@
     root.querySelectorAll('.afk-clear-btn').forEach((btn) => {
       btn.addEventListener('click', async () => {
         const userId = btn.dataset.user;
-        if (!confirm(`Clear AFK for user ${userId}?`)) return;
         try {
           const res = await fetch(`/api/guild/${_guildId}/afk/${userId}`, { method: 'DELETE' });
           if (!res.ok) throw new Error('Request failed');
           _loaded = false;
           load();
+          window.showToast?.('AFK cleared.', 'success');
         } catch {
-          alert('Failed to clear AFK status.');
+          window.showToast?.('Failed to clear AFK status.', 'error');
         }
       });
     });

@@ -1511,7 +1511,7 @@
   }
 
   async function deleteMessage(id) {
-    if (!confirm('Delete this message? This cannot be undone.')) return;
+    if (!await window.showConfirm('Delete this message? This cannot be undone.', { title: 'Delete Message', confirmText: 'Delete' })) return;
     try {
       const r = await fetch(`/api/guild/${guildId}/messages/${id}`, { method: 'DELETE' });
       if (!r.ok) {
@@ -1606,3 +1606,4 @@
   }
 
 })();
+

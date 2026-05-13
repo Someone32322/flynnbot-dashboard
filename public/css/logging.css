@@ -35,7 +35,7 @@
   align-items: center;
   gap: 0.45rem;
   font-size: 0.8rem;
-  color: var(--text-secondary, #a0a0b0);
+  color: var(--text-2);
 }
 
 .logging-bulk-count {
@@ -71,7 +71,7 @@
   list-style: none;
   font-weight: 700;
   font-size: 0.88rem;
-  color: var(--text-primary, #e2e8f0);
+  color: var(--text);
   letter-spacing: 0.2px;
 }
 
@@ -129,7 +129,7 @@ details[open] .logging-cat-arrow {
   border-radius: 8px;
   border: 1px solid rgba(59, 130, 246, 0.2);
   background: rgba(8, 16, 38, 0.92);
-  color: var(--text-primary, #e2e8f0);
+  color: var(--text);
   font-size: 0.82rem;
   padding: 0.45rem 0.62rem;
 }
@@ -142,7 +142,7 @@ details[open] .logging-cat-arrow {
 
 .logging-event-label {
   font-size: 0.84rem;
-  color: var(--text-secondary, #cbd5e1);
+  color: var(--text-2);
   font-weight: 500;
   flex: 1;
   min-width: 0;
@@ -178,7 +178,7 @@ details[open] .logging-cat-arrow {
   border-radius: 8px;
   border: 1px solid rgba(59, 130, 246, 0.2);
   background: rgba(8, 16, 38, 0.92);
-  color: var(--text-primary, #e2e8f0);
+  color: var(--text);
   font-size: 0.8rem;
   cursor: pointer;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -281,19 +281,19 @@ details[open] .logging-cat-arrow {
 .embed-card-name {
   font-weight: 700;
   font-size: 0.9rem;
-  color: var(--text-primary, #e0e0e0);
+  color: var(--text);
   margin-bottom: 0.2rem;
 }
 
 .embed-card-title {
   font-size: 0.82rem;
-  color: var(--text-primary, #c8c8d8);
+  color: var(--text);
   margin-bottom: 0.2rem;
 }
 
 .embed-card-desc {
   font-size: 0.78rem;
-  color: var(--text-secondary, #8888a0);
+  color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -334,7 +334,7 @@ details[open] .logging-cat-arrow {
   flex-direction: column;
   gap: 0.3rem;
   font-size: 0.82rem;
-  color: var(--text-secondary, #a0a0b0);
+  color: var(--text-2);
   margin-bottom: 0.75rem;
 }
 
@@ -345,7 +345,7 @@ details[open] .logging-cat-arrow {
   border-radius: 6px;
   border: 1px solid var(--border, rgba(255,255,255,.12));
   background: var(--input-bg, #252535);
-  color: var(--text-primary, #e0e0e0);
+  color: var(--text);
   font-size: 0.85rem;
   width: 100%;
   box-sizing: border-box;
@@ -373,7 +373,7 @@ details[open] .logging-cat-arrow {
   justify-content: space-between;
   margin-bottom: 0.5rem;
   font-size: 0.82rem;
-  color: var(--text-secondary, #a0a0b0);
+  color: var(--text-2);
 }
 
 .embed-field-row {
@@ -393,7 +393,7 @@ details[open] .logging-cat-arrow {
   border-radius: 5px;
   border: 1px solid var(--border, rgba(255,255,255,.1));
   background: var(--input-bg, #252535);
-  color: var(--text-primary, #e0e0e0);
+  color: var(--text);
   font-size: 0.8rem;
   width: 100%;
   box-sizing: border-box;
@@ -404,14 +404,14 @@ details[open] .logging-cat-arrow {
   align-items: center;
   gap: 0.3rem;
   font-size: 0.78rem;
-  color: var(--text-secondary, #a0a0b0);
+  color: var(--text-2);
   white-space: nowrap;
   padding-top: 0.3rem;
 }
 
 /* Embed Preview */
 .embed-editor-preview { display: flex; flex-direction: column; gap: 0.5rem; }
-.preview-label { font-size: 0.8rem; color: var(--text-secondary, #a0a0b0); margin-bottom: 0.25rem; }
+.preview-label { font-size: 0.8rem; color: var(--text-2); margin-bottom: 0.25rem; }
 
 .discord-embed-preview {
   display: flex;
@@ -502,10 +502,10 @@ details[open] .logging-cat-arrow {
 }
 
 /* Misc */
-.muted { color: var(--text-secondary, #8888a0); }
+.muted { color: var(--text-2); }
 .empty-state {
   text-align: center;
-  color: var(--text-secondary, #8888a0);
+  color: var(--text-2);
   padding: 2rem 0;
   font-size: 0.9rem;
 }
@@ -535,7 +535,7 @@ details[open] .logging-cat-arrow {
 
 .logging-main-tab.active,
 .logging-main-tab:hover {
-  color: var(--text-1, #fff);
+  color: var(--text);
   border-bottom-color: #6366f1;
 }
 
@@ -574,7 +574,7 @@ details[open] .logging-cat-arrow {
 .logging-setting-label {
   font-size: 0.88rem;
   font-weight: 600;
-  color: var(--text-1, #fff);
+  color: var(--text);
 }
 
 .logging-setting-hint {

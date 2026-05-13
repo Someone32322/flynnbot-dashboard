@@ -483,7 +483,7 @@
   /* --- reset --- */
   function resetTemplate(type, container) {
     var meta  = state.types.find(function(t) { return t.key === type; }) || {};
-    if (!confirm('Reset "' + (meta.label || type) + '" to default?')) return;
+    if (!await window.showConfirm('Reset "' + (meta.label || type) + '" to default?', { title: 'Reset Response', confirmText: 'Reset' })) return;
     var sk      = type.replace(/_/g, '-');
     var badgeEl = document.getElementById('resp-badge-' + sk);
     var itemEl  = document.getElementById('resp-item-' + sk);
@@ -538,3 +538,4 @@
 
   if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
 })();
+

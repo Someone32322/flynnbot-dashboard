@@ -161,7 +161,7 @@
       _config = data.config || payload;
       window.SaveBar?.markClean();
     } catch (err) {
-      alert('Failed to save starboard config: ' + err.message);
+      window.showToast?.('Failed to save starboard config: ' + err.message, 'error');
     }
   }
 
@@ -176,3 +176,4 @@
   const pageData = document.getElementById('pageData');
   if (pageData?.dataset.guildId) init(pageData.dataset.guildId);
 })();
+

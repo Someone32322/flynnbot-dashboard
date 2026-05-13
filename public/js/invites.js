@@ -44,7 +44,7 @@
     const inviteRows = (_data.invites || []).map((inv) => `
       <tr>
         <td><code>${escHtml(inv.inviteCode)}</code></td>
-        <td><@${inv.inviterId || '?'}></td>
+        <td><code>${escHtml(inv.inviterId || '?')}</code></td>
         <td>${inv.uses}</td>
         <td>${fmt(inv.lastUsedAt)}</td>
       </tr>

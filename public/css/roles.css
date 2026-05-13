@@ -18,7 +18,7 @@
 
 .roles-stat-card {
   background: var(--bg-2);
-  border: 1px solid var(--border-1);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 1rem;
   text-align: center;
@@ -53,14 +53,14 @@
   align-items: center;
   gap: 0.75rem;
   background: var(--bg-2);
-  border: 1px solid var(--border-1);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.65rem 0.875rem;
   transition: border-color 0.15s;
 }
 
 .role-item:hover {
-  border-color: var(--border-2);
+  border-color: var(--border-hover);
 }
 
 .role-item.role-item--danger {
@@ -78,7 +78,7 @@
 .role-name {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--text-1);
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -122,7 +122,7 @@
 /* Mass assign card */
 .mass-assign-card {
   background: var(--bg-2);
-  border: 1px solid var(--border-1);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.25rem;
   margin-bottom: 1.5rem;
@@ -132,7 +132,7 @@
   font-size: 0.9rem;
   font-weight: 600;
   margin: 0 0 1rem;
-  color: var(--text-1);
+  color: var(--text);
 }
 
 .mass-assign-grid {

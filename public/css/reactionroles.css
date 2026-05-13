@@ -53,7 +53,7 @@
 .rr-msg-channel {
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--text-1);
+  color: var(--text);
   margin-bottom: 0.3rem;
 }
 
@@ -140,7 +140,7 @@
   flex: 1;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--text-1);
+  color: var(--text);
   margin: 0;
 }
 
@@ -270,7 +270,7 @@
 .rr-channel-option:hover,
 .rr-channel-option:focus-visible {
   background: rgba(255,255,255,0.07);
-  color: var(--text-1);
+  color: var(--text);
   outline: none;
 }
 
@@ -324,7 +324,7 @@
 
 .rr-tab.active,
 .rr-tab:hover {
-  color: var(--text-1);
+  color: var(--text);
   border-bottom-color: #6366f1;
 }
 
@@ -446,7 +446,7 @@
 
 .rr-sub-tab.active,
 .rr-sub-tab:hover {
-  color: var(--text-1);
+  color: var(--text);
   border-bottom-color: #6366f1;
 }
 
@@ -525,7 +525,7 @@
 .rr-embed-input {
   background: transparent;
   border: none;
-  color: var(--text-1);
+  color: var(--text);
   font-family: inherit;
   font-size: 0.84rem;
   width: 100%;
@@ -729,7 +729,7 @@
 .rr-role-pick-option:hover,
 .rr-role-pick-option:focus-visible {
   background: rgba(255,255,255,0.07);
-  color: var(--text-1);
+  color: var(--text);
   outline: none;
 }
 
@@ -759,7 +759,7 @@
 
 .rr-opt-label {
   font-size: 0.86rem;
-  color: var(--text-1);
+  color: var(--text);
   font-weight: 500;
 }
 

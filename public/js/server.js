@@ -35,7 +35,7 @@
 
     // Reset all commands button
     document.getElementById('resetAllCommandsBtn')?.addEventListener('click', async () => {
-      if (!confirm('This will disable ALL commands and remove them from Discord. Are you sure?')) return;
+      if (!await window.showConfirm('This will disable ALL commands and remove them from Discord. Are you sure?', { title: 'Disable All Commands', confirmText: 'Disable All' })) return;
       const btn = document.getElementById('resetAllCommandsBtn');
       btn.disabled = true;
       btn.textContent = 'Resetting…';
@@ -629,7 +629,9 @@
   /* ------------------------------------------------------------------ */
   function initSectionNav() {
     const hash = window.location.hash.replace('#', '');
-    const valid = ['home', 'commands', 'applications', 'logging', 'embeds', 'reaction-roles', 'levels', 'cases', 'responses', 'moderation', 'welcome', 'leveling', 'automod', 'tickets'];
+    // Build valid sections dynamically from DOM — catches all present + future sections
+    const domSections = Array.from(document.querySelectorAll('.dash-section[data-section]')).map(s => s.dataset.section);
+    const valid = domSections.length ? domSections : ['home'];
     const initial = valid.includes(hash) ? hash : 'home';
 
     document.querySelectorAll('.sidebar-nav-item[data-section]').forEach((btn) => {

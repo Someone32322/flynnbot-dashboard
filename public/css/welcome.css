@@ -22,7 +22,7 @@
 }
 
 .welcome-tab:hover {
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .welcome-tab.active {
@@ -65,7 +65,7 @@
 .welcome-row-label {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .welcome-row-hint {
@@ -89,7 +89,7 @@
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: 7px;
-  color: var(--text-primary);
+  color: var(--text);
   font-size: 0.85rem;
 }
 
@@ -99,7 +99,7 @@
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: 7px;
-  color: var(--text-primary);
+  color: var(--text);
   font-size: 0.85rem;
   resize: vertical;
   min-height: 80px;
@@ -150,13 +150,13 @@
 .welcome-embed-preview-title {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text);
   margin-bottom: 0.35rem;
 }
 
 .welcome-embed-preview-desc {
   font-size: 0.82rem;
-  color: var(--text-secondary);
+  color: var(--text-2);
   white-space: pre-wrap;
 }
 
@@ -180,7 +180,7 @@
   background: var(--surface-3);
   border-radius: 20px;
   font-size: 0.8rem;
-  color: var(--text-secondary);
+  color: var(--text-2);
 }
 
 .welcome-role-chip-remove {

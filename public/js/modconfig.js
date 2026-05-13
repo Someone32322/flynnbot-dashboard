@@ -85,7 +85,7 @@ function _updateUserReportsCard() {
       <button class="btn btn-sm btn-danger" id="modUserReportsDisableBtn">Disable</button>`;
     document.getElementById('modUserReportsConfigureBtn')?.addEventListener('click', () => _openSubpage('user-reports'));
     document.getElementById('modUserReportsDisableBtn')?.addEventListener('click', async () => {
-      if (!confirm('Disable user reports?')) return;
+      if (!await window.showConfirm('Disable user reports?', { title: 'Disable Reports', confirmText: 'Disable', type: 'warning' })) return;
       await _patchModConfig({ 'userReports.enabled': false });
       if (_modConfig) _modConfig.userReports.enabled = false;
       _updateUserReportsCard();
@@ -356,7 +356,7 @@ function _drawPredefinedReasons(el) {
 
   // Delete + edit buttons
   el.querySelectorAll('.mod-reason-delete').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       const idx = +btn.dataset.idx;
       const list = [...(_predefinedReasons[_reasonActiveTab] || [])];
       list.splice(idx, 1);
@@ -727,7 +727,7 @@ function _renderAppeals() {
   el.querySelectorAll('.appeals-q-delete').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       const qId = e.currentTarget.dataset.id;
-      if (!confirm('Delete this question?')) return;
+      if (!await window.showConfirm('Delete this question?', { title: 'Delete Question', confirmText: 'Delete' })) return;
       const res = await fetch(MODCONFIG_API('/modconfig/appeals/questions/'+qId), { method: 'DELETE' });
       if (res.ok) {
         if (_modConfig?.appeals) _modConfig.appeals.questions = _modConfig.appeals.questions.filter(q => q.id !== qId);
@@ -1165,3 +1165,4 @@ function _esc(s) {
   if (s == null) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+

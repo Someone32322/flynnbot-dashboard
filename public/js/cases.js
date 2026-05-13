@@ -149,7 +149,7 @@ function renderCases(container, guildId) {
   document.querySelectorAll('[data-case-delete]').forEach(btn => {
     btn.addEventListener('click', async e => {
       e.stopPropagation();
-      if (!confirm('Delete this case? This cannot be undone.')) return;
+      if (!await window.showConfirm('Delete this case? This cannot be undone.', { title: 'Delete Case', confirmText: 'Delete' })) return;
       const res = await fetch(`/api/guild/${guildId}/cases/${btn.dataset.caseDelete}`, { method: 'DELETE' });
       if (res.ok) loadCases(guildId, _casesData.page);
     });
@@ -195,7 +195,7 @@ function notifyCaseSave(msg, ok = true) {
     window.showToast(msg, ok ? 'success' : 'error');
     return;
   }
-  if (!ok) alert(msg);
+  if (!ok) window.showToast?.(msg, 'error');
 }
 
 function openCaseDetail(c, guildId) {
@@ -341,7 +341,7 @@ function openCaseModal(guildId) {
 
 async function submitCaseModal(guildId) {
   const targetUserId = document.getElementById('caseTargetId')?.value.trim();
-  if (!targetUserId) { alert('User ID is required.'); return; }
+  if (!targetUserId) { window.showToast?.('User ID is required.', 'warning'); return; }
   const btn = document.getElementById('caseModalConfirm');
   btn.disabled = true;
   try {
@@ -362,7 +362,7 @@ async function submitCaseModal(guildId) {
     document.getElementById('caseModal').style.display = 'none';
     loadCases(guildId, 1);
   } catch (e) {
-    alert('Error: ' + e.message);
+    window.showToast?.('Error: ' + e.message, 'error');
   } finally {
     btn.disabled = false;
   }

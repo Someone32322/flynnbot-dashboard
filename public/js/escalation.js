@@ -149,7 +149,7 @@
       _config = data.config || payload;
       window.SaveBar?.markClean();
     } catch (err) {
-      alert('Failed to save escalation config: ' + err.message);
+      window.showToast?.('Failed to save escalation config: ' + err.message, 'error');
     }
   }
 
@@ -164,3 +164,4 @@
   const pageData = document.getElementById('pageData');
   if (pageData?.dataset.guildId) init(pageData.dataset.guildId);
 })();
+

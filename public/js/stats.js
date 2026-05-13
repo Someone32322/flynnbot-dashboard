@@ -169,7 +169,7 @@
       _config = data.config || payload;
       window.SaveBar?.markClean();
     } catch (err) {
-      alert('Failed to save stats config: ' + err.message);
+      window.showToast?.('Failed to save stats config: ' + err.message, 'error');
     }
   }
 

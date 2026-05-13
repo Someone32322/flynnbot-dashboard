@@ -14,7 +14,7 @@
 .automod-master-label {
   font-weight: 600;
   font-size: 0.95rem;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .automod-master-sub {
@@ -50,7 +50,7 @@
   flex: 1;
   font-weight: 600;
   font-size: 0.9rem;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .automod-group-badge {
@@ -90,7 +90,7 @@
 .automod-rule-label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .automod-rule-hint {
@@ -143,7 +143,7 @@
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 6px;
-  color: var(--text-primary);
+  color: var(--text);
   font-size: 0.82rem;
 }
 
@@ -191,7 +191,7 @@
   border: none;
   outline: none;
   background: transparent;
-  color: var(--text-primary);
+  color: var(--text);
   font-size: 0.82rem;
   flex: 1;
   min-width: 80px;
@@ -210,7 +210,7 @@
 .automod-exempt-title {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--text-2);
   margin-bottom: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;

@@ -152,7 +152,7 @@
       _config = data.config || payload;
       window.SaveBar?.markClean();
     } catch (err) {
-      alert('Failed to save slowmode config: ' + err.message);
+      window.showToast?.('Failed to save slowmode config: ' + err.message, 'error');
     }
   }
 

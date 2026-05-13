@@ -102,13 +102,13 @@
     });
     root.querySelectorAll('.poll-delete').forEach((btn) => {
       btn.addEventListener('click', async () => {
-        if (!confirm('Delete this poll?')) return;
+        if (!await window.showConfirm('Delete this poll?', { title: 'Delete Poll', confirmText: 'Delete' })) return;
         try {
           await fetch(`/api/guild/${_guildId}/polls/${btn.dataset.id}`, { method: 'DELETE' });
           _loaded = false;
           load();
         } catch {
-          alert('Failed to delete poll.');
+          window.showToast?.('Failed to delete poll.', 'error');
         }
       });
     });

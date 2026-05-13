@@ -36,8 +36,6 @@ function renderAI(container, guildId) {
   const selectedChannels = (cfg.allowedChannels || []).map(id => escapeHtmlAI(id)).join(',');
 
   container.innerHTML = `
-    <div id="aiSaveStatus" class="save-status" style="display:none"></div>
-
     <div class="ec-card">
       <div class="ec-card-header"><h3>System Status</h3></div>
       <div class="ec-card-body">
@@ -174,24 +172,15 @@ async function saveAI(guildId) {
     const data = await res.json();
     if (res.ok) {
       _aiCfg = data;
-      setAISaveStatus('✅ AI settings saved.', true);
+      window.showToast?.('AI settings saved.', 'success');
     } else {
-      setAISaveStatus('❌ ' + (data.error || 'Failed'), false);
+      window.showToast?.('Failed to save: ' + (data.error || 'Unknown error'), 'error');
     }
   } catch {
-    setAISaveStatus('❌ Network error', false);
+    window.showToast?.('Network error — changes not saved.', 'error');
   } finally {
     if (btn) btn.disabled = false;
   }
-}
-
-function setAISaveStatus(msg, ok) {
-  const el = document.getElementById('aiSaveStatus');
-  if (!el) return;
-  el.textContent = msg;
-  el.className = 'save-status ' + (ok ? 'save-ok' : 'save-error');
-  el.style.display = 'block';
-  setTimeout(() => { el.style.display = 'none'; }, 4000);
 }
 
 function escapeHtmlAI(value) {

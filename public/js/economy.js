@@ -180,7 +180,7 @@ function renderEconomy(container, guildId) {
 
   // Reset all
   document.getElementById('ecResetAllBtn')?.addEventListener('click', async () => {
-    if (!confirm('Reset ALL user balances in this server? This cannot be undone.')) return;
+    if (!await window.showConfirm('Reset ALL user balances in this server? This cannot be undone.', { title: 'Reset Economy', confirmText: 'Reset All' })) return;
     try {
       const res = await fetch(`/api/guild/${guildId}/economy/reset`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
       const data = await res.json();
@@ -246,7 +246,7 @@ async function submitItemModal(guildId) {
   const editId = modal.dataset.editId;
   const name = document.getElementById('ecItemName').value.trim();
   const price = parseInt(document.getElementById('ecItemPrice').value);
-  if (!name || isNaN(price)) { alert('Name and price are required.'); return; }
+  if (!name || isNaN(price)) { window.showToast?.('Name and price are required.', 'warning'); return; }
 
   const body = {
     name,
@@ -278,7 +278,7 @@ async function submitItemModal(guildId) {
     wireShopButtons(guildId);
     closeItemModal();
   } catch (e) {
-    alert('Error: ' + e.message);
+    window.showToast?.('Error: ' + e.message, 'error');
   } finally {
     btn.disabled = false;
   }
@@ -290,7 +290,7 @@ function wireShopButtons(guildId) {
   });
   document.querySelectorAll('[data-action="delete-item"]').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm('Delete this shop item?')) return;
+      if (!await window.showConfirm('Delete this shop item?', { title: 'Delete Item', confirmText: 'Delete' })) return;
       try {
         const res = await fetch(`/api/guild/${guildId}/economy/shop/${encodeURIComponent(btn.dataset.id)}`, { method: 'DELETE' });
         const data = await res.json();
@@ -299,7 +299,7 @@ function wireShopButtons(guildId) {
         document.getElementById('ecShopList').innerHTML = renderShopList();
         wireShopButtons(guildId);
       } catch (e) {
-        alert('Error: ' + e.message);
+        window.showToast?.('Error: ' + e.message, 'error');
       }
     });
   });
@@ -339,7 +339,7 @@ async function loadEconomyLeaderboard(guildId) {
     </table>`;
     el.querySelectorAll('[data-action="reset-user"]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (!confirm(`Reset balance for user ${btn.dataset.uid}?`)) return;
+        if (!await window.showConfirm(`Reset balance for user ${btn.dataset.uid}?`, { title: 'Reset Balance', confirmText: 'Reset' })) return;
         try {
           const r = await fetch(`/api/guild/${guildId}/economy/reset`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -348,7 +348,7 @@ async function loadEconomyLeaderboard(guildId) {
           const d = await r.json();
           if (!r.ok) throw new Error(d.error || 'Failed');
           loadEconomyLeaderboard(guildId);
-        } catch (e) { alert('Error: ' + e.message); }
+        } catch (e) { window.showToast?.('Error: ' + e.message, 'error'); }
       });
     });
   } catch {
@@ -402,7 +402,7 @@ function setEconomySaveStatus(msg, ok) {
   const el = document.getElementById('economySaveStatus');
   if (!el) return;
   el.textContent = msg;
-  el.className = 'save-status ' + (ok ? 'save-ok' : 'save-error');
+  el.className = 'save-status ' + (ok ? 'success' : 'error');
   el.style.display = 'block';
   setTimeout(() => { el.style.display = 'none'; }, 4000);
 }
@@ -431,3 +431,5 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btn) openItemModal(gId, btn.dataset.id);
   });
 });
+
+

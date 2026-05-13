@@ -91,9 +91,9 @@ function renderBmSidebar() {
 }
 
 // ── Select a message type ─────────────────────────────────────────────────────
-function selectBmType(key, scrollIntoView = true) {
+async function selectBmType(key, scrollIntoView = true) {
   if (_bmDirty && _bmActive && _bmActive !== key) {
-    if (!confirm('You have unsaved changes. Switch anyway?')) return;
+    if (!await window.showConfirm('You have unsaved changes. Switch away?', { title: 'Unsaved Changes', confirmText: 'Switch', type: 'warning' })) return;
   }
   _bmActive = key;
   _bmDirty = false;
@@ -383,7 +383,7 @@ function wireBmEditor(tmpl) {
 
   // Reset
   document.getElementById('bmResetBtn')?.addEventListener('click', async () => {
-    if (!confirm('Reset this message to default? Your customisation will be lost.')) return;
+    if (!await window.showConfirm('Reset this message to default? Your customisation will be lost.', { title: 'Reset to Default', confirmText: 'Reset', type: 'warning' })) return;
     const guildId = _bmGuildId;
     const key = _bmActive;
     try {

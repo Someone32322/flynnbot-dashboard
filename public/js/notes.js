@@ -95,7 +95,7 @@ window.NotesModule = (() => {
   }
 
   async function deleteNote(noteId) {
-    if (!confirm('Delete this note?')) return;
+    if (!await window.showConfirm('Delete this note?', { title: 'Delete Note', confirmText: 'Delete' })) return;
     try {
       const res = await fetch(`/api/guild/${guildId}/notes/${noteId}`, { method: 'DELETE' });
       const data = await res.json();
@@ -169,3 +169,4 @@ document.addEventListener('DOMContentLoaded', () => {
   const pd = document.getElementById('pageData');
   if (pd?.dataset?.guildId) NotesModule.init(pd.dataset.guildId);
 });
+

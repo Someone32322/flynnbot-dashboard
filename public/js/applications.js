@@ -512,7 +512,7 @@
 
   async function deleteApplication(id) {
     if (!id) return;
-    if (!window.confirm('Delete this application and all submissions? This cannot be undone.')) return;
+    if (!await window.showConfirm('Delete this application and all submissions? This cannot be undone.', { title: 'Delete Application', confirmText: 'Delete' })) return;
 
     try {
       await apiFetch(`/guild/${GUILD_ID}/applications/${id}`, { method: 'DELETE' });
@@ -621,3 +621,4 @@
       .replace(/'/g, '&#39;');
   }
 })();
+

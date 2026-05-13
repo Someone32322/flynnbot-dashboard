@@ -168,7 +168,7 @@
     const applicationId = selectEl.value;
     if (!applicationId) return;
 
-    if (!confirm(`Delete this submission from ${sub.applicantUsername}?\n\nThis cannot be undone. If a transcript channel is configured, a log will be posted there first.`)) return;
+    if (!await window.showConfirm(`Delete this submission from ${sub.applicantUsername}? This cannot be undone.`, { title: 'Delete Submission', confirmText: 'Delete' })) return;
 
     const btn = document.getElementById('reviewDeleteBtn');
     if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
@@ -180,7 +180,7 @@
       renderList();
       renderDetail();
     } catch (err) {
-      alert(`Failed to delete submission: ${err.message}`);
+      window.showToast?.(`Failed to delete: ${err.message}`, 'error');
       if (btn) { btn.disabled = false; btn.textContent = 'Delete Submission'; }
     }
   }
@@ -209,7 +209,7 @@
       renderList();
       renderDetail();
     } catch (err) {
-      alert(`Failed to save review: ${err.message}`);
+      window.showToast?.(`Failed to save review: ${err.message}`, 'error');
       if (btn) {
         btn.disabled = false;
         btn.textContent = 'Save Review';
@@ -226,3 +226,5 @@
       .replace(/'/g, '&#39;');
   }
 })();
+
+

@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 var parsed = JSON.parse(ta.value);
                 ta.value = JSON.stringify(parsed, null, 2);
             } catch (e) {
-                alert('Cannot format: invalid JSON.\n\n' + e.message);
+                window.showToast?.('Cannot format: invalid JSON. ' + e.message, 'error');
             }
         });
     }

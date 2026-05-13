@@ -92,24 +92,24 @@
 
   function attachEvents(root) {
     root.querySelectorAll('[data-tab]').forEach((btn) => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         _tab = btn.dataset.tab;
         render();
       });
     });
-    document.getElementById('gaw-refresh')?.addEventListener('click', () => {
+    document.getElementById('gaw-refresh')?.addEventListener('click', async () => {
       _loaded = false;
       load();
     });
     root.querySelectorAll('.gaw-delete').forEach((btn) => {
       btn.addEventListener('click', async () => {
-        if (!confirm('Delete this giveaway?')) return;
+        if (!await window.showConfirm('Delete this giveaway?', { title: 'Delete Giveaway', confirmText: 'Delete' })) return;
         try {
           await fetch(`/api/guild/${_guildId}/giveaways/${btn.dataset.id}`, { method: 'DELETE' });
           _loaded = false;
           load();
         } catch {
-          alert('Failed to delete giveaway.');
+          window.showToast?.('Failed to delete giveaway.', 'error');
         }
       });
     });
@@ -124,3 +124,4 @@
   const pageData = document.getElementById('pageData');
   if (pageData?.dataset.guildId) init(pageData.dataset.guildId);
 })();
+

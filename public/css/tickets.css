@@ -19,7 +19,7 @@
 .tickets-stat-num {
   font-size: 1.75rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text);
   line-height: 1;
 }
 
@@ -52,7 +52,7 @@
   transition: color 0.15s, border-color 0.15s;
 }
 
-.tickets-main-tab:hover { color: var(--text-primary); }
+.tickets-main-tab:hover { color: var(--text); }
 .tickets-main-tab.active {
   color: var(--accent-light);
   border-bottom-color: var(--accent-light);
@@ -86,7 +86,7 @@
   flex: 1;
   font-weight: 600;
   font-size: 0.9rem;
-  color: var(--text-primary);
+  color: var(--text);
 }
 
 .tickets-panel-card-actions {
@@ -127,7 +127,7 @@
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: 6px;
-  color: var(--text-primary);
+  color: var(--text);
   font-size: 0.82rem;
 }
 
@@ -137,7 +137,7 @@
   background: var(--surface-1);
   border: 1px solid var(--border);
   border-radius: 6px;
-  color: var(--text-primary);
+  color: var(--text);
   font-size: 0.82rem;
   resize: vertical;
   min-height: 60px;
@@ -171,7 +171,7 @@
 
 .tickets-table td {
   padding: 0.7rem 1rem;
-  color: var(--text-secondary);
+  color: var(--text-2);
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
 }
@@ -299,7 +299,7 @@ details[open] > .tickets-advanced-toggle::before {
   transform: rotate(90deg);
 }
 
-.tickets-advanced-toggle:hover { color: var(--text-primary); }
+.tickets-advanced-toggle:hover { color: var(--text); }
 
 .tickets-advanced-body {
   padding: 0.5rem 0.875rem 0.875rem;

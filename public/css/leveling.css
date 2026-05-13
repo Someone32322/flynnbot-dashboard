@@ -27,7 +27,7 @@
 .lv-card-title {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-1, #e8eaf6);
+  color: var(--text);
   margin-bottom: 0.85rem;
 }
 
@@ -49,7 +49,7 @@
   background: rgba(255,255,255,.06);
   border: 1px solid rgba(255,255,255,.12);
   border-radius: 8px;
-  color: var(--text-1, #e8eaf6);
+  color: var(--text);
   font-size: 0.9rem;
   padding: 0.55rem 0.8rem;
   font-family: inherit;
@@ -97,7 +97,7 @@
   border-radius: 6px;
   padding: 0.3rem 0.65rem;
   font-size: 0.82rem;
-  color: var(--text-1);
+  color: var(--text);
   cursor: pointer;
   transition: background .15s, border-color .15s;
   user-select: none;
@@ -134,7 +134,7 @@
 .lv-reward-role {
   flex: 1;
   font-size: 0.88rem;
-  color: var(--text-1);
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -172,7 +172,7 @@
 .lv-lb-table td {
   padding: 0.6rem 0.75rem;
   border-bottom: 1px solid rgba(255,255,255,.05);
-  color: var(--text-1);
+  color: var(--text);
 }
 .lv-lb-table tr:last-child td { border-bottom: none; }
 .lv-lb-table tr:hover td { background: rgba(255,255,255,.03); }

@@ -26,9 +26,9 @@
 .audit-control-group input,
 .audit-control-group select {
   background: var(--bg-2);
-  border: 1px solid var(--border-1);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: var(--text-1);
+  color: var(--text);
   padding: 0.55rem 0.875rem;
   font-size: 0.875rem;
   outline: none;
@@ -59,14 +59,14 @@
   text-transform: uppercase;
   color: var(--text-2);
   padding: 0.6rem 0.875rem;
-  border-bottom: 1px solid var(--border-1);
+  border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 
 .audit-table td {
   padding: 0.65rem 0.875rem;
-  border-bottom: 1px solid var(--border-1);
-  color: var(--text-1);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
   vertical-align: middle;
 }
 

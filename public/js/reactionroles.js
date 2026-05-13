@@ -106,7 +106,7 @@
     list.querySelectorAll('[data-rr-delete]').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (!confirm('Delete this reaction role group?')) return;
+        if (!await window.showConfirm('Delete this reaction role group?', { title: 'Delete Group', confirmText: 'Delete' })) return;
         await fetch(`/api/guild/${GID}/reaction-roles/${btn.dataset.rrDelete}`, { method: 'DELETE' });
         loadAll();
       });
@@ -736,7 +736,7 @@
       const col = document.getElementById('rrEmbedColorInput'); if (col) col.value = wiz.embed.color;
       refreshPreview();
     } catch {
-      alert('Invalid JSON. Please check your syntax.');
+      window.showToast?.('Invalid JSON. Please check your syntax.', 'error');
     }
   }
 
@@ -824,7 +824,7 @@
       closeModal();
       loadAll();
     } catch (e) {
-      alert('Failed to save: ' + e.message);
+      window.showToast?.('Failed to save: ' + e.message, 'error');
       if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save changes'; }
     }
   }

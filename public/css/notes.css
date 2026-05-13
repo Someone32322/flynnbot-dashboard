@@ -11,9 +11,9 @@
 .notes-search-bar input {
   flex: 1 1 220px;
   background: var(--bg-2);
-  border: 1px solid var(--border-1);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: var(--text-1);
+  color: var(--text);
   padding: 0.55rem 0.875rem;
   font-size: 0.875rem;
   outline: none;
@@ -25,7 +25,7 @@
 /* Add note form */
 .note-add-form {
   background: var(--bg-2);
-  border: 1px solid var(--border-1);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.25rem;
   margin-bottom: 1.5rem;
@@ -35,7 +35,7 @@
   font-size: 0.875rem;
   font-weight: 600;
   margin: 0 0 1rem;
-  color: var(--text-1);
+  color: var(--text);
 }
 
 .note-add-grid {
@@ -48,9 +48,9 @@
 .note-add-grid textarea {
   grid-column: 1 / -1;
   background: var(--bg-3);
-  border: 1px solid var(--border-1);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: var(--text-1);
+  color: var(--text);
   padding: 0.65rem 0.875rem;
   font-size: 0.875rem;
   font-family: inherit;
@@ -71,13 +71,13 @@
 
 .note-card {
   background: var(--bg-2);
-  border: 1px solid var(--border-1);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 1rem 1.25rem;
   transition: border-color 0.15s;
 }
 
-.note-card:hover { border-color: var(--border-2); }
+.note-card:hover { border-color: var(--border-hover); }
 
 .note-card-head {
   display: flex;
@@ -96,7 +96,7 @@
 .note-target-name {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--text-1);
+  color: var(--text);
 }
 
 .note-target-id {
