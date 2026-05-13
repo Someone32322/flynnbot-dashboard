@@ -1,0 +1,164 @@
+/* ── roles.css — Advanced Role Management section ──────────── */
+
+.roles-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.roles-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.roles-stat-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border-1);
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+}
+
+.roles-stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  display: block;
+}
+
+.roles-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-2);
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Role list */
+.role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.role-item {
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-2);
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  padding: 0.65rem 0.875rem;
+  transition: border-color 0.15s;
+}
+
+.role-item:hover {
+  border-color: var(--border-2);
+}
+
+.role-item.role-item--danger {
+  border-color: rgba(237, 66, 69, 0.3);
+}
+
+.role-color-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,0.08);
+}
+
+.role-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.role-badges {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.role-badge {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--bg-3);
+  color: var(--text-2);
+}
+
+.role-badge--danger {
+  background: rgba(237, 66, 69, 0.15);
+  color: #ed4245;
+}
+
+.role-badge--bot {
+  background: rgba(88, 101, 242, 0.15);
+  color: #5865f2;
+}
+
+.role-pos {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  min-width: 28px;
+  text-align: right;
+}
+
+/* Mass assign card */
+.mass-assign-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border-1);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.mass-assign-card h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+  color: var(--text-1);
+}
+
+.mass-assign-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.mass-assign-result {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: var(--bg-3);
+  border-radius: 8px;
+  font-size: 0.825rem;
+  color: var(--text-2);
+  display: none;
+}
+
+.mass-assign-result.visible { display: block; }
+
+.result-ok   { color: #57f287; }
+.result-fail { color: #ed4245; }
+
+@media (max-width: 640px) {
+  .mass-assign-grid { grid-template-columns: 1fr; }
+  .roles-stats { grid-template-columns: repeat(2, 1fr); }
+  .role-item { grid-template-columns: 24px 1fr auto; }
+  .role-pos { display: none; }
+}

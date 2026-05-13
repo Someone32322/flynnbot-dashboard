@@ -1,0 +1,160 @@
+/* ── notes.css — Per-User Notes Viewer section ──────────────── */
+
+.notes-search-bar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.notes-search-bar input {
+  flex: 1 1 220px;
+  background: var(--bg-2);
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  color: var(--text-1);
+  padding: 0.55rem 0.875rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.notes-search-bar input:focus { border-color: var(--accent); }
+
+/* Add note form */
+.note-add-form {
+  background: var(--bg-2);
+  border: 1px solid var(--border-1);
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.note-add-form h3 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+  color: var(--text-1);
+}
+
+.note-add-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.note-add-grid textarea {
+  grid-column: 1 / -1;
+  background: var(--bg-3);
+  border: 1px solid var(--border-1);
+  border-radius: 8px;
+  color: var(--text-1);
+  padding: 0.65rem 0.875rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.note-add-grid textarea:focus { border-color: var(--accent); }
+
+/* Notes list */
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.note-card {
+  background: var(--bg-2);
+  border: 1px solid var(--border-1);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  transition: border-color 0.15s;
+}
+
+.note-card:hover { border-color: var(--border-2); }
+
+.note-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  gap: 0.75rem;
+}
+
+.note-target {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.note-target-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-1);
+}
+
+.note-target-id {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  font-family: monospace;
+}
+
+.note-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.note-by {
+  font-size: 0.78rem;
+  color: var(--text-3);
+}
+
+.note-date {
+  font-size: 0.78rem;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.note-content {
+  font-size: 0.875rem;
+  color: var(--text-2);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.note-case-link {
+  font-size: 0.78rem;
+  color: var(--accent);
+  text-decoration: none;
+  margin-top: 0.5rem;
+  display: inline-block;
+}
+
+.note-case-link:hover { text-decoration: underline; }
+
+.note-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  justify-content: flex-end;
+}
+
+.notes-empty {
+  text-align: center;
+  color: var(--text-3);
+  padding: 3rem 1rem;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .note-add-grid { grid-template-columns: 1fr; }
+  .note-card-head { flex-direction: column; align-items: flex-start; }
+}

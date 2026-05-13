@@ -25,14 +25,27 @@
 
     selectEl.addEventListener('change', async () => {
       activeSubmissionId = null;
+      const exportBtn = document.getElementById('exportCsvBtn');
       if (!selectEl.value) {
         submissions = [];
         renderList();
         renderDetail();
+        if (exportBtn) exportBtn.style.display = 'none';
         return;
       }
+      if (exportBtn) exportBtn.style.display = '';
       await loadSubmissions(selectEl.value);
     });
+
+    // CSV export
+    const exportBtn = document.getElementById('exportCsvBtn');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        const appId = selectEl.value;
+        if (!appId) return;
+        window.location.href = `/api/guild/${guildId}/applications/${appId}/export-csv`;
+      });
+    }
   }
 
   async function apiFetch(path, options = {}) {

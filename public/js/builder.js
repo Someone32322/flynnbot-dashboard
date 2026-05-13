@@ -82,6 +82,10 @@
     const deleteBtn = t.closest('[data-action="delete-msg"]');
     if (deleteBtn) { deleteMessage(deleteBtn.dataset.id); return; }
 
+    // Duplicate message card
+    const duplicateBtn = t.closest('[data-action="duplicate-msg"]');
+    if (duplicateBtn) { duplicateMessage(duplicateBtn.dataset.id); return; }
+
     // Center empty-state "+ New Message"
     if (t.closest('#builderNewBtnEmpty')) { openEditor(null); return; }
 
@@ -227,6 +231,15 @@
     document.getElementById('builderSendNowBtn')?.addEventListener('click', () => saveMessage(true));
     document.getElementById('builderAddEmbedBtn')?.addEventListener('click', () => addEmbed());
 
+    // JSON export / import
+    document.getElementById('builderExportJsonBtn')?.addEventListener('click', exportCurrentAsJson);
+    const jsonFileInput = document.getElementById('builderJsonFileInput');
+    document.getElementById('builderImportJsonBtn')?.addEventListener('click', () => jsonFileInput?.click());
+    jsonFileInput?.addEventListener('change', () => {
+      if (jsonFileInput.files?.length) importFromJsonFile(jsonFileInput.files[0]);
+      jsonFileInput.value = '';
+    });
+
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && editorFocusMode) {
         setFocusMode(false);
@@ -311,6 +324,7 @@
           <span class="builder-msg-card-badge ${badge.cls}">${badge.icon} ${badge.label}</span>
           <div class="builder-msg-card-actions">
             <button class="btn btn-sm" data-action="edit-msg" data-id="${m._id}">Edit</button>
+            <button class="btn btn-sm btn-secondary" data-action="duplicate-msg" data-id="${m._id}" title="Duplicate">⊕</button>
             <button class="btn btn-sm btn-danger" data-action="delete-msg" data-id="${m._id}">✕</button>
           </div>
         </div>`;
@@ -1297,6 +1311,65 @@
   }
 
   // ── Collect / save ────────────────────────────────────────────
+  async function duplicateMessage(id) {
+    const original = allMessages.find(m => m._id === id);
+    if (!original) return;
+    const newName = `${original.name} (copy)`;
+    try {
+      const { _id, createdAt, updatedAt, __v, ...rest } = original;
+      const payload = { ...rest, name: newName };
+      const r = await fetch(`/api/guild/${guildId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); showToast(d.error || 'Duplicate failed', 'error'); return; }
+      const saved = await r.json();
+      allMessages.push(saved.message || saved);
+      renderList();
+      showToast(`Duplicated as "${newName}"`, 'success');
+    } catch (e) {
+      showToast('Duplicate failed: ' + e.message, 'error');
+    }
+  }
+
+  function exportCurrentAsJson() {
+    const msg = collectMessage();
+    if (!msg) { showToast('Nothing to export — open a message first', 'info'); return; }
+    const json = JSON.stringify({ flynnbot_message: 1, ...msg }, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(msg.name || 'message').replace(/[^a-z0-9_-]/gi, '_')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Exported!', 'success');
+  }
+
+  async function importFromJsonFile(file) {
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!data || data.flynnbot_message !== 1) { showToast('Invalid FlynnBot message JSON', 'error'); return; }
+      // Populate editor with imported values
+      const { name, content, embeds, delivery, actionRows } = data;
+      if (!name) { showToast('Missing message name in JSON', 'error'); return; }
+      openEditor(null);
+      const nameEl = document.getElementById('builderEditorMsgName');
+      if (nameEl) nameEl.value = `${name} (imported)`;
+      const contentEl = document.getElementById('builderContent');
+      if (contentEl) { contentEl.value = content || ''; contentEl.dispatchEvent(new Event('input')); }
+      // Remove existing embeds
+      document.querySelectorAll('#builderEmbedsList .embed-panel').forEach(p => p.remove());
+      // Add embeds from JSON
+      if (Array.isArray(embeds)) embeds.forEach(e => addEmbed(e));
+      showToast('Imported! Review and save.', 'success');
+    } catch (err) {
+      showToast('Import failed: ' + err.message, 'error');
+    }
+  }
+
   function collectMessage() {
     const name = document.getElementById('builderEditorMsgName')?.value?.trim();
     if (!name) return null;

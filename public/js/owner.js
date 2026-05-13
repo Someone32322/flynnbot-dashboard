@@ -12,7 +12,7 @@
   let uptimeStart = Date.now();
   let currentLogFilter = 'all';
   let spotlightIdx = -1;
-  const SUPPORTED_PANELS = new Set(['overview', 'servers', 'users', 'database', 'deploy', 'security', 'incidents']);
+  const SUPPORTED_PANELS = new Set(['overview', 'servers', 'users', 'database', 'deploy', 'security', 'incidents', 'backup', 'experiments']);
 
   /* ═══════════════════════════════════════════════════
      PANEL NAVIGATION
@@ -736,5 +736,74 @@
     if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openSpotlight(); }
     if (e.key === 'Escape') closeSpotlight();
   });
+
+  /* ═══════════════════════════════════════════════════
+     BACKUP & RESTORE
+  ═══════════════════════════════════════════════════ */
+  const downloadBackupBtn = document.getElementById('downloadBackupBtn');
+  const restoreBackupBtn  = document.getElementById('restoreBackupBtn');
+
+  if (downloadBackupBtn) {
+    downloadBackupBtn.addEventListener('click', async () => {
+      const guildId = document.getElementById('backupGuildId')?.value?.trim();
+      if (!guildId || !/^\d+$/.test(guildId)) { opToast('Enter a valid guild ID', 'error'); return; }
+      downloadBackupBtn.disabled = true;
+      downloadBackupBtn.textContent = 'Generating…';
+      try {
+        const res = await fetch(`/api/owner/backup/${guildId}`);
+        if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed'); }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `flynnbot-backup-${guildId}-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        opToast('Backup downloaded', 'success');
+      } catch (err) {
+        opToast(err.message, 'error');
+      } finally {
+        downloadBackupBtn.disabled = false;
+        downloadBackupBtn.textContent = 'Download Backup';
+      }
+    });
+  }
+
+  if (restoreBackupBtn) {
+    restoreBackupBtn.addEventListener('click', async () => {
+      const guildId = document.getElementById('restoreGuildId')?.value?.trim();
+      const fileInput = document.getElementById('restoreFileInput');
+      const resultEl = document.getElementById('restoreResult');
+      if (!guildId || !/^\d+$/.test(guildId)) { opToast('Enter a valid guild ID', 'error'); return; }
+      if (!fileInput?.files?.length) { opToast('Select a backup file', 'error'); return; }
+      const confirmed = await opConfirm(
+        'Restore Backup',
+        `This will overwrite all configuration for guild ${guildId}. This cannot be undone. Continue?`
+      );
+      if (!confirmed) return;
+      restoreBackupBtn.disabled = true;
+      restoreBackupBtn.textContent = 'Restoring…';
+      if (resultEl) { resultEl.style.display = 'none'; resultEl.textContent = ''; }
+      try {
+        const text = await fileInput.files[0].text();
+        const backup = JSON.parse(text);
+        const res = await fetch(`/api/owner/restore/${guildId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ backup }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed');
+        if (resultEl) { resultEl.style.display = 'block'; resultEl.style.color = '#57f287'; resultEl.textContent = '✔ ' + data.message; }
+        opToast('Restore complete', 'success');
+      } catch (err) {
+        if (resultEl) { resultEl.style.display = 'block'; resultEl.style.color = '#ed4245'; resultEl.textContent = 'Error: ' + err.message; }
+        opToast(err.message, 'error');
+      } finally {
+        restoreBackupBtn.disabled = false;
+        restoreBackupBtn.textContent = 'Restore Backup';
+      }
+    });
+  }
 
 })();

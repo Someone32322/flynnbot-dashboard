@@ -92,6 +92,12 @@
             </span>
             <span class="sidebar-nav-text">Bot Responses</span>
           </button>
+          <button class="sidebar-nav-item" data-section="roles">
+            <span class="sidebar-nav-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            </span>
+            <span class="sidebar-nav-text">Roles</span>
+          </button>
         </div>
         <div class="sidebar-nav-group">
           <div class="sidebar-nav-label">Safety</div>
@@ -155,6 +161,12 @@
             </span>
             <span class="sidebar-nav-text">Invite Tracker</span>
           </button>
+          <button class="sidebar-nav-item" data-section="audit-log">
+            <span class="sidebar-nav-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            </span>
+            <span class="sidebar-nav-text">Audit Log</span>
+          </button>
         </div>
         <div class="sidebar-nav-group">
           <div class="sidebar-nav-label">Moderation+</div>
@@ -175,6 +187,12 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </span>
             <span class="sidebar-nav-text">Slowmode Auto</span>
+          </button>
+          <button class="sidebar-nav-item" data-section="notes">
+            <span class="sidebar-nav-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </span>
+            <span class="sidebar-nav-text">User Notes</span>
           </button>
         </div>
       </nav>
@@ -578,6 +596,9 @@
             <input type="text" id="builderEditorMsgName" class="builder-editor-name-input"
               maxlength="60" placeholder="Message name…">
             <div class="builder-editor-btns">
+              <button class="btn btn-ghost btn-sm" id="builderImportJsonBtn" title="Import from JSON">⬆ Import JSON</button>
+              <button class="btn btn-ghost btn-sm" id="builderExportJsonBtn" title="Export as JSON">⬇ Export JSON</button>
+              <input type="file" id="builderJsonFileInput" accept=".json" style="display:none">
               <button class="btn btn-secondary" id="builderEditorBack">← Back</button>
               <button class="btn btn-secondary" id="builderFocusBtn">⤢ Focus Mode</button>
               <button class="btn btn-primary"   id="builderSaveBtn">💾 Save</button>
@@ -1452,6 +1473,148 @@
         <div id="slowmode-root" style="display:none"></div>
       </section>
 
+      <!-- ── ROLES SECTION ── -->
+      <section class="dash-section" id="section-roles" data-section="roles" style="display:none">
+        <div class="section-header">
+          <div>
+            <h2 class="section-page-title">Role Management</h2>
+            <p class="section-page-sub">View server roles and mass-assign or remove them from specific members.</p>
+          </div>
+        </div>
+        <div class="roles-stats">
+          <div class="roles-stat-card">
+            <span class="roles-stat-value" id="rolesTotalCount">—</span>
+            <div class="roles-stat-label">Total Roles</div>
+          </div>
+          <div class="roles-stat-card">
+            <span class="roles-stat-value" id="rolesDangerCount" style="color:#ed4245">—</span>
+            <div class="roles-stat-label">Admin Roles</div>
+          </div>
+          <div class="roles-stat-card">
+            <span class="roles-stat-value" id="rolesManagedCount" style="color:#5865f2">—</span>
+            <div class="roles-stat-label">Bot-Managed</div>
+          </div>
+        </div>
+        <div class="mass-assign-card">
+          <h3>Mass Assign / Remove Role</h3>
+          <div class="mass-assign-grid">
+            <div>
+              <label class="form-label">ROLE</label>
+              <select id="massAssignRole" class="form-input">
+                <option value="">Loading roles…</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">ACTION</label>
+              <select id="massAssignAction" class="form-input">
+                <option value="add">Add role</option>
+                <option value="remove">Remove role</option>
+              </select>
+            </div>
+            <div style="grid-column:1/-1">
+              <label class="form-label">USER IDs (one per line or comma-separated, max 50)</label>
+              <textarea id="massAssignUsers" class="form-input" rows="3" placeholder="123456789012345678&#10;987654321098765432"></textarea>
+            </div>
+          </div>
+          <div class="mass-assign-result" id="massAssignResult"></div>
+          <div style="margin-top:0.75rem">
+            <button id="massAssignBtn" class="btn btn-primary btn-sm">Apply</button>
+          </div>
+        </div>
+        <h3 class="form-section-title" style="margin-bottom:0.75rem">All Roles (by position)</h3>
+        <div id="roleList" class="role-list">
+          <div class="notes-empty">Loading…</div>
+        </div>
+      </section>
+
+      <!-- ── AUDIT LOG SECTION ── -->
+      <section class="dash-section" id="section-audit-log" data-section="audit-log" style="display:none">
+        <div class="section-header">
+          <div>
+            <h2 class="section-page-title">Audit Log</h2>
+            <p class="section-page-sub">Browse Discord's native audit log for moderation actions and server changes.</p>
+          </div>
+        </div>
+        <div class="audit-controls">
+          <div class="audit-control-group">
+            <label for="auditUserFilter">USER ID</label>
+            <input type="text" id="auditUserFilter" placeholder="Filter by user ID…" maxlength="20" pattern="\d*">
+          </div>
+          <div class="audit-control-group">
+            <label for="auditActionFilter">ACTION TYPE</label>
+            <select id="auditActionFilter">
+              <option value="">All actions</option>
+              <option value="20">Member kick</option>
+              <option value="22">Member ban</option>
+              <option value="23">Member unban</option>
+              <option value="24">Member update</option>
+              <option value="25">Member roles update</option>
+              <option value="10">Channel create</option>
+              <option value="11">Channel update</option>
+              <option value="12">Channel delete</option>
+              <option value="30">Role create</option>
+              <option value="31">Role update</option>
+              <option value="32">Role delete</option>
+              <option value="72">Message delete</option>
+              <option value="73">Message bulk delete</option>
+            </select>
+          </div>
+          <button id="auditFilterBtn" class="btn btn-secondary btn-sm" style="align-self:flex-end">Filter</button>
+        </div>
+        <div class="audit-table-wrap">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Action</th>
+                <th>Target</th>
+                <th>When</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody">
+              <tr><td colspan="4" class="audit-empty">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="audit-empty" id="auditEmpty" style="display:none">No audit log entries found.</div>
+        <div class="audit-load-more">
+          <button id="auditLoadMore" class="btn btn-ghost btn-sm" style="display:none">Load more</button>
+        </div>
+      </section>
+
+      <!-- ── USER NOTES SECTION ── -->
+      <section class="dash-section" id="section-notes" data-section="notes" style="display:none">
+        <div class="section-header">
+          <div>
+            <h2 class="section-page-title">User Notes</h2>
+            <p class="section-page-sub">View, add, and manage internal notes on server members.</p>
+          </div>
+        </div>
+        <div class="note-add-form">
+          <h3>Add Note</h3>
+          <div class="note-add-grid">
+            <div>
+              <label class="form-label">USER ID</label>
+              <input type="text" id="noteUserId" class="form-input" placeholder="123456789012345678" maxlength="20" pattern="\d*">
+            </div>
+            <div>
+              <label class="form-label">RELATED CASE # (optional)</label>
+              <input type="text" id="noteCaseId" class="form-input" placeholder="e.g. 42" maxlength="10" pattern="\d*">
+            </div>
+            <textarea id="noteContent" placeholder="Note content…" maxlength="2000"></textarea>
+          </div>
+          <button id="addNoteBtn" class="btn btn-primary btn-sm">Add Note</button>
+        </div>
+        <div class="notes-search-bar">
+          <input type="text" id="noteSearchId" placeholder="Filter by user ID (leave empty to show all)…" maxlength="20" pattern="\d*">
+          <button id="notesSearchBtn" class="btn btn-secondary btn-sm">Search</button>
+        </div>
+        <div id="notesList" class="notes-list">
+          <div class="notes-empty">Loading…</div>
+        </div>
+        <div id="notesEmpty" class="notes-empty" style="display:none">No notes found.</div>
+      </section>
+
   <nav class="mobile-bottom-nav" aria-label="Mobile quick navigation">
     <button class="mobile-nav-item" type="button" data-section="home">Home</button>
     <button class="mobile-nav-item" type="button" data-section="commands">Commands</button>
@@ -1523,6 +1686,9 @@
   <script src="/js/escalation.js?v=20260701"></script>
   <script src="/js/afk.js?v=20260701"></script>
   <script src="/js/slowmode.js?v=20260701"></script>
+  <script src="/js/roles.js?v=20260701"></script>
+  <script src="/js/audit.js?v=20260701"></script>
+  <script src="/js/notes.js?v=20260701"></script>
 
   <!-- ── Modal: Punish type settings ── -->
   <div id="punishTypeModal" class="modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-label="Punish type settings">

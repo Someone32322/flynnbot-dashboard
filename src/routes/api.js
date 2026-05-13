@@ -3695,4 +3695,200 @@ router.post('/guild/:guildId/slowmode', requireAuth, requireGuildAdmin, async (r
   }
 });
 
+// ══════════════════════════════════════════════════════════════════
+//  Feature 9: Advanced Role Management
+// ══════════════════════════════════════════════════════════════════
+
+// GET /api/guild/:guildId/roles/details  — roles enriched (uses existing roles endpoint)
+// POST /api/guild/:guildId/roles/mass-assign — mass add/remove role
+router.post('/guild/:guildId/roles/mass-assign', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  const { roleId, userIds, action } = req.body;
+  if (!roleId || !/^\d+$/.test(roleId))           return res.status(400).json({ error: 'Invalid roleId' });
+  if (!Array.isArray(userIds) || userIds.length === 0) return res.status(400).json({ error: 'userIds required' });
+  if (!['add', 'remove'].includes(action))        return res.status(400).json({ error: 'action must be add or remove' });
+  // Limit to 50 per request to avoid excessive rate-limits
+  const limited = userIds.filter(id => /^\d+$/.test(String(id))).slice(0, 50);
+  const results = { ok: [], failed: [] };
+  for (const userId of limited) {
+    try {
+      if (action === 'add') {
+        await discordApi.addRoleToMember(guildId, userId, roleId);
+      } else {
+        await discordApi.removeRoleFromMember(guildId, userId, roleId);
+      }
+      results.ok.push(userId);
+      // Small delay to respect rate limits
+      await new Promise(r => setTimeout(r, 150));
+    } catch (err) {
+      results.failed.push({ userId, reason: err.message });
+    }
+  }
+  res.json({ ok: true, results });
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  Feature 10: Audit Log Viewer
+// ══════════════════════════════════════════════════════════════════
+
+router.get('/guild/:guildId/audit-log', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  const { limit = 50, before, user_id, action_type } = req.query;
+  // Validate query params
+  if (user_id && !/^\d+$/.test(user_id)) return res.status(400).json({ error: 'Invalid user_id' });
+  if (action_type && !/^\d+$/.test(action_type)) return res.status(400).json({ error: 'Invalid action_type' });
+  try {
+    const auditData = await discordApi.getAuditLog(guildId, {
+      limit: Math.min(100, Math.max(1, parseInt(limit) || 50)),
+      before: before && /^\d+$/.test(before) ? before : undefined,
+      user_id: user_id || undefined,
+      action_type: action_type || undefined,
+    });
+    res.json({ audit_log: auditData });
+  } catch (err) {
+    console.error('[API] GET /audit-log', err);
+    res.status(500).json({ error: 'Failed to fetch audit log' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  Feature 12: Notes — add note (delete already exists above)
+// ══════════════════════════════════════════════════════════════════
+
+router.post('/guild/:guildId/notes', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  const { targetUserId, content, caseId } = req.body;
+  if (!targetUserId || !/^\d+$/.test(String(targetUserId))) return res.status(400).json({ error: 'Invalid targetUserId' });
+  if (!content || typeof content !== 'string' || content.trim().length === 0) return res.status(400).json({ error: 'content required' });
+  const sanitized = content.trim().slice(0, 2000);
+  try {
+    let targetTag = `User ${targetUserId}`;
+    try {
+      const discordUser = await discordApi.getUser(targetUserId);
+      if (discordUser) targetTag = `${discordUser.username}#${discordUser.discriminator || '0'}`;
+    } catch {}
+    const note = await UserNote.create({
+      guildId,
+      targetUserId: String(targetUserId),
+      targetTag,
+      content: sanitized,
+      addedBy: req.user.id,
+      addedByTag: `${req.user.username}`,
+      caseId: caseId && /^\d+$/.test(String(caseId)) ? String(caseId) : undefined,
+    });
+    res.json({ ok: true, note });
+  } catch (err) {
+    console.error('[API] POST /notes', err);
+    res.status(500).json({ error: 'Failed to add note' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  Feature 18: Backup & Restore (owner-only)
+// ══════════════════════════════════════════════════════════════════
+
+router.get('/owner/backup/:guildId', requireOwner, async (req, res) => {
+  const { guildId } = req.params;
+  if (!/^\d+$/.test(guildId)) return res.status(400).json({ error: 'Invalid guildId' });
+  try {
+    const [
+      guildConfig, loggingConfig, levelConfig, autoModConfig, welcomeConfig,
+      ticketConfig, reactionRoles, embedTemplates, escalationConfig, slowmodeConfig,
+    ] = await Promise.all([
+      GuildConfig.findOne({ guildId }).lean(),
+      LoggingConfig.findOne({ guildId }).lean(),
+      LevelConfig.findOne({ guildId }).lean(),
+      AutoModConfig.findOne({ guildId }).lean(),
+      WelcomeConfig.findOne({ guildId }).lean(),
+      TicketConfig.findOne({ guildId }).lean(),
+      ReactionRole.find({ guildId }).lean(),
+      EmbedTemplate.find({ guildId }).lean(),
+      EscalationConfig.findOne({ guildId }).lean(),
+      SlowmodeConfig.findOne({ guildId }).lean(),
+    ]);
+    const backup = {
+      version: 1,
+      guildId,
+      exportedAt: new Date().toISOString(),
+      data: {
+        guildConfig, loggingConfig, levelConfig, autoModConfig, welcomeConfig,
+        ticketConfig, reactionRoles, embedTemplates, escalationConfig, slowmodeConfig,
+      },
+    };
+    res.setHeader('Content-Disposition', `attachment; filename="flynnbot-backup-${guildId}-${Date.now()}.json"`);
+    res.setHeader('Content-Type', 'application/json');
+    res.json(backup);
+  } catch (err) {
+    console.error('[Owner API] GET /backup/:guildId', err);
+    res.status(500).json({ error: 'Failed to generate backup' });
+  }
+});
+
+router.post('/owner/restore/:guildId', requireOwner, async (req, res) => {
+  const { guildId } = req.params;
+  if (!/^\d+$/.test(guildId)) return res.status(400).json({ error: 'Invalid guildId' });
+  const { backup } = req.body;
+  if (!backup || !backup.data || backup.version !== 1) return res.status(400).json({ error: 'Invalid backup format' });
+  const d = backup.data;
+  try {
+    const ops = [];
+    if (d.guildConfig)    ops.push(GuildConfig.findOneAndUpdate({ guildId }, d.guildConfig, { upsert: true }));
+    if (d.loggingConfig)  ops.push(LoggingConfig.findOneAndUpdate({ guildId }, d.loggingConfig, { upsert: true }));
+    if (d.levelConfig)    ops.push(LevelConfig.findOneAndUpdate({ guildId }, d.levelConfig, { upsert: true }));
+    if (d.autoModConfig)  ops.push(AutoModConfig.findOneAndUpdate({ guildId }, d.autoModConfig, { upsert: true }));
+    if (d.welcomeConfig)  ops.push(WelcomeConfig.findOneAndUpdate({ guildId }, d.welcomeConfig, { upsert: true }));
+    if (d.ticketConfig)   ops.push(TicketConfig.findOneAndUpdate({ guildId }, d.ticketConfig, { upsert: true }));
+    if (d.escalationConfig) ops.push(EscalationConfig.findOneAndUpdate({ guildId }, d.escalationConfig, { upsert: true }));
+    if (d.slowmodeConfig) ops.push(SlowmodeConfig.findOneAndUpdate({ guildId }, d.slowmodeConfig, { upsert: true }));
+    // For arrays, replace entirely
+    if (Array.isArray(d.reactionRoles)) {
+      ops.push(ReactionRole.deleteMany({ guildId }));
+      if (d.reactionRoles.length) ops.push(ReactionRole.insertMany(d.reactionRoles.map(r => ({ ...r, guildId }))));
+    }
+    if (Array.isArray(d.embedTemplates)) {
+      ops.push(EmbedTemplate.deleteMany({ guildId }));
+      if (d.embedTemplates.length) ops.push(EmbedTemplate.insertMany(d.embedTemplates.map(r => ({ ...r, guildId }))));
+    }
+    await Promise.all(ops);
+    res.json({ ok: true, message: 'Restore complete' });
+  } catch (err) {
+    console.error('[Owner API] POST /restore/:guildId', err);
+    res.status(500).json({ error: 'Failed to restore backup' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  Feature 28: Application CSV export
+// ══════════════════════════════════════════════════════════════════
+
+router.get('/guild/:guildId/applications/:appId/export-csv', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId, appId } = req.params;
+  try {
+    const form = await ApplicationForm.findOne({ _id: appId, guildId }).lean();
+    if (!form) return res.status(404).json({ error: 'Form not found' });
+    const submissions = await ApplicationSubmission.find({ formId: appId }).sort({ createdAt: -1 }).lean();
+    // Build CSV
+    const questions = (form.questions || []).map(q => q.label || q.id || 'Question');
+    const headers = ['Submission ID', 'User ID', 'Status', 'Submitted At', ...questions];
+    function escCsv(v) {
+      const s = String(v ?? '').replace(/"/g, '""');
+      return /[,"\n\r]/.test(s) ? `"${s}"` : s;
+    }
+    const rows = submissions.map(s => {
+      const answers = (form.questions || []).map(q => {
+        const ans = (s.answers || []).find(a => a.questionId === String(q._id || q.id));
+        return ans ? ans.value : '';
+      });
+      return [s._id, s.userId, s.status, new Date(s.createdAt).toISOString(), ...answers].map(escCsv).join(',');
+    });
+    const csv = [headers.map(escCsv).join(','), ...rows].join('\n');
+    res.setHeader('Content-Disposition', `attachment; filename="submissions-${appId}.csv"`);
+    res.setHeader('Content-Type', 'text/csv');
+    res.send(csv);
+  } catch (err) {
+    console.error('[API] GET /applications/export-csv', err);
+    res.status(500).json({ error: 'Failed to export CSV' });
+  }
+});
+
 module.exports = router;

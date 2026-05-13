@@ -95,6 +95,7 @@
         <a class="op-nav-item" data-panel="deploy" href="#"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg> Deploy</a>
         <a class="op-nav-item" data-panel="security" href="#"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Security</a>
         <a class="op-nav-item" data-panel="incidents" href="#"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Incidents</a>
+        <a class="op-nav-item" data-panel="backup" href="#"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Backup</a>
         <a class="op-nav-item" data-panel="experiments" href="#"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg> Experiments</a>
       </div>
     </nav>
@@ -479,6 +480,40 @@
               <div class="op-empty-desc">Use the form above to log a status event for any day</div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BACKUP & RESTORE -->
+    <div class="op-panel" data-panel="backup">
+      <div class="op-ph"><div><h1 class="op-ph-title">Backup &amp; Restore</h1><p class="op-ph-desc">Export all guild configurations to JSON or restore from a previous backup.</p></div></div>
+      <div class="op-card" style="margin-bottom:1rem">
+        <div class="op-card-head"><h3 class="op-card-title">Export Backup</h3></div>
+        <div class="op-card-body">
+          <p style="font-size:0.85rem;color:var(--op-text-2);margin:0 0 1rem">Download a complete JSON backup of all configuration for a specific guild. Includes: AutoMod, Welcome, Tickets, Logging, Levels, Escalation, Slowmode, Reaction Roles, and Embed Templates.</p>
+          <div style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap">
+            <div style="flex:1 1 200px">
+              <label class="op-label">GUILD ID</label>
+              <input type="text" id="backupGuildId" class="op-input" placeholder="Server ID…" maxlength="20" pattern="\d*">
+            </div>
+            <button id="downloadBackupBtn" class="op-btn op-btn--primary">Download Backup</button>
+          </div>
+        </div>
+      </div>
+      <div class="op-card" style="border-color:rgba(237,66,69,0.25)">
+        <div class="op-card-head"><h3 class="op-card-title" style="color:#ed4245">Restore Backup</h3><span class="op-badge op-badge--red">DESTRUCTIVE</span></div>
+        <div class="op-card-body">
+          <p style="font-size:0.85rem;color:var(--op-text-2);margin:0 0 1rem"><strong>Warning:</strong> Restoring will overwrite the current configuration for the target guild. This cannot be undone.</p>
+          <div style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap;margin-bottom:0.75rem">
+            <div style="flex:1 1 200px">
+              <label class="op-label">TARGET GUILD ID</label>
+              <input type="text" id="restoreGuildId" class="op-input" placeholder="Server ID…" maxlength="20" pattern="\d*">
+            </div>
+          </div>
+          <label class="op-label">BACKUP FILE</label>
+          <input type="file" id="restoreFileInput" accept=".json" style="display:block;margin:0.35rem 0 0.75rem;font-size:0.85rem;color:var(--op-text-1)">
+          <button id="restoreBackupBtn" class="op-btn op-btn--danger">Restore Backup</button>
+          <div id="restoreResult" style="margin-top:0.75rem;font-size:0.825rem;display:none"></div>
         </div>
       </div>
     </div>

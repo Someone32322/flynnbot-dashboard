@@ -82,6 +82,31 @@ async function deleteGuildCommand(guildId, commandId) {
   });
 }
 
+// ── Audit log ─────────────────────────────────────────────────
+async function getAuditLog(guildId, params = {}) {
+  const qs = new URLSearchParams();
+  if (params.limit)       qs.set('limit', Math.min(100, parseInt(params.limit) || 50));
+  if (params.before)      qs.set('before', params.before);
+  if (params.user_id)     qs.set('user_id', params.user_id);
+  if (params.action_type) qs.set('action_type', params.action_type);
+  const query = qs.toString() ? `?${qs}` : '';
+  return discordFetch(`/guilds/${guildId}/audit-logs${query}`);
+}
+
+// ── Role management ───────────────────────────────────────────
+async function addRoleToMember(guildId, userId, roleId) {
+  return discordFetch(`/guilds/${guildId}/members/${userId}/roles/${roleId}`, {
+    method: 'PUT',
+    headers: { 'Content-Length': '0' },
+  });
+}
+
+async function removeRoleFromMember(guildId, userId, roleId) {
+  return discordFetch(`/guilds/${guildId}/members/${userId}/roles/${roleId}`, {
+    method: 'DELETE',
+  });
+}
+
 // ── User helpers ──────────────────────────────────────────────
 async function getUser(userId) {
   return discordFetch(`/users/${userId}`);
@@ -110,6 +135,9 @@ module.exports = {
   sendWebhook,
   getUser,
   getBotGuilds,
+  getAuditLog,
+  addRoleToMember,
+  removeRoleFromMember,
 };
 
 // ── Message helpers ───────────────────────────────────────────
