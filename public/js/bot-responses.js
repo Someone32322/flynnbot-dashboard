@@ -13,7 +13,7 @@
 (function () {
   'use strict';
 
-  var state = { guildId: null, types: [], templates: {}, theme: {}, loaded: false };
+  var state = { guildId: null, types: [], templates: {}, theme: {}, loaded: false, activeEditorType: 'theme' };
 
   var GROUP_ICON = {
     'Punishment Responses': '🔨', 'Logging': '📋',
@@ -46,7 +46,10 @@
     state.guildId = pd.dataset.guildId;
     if (!state.guildId) return;
     document.addEventListener('sectionActivated', function(e) {
-      if (e.detail && e.detail.section === 'responses' && !state.loaded) loadTemplates();
+      if (e.detail && e.detail.section === 'responses') {
+        if (!state.loaded) loadTemplates();
+        window.SaveBar?.setHandlers(saveTheme, resetThemeFields);
+      }
     });
     var sec = document.getElementById('section-responses');
     if (sec && sec.style.display !== 'none' && !state.loaded) loadTemplates();
@@ -147,18 +150,13 @@
               '</label>' +
             '</div>' +
           '</div>' +
-          '<div class="resp-actions" style="margin-top:1rem">' +
-            '<button class="btn btn-primary btn-sm" id="theme-save-btn">Save Theme</button>' +
-          '</div>' +
         '</div>' +
       '</div>' +
     '</div>';
   }
 
   /* --- save theme --- */
-  function saveTheme() {
-    var btn = document.getElementById('theme-save-btn');
-    if (btn) btn.disabled = true;
+  async function saveTheme() {
     var body = {
       embedColor: document.getElementById('theme-embedColor')?.value || '#0f52ba',
       embedAuthorName: document.getElementById('theme-embedAuthorName')?.value?.trim() || '',
@@ -168,22 +166,42 @@
       useServerIcon: !!document.getElementById('theme-useServerIcon')?.checked,
       showTimestamp: !!document.getElementById('theme-showTimestamp')?.checked,
     };
-    fetch('/api/guild/' + state.guildId + '/theme', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    }).then(function(r) { return r.json(); }).then(function(data) {
+    try {
+      var r = await fetch('/api/guild/' + state.guildId + '/theme', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      var data = await r.json();
       if (data && data.embedColor) {
         state.theme = data;
-        window.showToast?.('Embed theme saved.', 'success');
+        showToast('Embed theme saved.', 'success');
       } else {
-        window.showToast?.('Failed to save theme.', 'error');
+        showToast('Failed to save theme.', 'error');
+        throw new Error('Save failed');
       }
-    }).catch(function() {
-      window.showToast?.('Network error — theme not saved.', 'error');
-    }).finally(function() {
-      if (btn) btn.disabled = false;
-    });
+    } catch (err) {
+      if (err.message !== 'Save failed') showToast('Network error — theme not saved.', 'error');
+      throw err;
+    }
+  }
+
+  /* --- reset theme form fields to last saved state --- */
+  function resetThemeFields() {
+    var t = state.theme || {};
+    var colorEl = document.getElementById('theme-embedColor');
+    if (colorEl) colorEl.value = t.embedColor || '#0f52ba';
+    var colorVal = document.getElementById('theme-color-val');
+    if (colorVal) colorVal.textContent = t.embedColor || '#0f52ba';
+    var setVal = function(id, val) { var el = document.getElementById(id); if (el) el.value = val || ''; };
+    setVal('theme-embedAuthorName', t.embedAuthorName);
+    setVal('theme-embedAuthorIconUrl', t.embedAuthorIconUrl);
+    setVal('theme-embedFooterText', t.embedFooterText);
+    setVal('theme-embedFooterIconUrl', t.embedFooterIconUrl);
+    var ts = document.getElementById('theme-showTimestamp');
+    if (ts) ts.checked = t.showTimestamp !== false;
+    var si = document.getElementById('theme-useServerIcon');
+    if (si) si.checked = !!t.useServerIcon;
   }
 
   /* --- build single item --- */
@@ -283,9 +301,6 @@
 
     h += '</div>'; /* /resp-embed-body */
     h += '</div>'; /* /resp-embed-section */
-
-    h += '<div class="resp-actions"><button class="btn btn-ghost btn-sm resp-reset-btn" data-type="' + item.key + '">Reset to Default</button>';
-    h += '<button class="btn btn-primary btn-sm resp-save-btn" data-type="' + item.key + '">Save Changes</button></div>';
 
     h += '</div>'; /* /resp-form-col */
 
@@ -425,16 +440,36 @@
   /* --- attach all listeners --- */
   function attachListeners(container) {
     // Theme card
-    document.getElementById('theme-save-btn')?.addEventListener('click', saveTheme);
     var themeColor = document.getElementById('theme-embedColor');
     var themeColorVal = document.getElementById('theme-color-val');
     if (themeColor && themeColorVal) {
-      themeColor.addEventListener('input', function() { themeColorVal.textContent = themeColor.value; });
+      themeColor.addEventListener('input', function() {
+        themeColorVal.textContent = themeColor.value;
+        window.SaveBar?.setHandlers(saveTheme, resetThemeFields);
+        window.SaveBar?.markDirty();
+      });
     }
+    ['theme-embedAuthorName', 'theme-embedAuthorIconUrl', 'theme-embedFooterText', 'theme-embedFooterIconUrl'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', function() {
+        window.SaveBar?.setHandlers(saveTheme, resetThemeFields);
+        window.SaveBar?.markDirty();
+      });
+    });
+    ['theme-showTimestamp', 'theme-useServerIcon'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('change', function() {
+        window.SaveBar?.setHandlers(saveTheme, resetThemeFields);
+        window.SaveBar?.markDirty();
+      });
+    });
 
     container.querySelectorAll('.resp-expand-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
-        var sk     = btn.dataset.type.replace(/_/g, '-');
+        var type = btn.dataset.type;
+        var sk   = type.replace(/_/g, '-');
         var editor = document.getElementById('resp-editor-' + sk);
         var item   = document.getElementById('resp-item-' + sk);
         if (!editor) return;
@@ -442,6 +477,17 @@
         if (item) item.classList.toggle('editor-open', open);
         btn.textContent = open ? 'Close' : 'Edit';
         btn.setAttribute('aria-expanded', String(open));
+        if (open) {
+          state.activeEditorType = type;
+          window.SaveBar?.setHandlers(
+            function() { return saveTemplate(type, container); },
+            function() { state.loaded = false; loadTemplates(); }
+          );
+        } else if (state.activeEditorType === type) {
+          state.activeEditorType = 'theme';
+          window.SaveBar?.setHandlers(saveTheme, resetThemeFields);
+          window.SaveBar?.markClean({ clearHandlers: false });
+        }
       });
     });
 
@@ -451,6 +497,7 @@
         var body = document.getElementById('resp-embed-body-' + sk);
         if (body) body.classList.toggle('resp-embed-body--hidden', !chk.checked);
         refreshPreview(chk.dataset.type, container);
+        window.SaveBar?.markDirty();
       });
     });
 
@@ -460,15 +507,16 @@
         var lbl = document.getElementById('resp-color-val-' + sk);
         if (lbl) lbl.textContent = inp.value;
         refreshPreview(inp.dataset.type, container);
+        window.SaveBar?.markDirty();
       });
     });
 
     container.querySelectorAll('.resp-content, .resp-embed-author, .resp-embed-title, .resp-embed-desc, .resp-embed-footer').forEach(function(el) {
-      el.addEventListener('input', function() { refreshPreview(el.dataset.type, container); });
+      el.addEventListener('input', function() { refreshPreview(el.dataset.type, container); window.SaveBar?.markDirty(); });
     });
 
     container.querySelectorAll('.resp-embed-thumbnail').forEach(function(chk) {
-      chk.addEventListener('change', function() { refreshPreview(chk.dataset.type, container); });
+      chk.addEventListener('change', function() { refreshPreview(chk.dataset.type, container); window.SaveBar?.markDirty(); });
     });
 
     container.querySelectorAll('.response-var-chip').forEach(function(chip) {
@@ -487,6 +535,7 @@
         ta.selectionStart = ta.selectionEnd = s + chip.dataset.var.length;
         ta.focus();
         refreshPreview(chip.dataset.type, container);
+        window.SaveBar?.markDirty();
       };
       chip.addEventListener('click', insertVar);
       chip.addEventListener('keydown', function(ev) {
@@ -508,6 +557,7 @@
         var rowEl = tmp.firstElementChild;
         list.appendChild(rowEl);
         bindFieldRow(rowEl, type2, container);
+        window.SaveBar?.markDirty();
       });
     });
 
@@ -516,28 +566,21 @@
       if (!item) return;
       bindFieldRow(row, item.dataset.type, container);
     });
-
-    container.querySelectorAll('.resp-save-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() { saveTemplate(btn.dataset.type, btn, container); });
-    });
-    container.querySelectorAll('.resp-reset-btn').forEach(function(btn) {
-      btn.addEventListener('click', function() { resetTemplate(btn.dataset.type, container); });
-    });
   }
 
   function bindFieldRow(row, type, container) {
     var rb = row.querySelector('.resp-remove-field-btn');
-    if (rb) rb.addEventListener('click', function() { row.remove(); refreshPreview(type, container); });
+    if (rb) rb.addEventListener('click', function() { row.remove(); refreshPreview(type, container); window.SaveBar?.markDirty(); });
     row.querySelectorAll('.resp-field-name, .resp-field-value').forEach(function(inp) {
-      inp.addEventListener('input', function() { refreshPreview(type, container); });
+      inp.addEventListener('input', function() { refreshPreview(type, container); window.SaveBar?.markDirty(); });
     });
     row.querySelectorAll('.resp-field-inline-chk').forEach(function(chk) {
-      chk.addEventListener('change', function() { refreshPreview(type, container); });
+      chk.addEventListener('change', function() { refreshPreview(type, container); window.SaveBar?.markDirty(); });
     });
   }
 
-  /* --- save --- */
-  function saveTemplate(type, btnEl, container) {
+  /* --- save template --- */
+  async function saveTemplate(type, container) {
     var sk        = type.replace(/_/g, '-');
     var toggleEl  = container.querySelector('.resp-toggle[data-type="' + type + '"]');
     var contentEl = container.querySelector('.resp-content[data-type="' + type + '"]');
@@ -552,21 +595,25 @@
       embedDescription: ev.embedDescription, embedFooter: ev.embedFooter,
       embedThumbnail: ev.embedThumbnail, embedFields: ev.embedFields,
     };
-    if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Saving...'; }
-    fetch('/api/guild/' + state.guildId + '/bot-messages/' + encodeURIComponent(type), {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
-    })
-    .then(function(res) { if (!res.ok) return res.json().then(function(e) { throw new Error(e.error || 'HTTP ' + res.status); }); return res.json(); })
-    .then(function(saved) {
+    try {
+      var res = await fetch('/api/guild/' + state.guildId + '/bot-messages/' + encodeURIComponent(type), {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        var errData = await res.json().catch(function() { return {}; });
+        throw new Error(errData.error || 'HTTP ' + res.status);
+      }
+      var saved = await res.json();
       state.templates[type] = saved;
       var hasCustom = !!(content || ev.embedTitle || ev.embedDescription);
       if (badgeEl) { badgeEl.className = hasCustom ? 'response-badge-custom' : 'response-badge-default'; badgeEl.textContent = hasCustom ? 'Custom' : 'Default'; }
       if (itemEl) itemEl.classList.toggle('response-has-override', hasCustom);
       updateCollapsedPreview(type, content, ev.embedEnabled, ev.embedColor, ev.embedTitle, ev.embedDescription, hasCustom, container);
       showToast('Response saved!', 'success');
-    })
-    .catch(function(err) { showToast('Save failed: ' + err.message, 'error'); })
-    .finally(function() { if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Save Changes'; } });
+    } catch (err) {
+      showToast('Save failed: ' + err.message, 'error');
+      throw err;
+    }
   }
 
   function updateCollapsedPreview(type, content, embedOn, embedColor, eTitle, eDesc, hasCustom, container) {
@@ -580,19 +627,20 @@
     item.replaceChild(tmp.firstElementChild, existing);
   }
 
-  /* --- reset --- */
-  function resetTemplate(type, container) {
+  /* --- reset template to bot default (discards saved data from DB) --- */
+  async function resetTemplate(type, container) {
     var meta  = state.types.find(function(t) { return t.key === type; }) || {};
-    if (!await window.showConfirm('Reset "' + (meta.label || type) + '" to default?', { title: 'Reset Response', confirmText: 'Reset' })) return;
+    if (!await window.showConfirm?.('Reset "' + (meta.label || type) + '" to default?', { title: 'Reset Response', confirmText: 'Reset' })) return;
     var sk      = type.replace(/_/g, '-');
     var badgeEl = document.getElementById('resp-badge-' + sk);
     var itemEl  = document.getElementById('resp-item-' + sk);
     var defaults = { content: '', enabled: true, embedEnabled: true, embedColor: '#6366f1', embedAuthor: '', embedTitle: '', embedDescription: '', embedFooter: '', embedThumbnail: false, embedFields: [] };
-    fetch('/api/guild/' + state.guildId + '/bot-messages/' + encodeURIComponent(type), {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(defaults),
-    })
-    .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
-    .then(function(saved) {
+    try {
+      var res = await fetch('/api/guild/' + state.guildId + '/bot-messages/' + encodeURIComponent(type), {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(defaults),
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var saved = await res.json();
       state.templates[type] = saved;
       var q = function(sel) { return container.querySelector(sel + '[data-type="' + type + '"]'); };
       var flds = document.getElementById('resp-fields-' + sk);
@@ -613,8 +661,7 @@
       updateCollapsedPreview(type, '', true, '#6366f1', '', '', false, container);
       refreshPreview(type, container);
       showToast('Reset to default.', 'info');
-    })
-    .catch(function(err) { showToast('Reset failed: ' + err.message, 'error'); });
+    } catch (err) { showToast('Reset failed: ' + err.message, 'error'); }
   }
 
   /* --- utilities --- */
@@ -624,17 +671,7 @@
       .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
   }
 
-  function showToast(msg, type) {
-    type = type || 'info';
-    if (typeof toast === 'function') { toast(msg, type); return; }
-    var c = document.getElementById('toast-container');
-    if (!c) { c = document.createElement('div'); c.id = 'toast-container'; c.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px'; document.body.appendChild(c); }
-    var t = document.createElement('div');
-    t.className = 'toast ' + type + ' show';
-    t.textContent = (type==='success'?'check  ':type==='error'?'x  ':'i  ') + msg;
-    c.appendChild(t);
-    setTimeout(function() { t.classList.remove('show'); setTimeout(function() { t.remove(); }, 400); }, 3200);
-  }
+  function showToast(msg, type) { window.showToast?.(msg, type || 'info'); }
 
   if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
 })();

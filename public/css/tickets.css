@@ -9,7 +9,7 @@
 }
 
 .tickets-stat-card {
-  background: var(--surface-2);
+  background: var(--bg-1);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 1rem 1.25rem;
@@ -25,7 +25,7 @@
 
 .tickets-stat-label {
   font-size: 0.78rem;
-  color: var(--text-muted);
+  color: var(--text-2);
   margin-top: 4px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -44,7 +44,7 @@
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
-  color: var(--text-muted);
+  color: var(--text-2);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -67,7 +67,7 @@
 }
 
 .tickets-panel-card {
-  background: var(--surface-2);
+  background: var(--bg-1);
   border: 1px solid var(--border);
   border-radius: 10px;
   overflow: hidden;
@@ -78,7 +78,7 @@
   align-items: center;
   gap: 0.75rem;
   padding: 0.9rem 1.25rem;
-  background: var(--surface-3);
+  background: var(--bg-2);
   border-bottom: 1px solid var(--border);
 }
 
@@ -110,7 +110,7 @@
 
 .tickets-panel-row-label {
   font-size: 0.82rem;
-  color: var(--text-muted);
+  color: var(--text-2);
   font-weight: 500;
   min-width: 130px;
 }
@@ -124,7 +124,7 @@
 .tickets-panel-row-value input[type="number"] {
   width: 100%;
   padding: 0.4rem 0.6rem;
-  background: var(--surface-1);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text);
@@ -134,7 +134,7 @@
 .tickets-panel-row-value textarea {
   width: 100%;
   padding: 0.5rem 0.6rem;
-  background: var(--surface-1);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text);
@@ -163,8 +163,8 @@
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-muted);
-  background: var(--surface-2);
+  color: var(--text-2);
+  background: var(--bg-1);
   font-weight: 600;
   border-bottom: 1px solid var(--border);
 }
@@ -181,7 +181,7 @@
 }
 
 .tickets-table tbody tr:hover td {
-  background: var(--surface-2);
+  background: var(--bg-1);
 }
 
 .ticket-status-badge {
@@ -200,8 +200,8 @@
 }
 
 .ticket-status-badge.closed {
-  background: var(--surface-3);
-  color: var(--text-muted);
+  background: var(--bg-2);
+  color: var(--text-2);
 }
 
 .ticket-priority-badge {
@@ -228,7 +228,7 @@
   background: none;
   border: 2px dashed var(--border);
   border-radius: 10px;
-  color: var(--text-muted);
+  color: var(--text-2);
   font-size: 0.875rem;
   cursor: pointer;
   width: 100%;
@@ -270,7 +270,7 @@
 
 /* Advanced settings collapsible */
 .tickets-advanced {
-  background: var(--surface-1);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
@@ -280,7 +280,7 @@
   padding: 0.6rem 0.875rem;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-2);
   cursor: pointer;
   user-select: none;
   list-style: none;
@@ -311,13 +311,13 @@ details[open] > .tickets-advanced-toggle::before {
 
 .tickets-panel-hint {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--text-2);
   margin-top: 3px;
 }
 
 .tickets-color-val {
   font-size: 0.78rem;
-  color: var(--text-muted);
+  color: var(--text-2);
   font-family: monospace;
 }
 

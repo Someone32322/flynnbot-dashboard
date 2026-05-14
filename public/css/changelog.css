@@ -143,9 +143,9 @@
     color: var(--text-2);
 }
 
-.cl-cat-title--new { color: var(--success); }
-.cl-cat-title--improved { color: var(--warning); }
-.cl-cat-title--fixed { color: var(--danger); }
+.cl-cat-title--new { color: var(--green); }
+.cl-cat-title--improved { color: var(--yellow); }
+.cl-cat-title--fixed { color: var(--red); }
 
 .feature-list {
     list-style: none;

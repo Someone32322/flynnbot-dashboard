@@ -73,7 +73,7 @@
   }
 
   function roleMultiSelect(id, selectedIds) {
-    return `<select id="${id}" multiple style="min-height:70px;width:100%;padding:.4rem;background:var(--surface-1);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-size:.82rem">
+    return `<select id="${id}" multiple style="min-height:70px;width:100%;padding:.4rem;background:var(--input-bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.82rem">
       ${_roles.filter((r) => r.id !== _guildId).map((r) =>
     `<option value="${r.id}" ${(selectedIds || []).includes(r.id) ? 'selected' : ''}>${esc(r.name)}</option>`
   ).join('')}
@@ -161,7 +161,7 @@
             <div class="tickets-panel-row">
               <div class="tickets-panel-row-label">Embed color</div>
               <div class="tickets-panel-row-value" style="display:flex;align-items:center;gap:.6rem">
-                <input type="color" data-field="embedColor" value="${embedColor}" style="width:42px;height:34px;padding:2px;border-radius:6px;cursor:pointer;background:var(--surface-1);border:1px solid var(--border)" />
+                <input type="color" data-field="embedColor" value="${embedColor}" style="width:42px;height:34px;padding:2px;border-radius:6px;cursor:pointer;background:var(--input-bg);border:1px solid var(--border)" />
                 <span class="tickets-color-val">${embedColor}</span>
               </div>
             </div>
@@ -217,7 +217,7 @@
                 <div class="tickets-panel-row" style="align-items:flex-start">
                   <div class="tickets-panel-row-label" style="padding-top:.4rem">Transcripts</div>
                   <div class="tickets-panel-row-value">
-                    <label style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-secondary);margin-bottom:.4rem">
+                    <label style="display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-2);margin-bottom:.4rem">
                       <input type="checkbox" data-field="transcripts.enabled" ${panel.transcripts?.enabled ? 'checked' : ''} /> Save transcript on close
                     </label>
                     <select data-field="transcripts.channelId">${channelOptions(panel.transcripts?.channelId)}</select>
@@ -243,13 +243,13 @@
     ];
     return `
       <div class="button-row" style="display:flex;gap:.5rem;align-items:center;margin-bottom:.35rem" data-btn-idx="${btnIdx}">
-        <input type="text" placeholder="Label" value="${esc(btn.label || 'Open Ticket')}" data-btn-field="label" style="flex:2;padding:.35rem .5rem;background:var(--surface-1);border:1px solid var(--border);border-radius:5px;color:var(--text-primary);font-size:.8rem" maxlength="80" />
-        <input type="text" placeholder="Emoji (optional)" value="${esc(btn.emoji || '')}" data-btn-field="emoji" style="flex:1;padding:.35rem .5rem;background:var(--surface-1);border:1px solid var(--border);border-radius:5px;color:var(--text-primary);font-size:.8rem" maxlength="32" />
-        <input type="text" placeholder="Category" value="${esc(btn.category || 'General')}" data-btn-field="category" style="flex:1;padding:.35rem .5rem;background:var(--surface-1);border:1px solid var(--border);border-radius:5px;color:var(--text-primary);font-size:.8rem" maxlength="50" />
-        <select data-btn-field="style" style="flex:1;padding:.35rem .4rem;background:var(--surface-1);border:1px solid var(--border);border-radius:5px;color:var(--text-primary);font-size:.8rem">
+        <input type="text" placeholder="Label" value="${esc(btn.label || 'Open Ticket')}" data-btn-field="label" style="flex:2;padding:.35rem .5rem;background:var(--input-bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:.8rem" maxlength="80" />
+        <input type="text" placeholder="Emoji (optional)" value="${esc(btn.emoji || '')}" data-btn-field="emoji" style="flex:1;padding:.35rem .5rem;background:var(--input-bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:.8rem" maxlength="32" />
+        <input type="text" placeholder="Category" value="${esc(btn.category || 'General')}" data-btn-field="category" style="flex:1;padding:.35rem .5rem;background:var(--input-bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:.8rem" maxlength="50" />
+        <select data-btn-field="style" style="flex:1;padding:.35rem .4rem;background:var(--input-bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:.8rem">
           ${styles.map(([v, l]) => `<option value="${v}" ${btn.style === v ? 'selected' : ''}>${l}</option>`).join('')}
         </select>
-        <button data-action="remove-button" data-panel-idx="${panelIdx}" data-btn-idx="${btnIdx}" style="flex:0;padding:.35rem .5rem;background:none;border:1px solid var(--border);border-radius:5px;color:var(--text-muted);cursor:pointer;font-size:.8rem">×</button>
+        <button data-action="remove-button" data-panel-idx="${panelIdx}" data-btn-idx="${btnIdx}" style="flex:0;padding:.35rem .5rem;background:none;border:1px solid var(--border);border-radius:5px;color:var(--text-2);cursor:pointer;font-size:.8rem">×</button>
       </div>`;
   }
 
@@ -312,16 +312,16 @@
       </div>
 
       <!-- Master settings -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;margin-bottom:1.5rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;background:var(--bg-1);border:1px solid var(--border);border-radius:10px;margin-bottom:1.5rem">
         <div>
-          <div style="font-weight:600;font-size:.95rem;color:var(--text-primary)">Ticket system</div>
-          <div style="font-size:.8rem;color:var(--text-muted);margin-top:2px">Enable or disable the entire ticket system</div>
+          <div style="font-weight:600;font-size:.95rem;color:var(--text)">Ticket system</div>
+          <div style="font-size:.8rem;color:var(--text-2);margin-top:2px">Enable or disable the entire ticket system</div>
         </div>
         ${toggle('tickets-enabled', c.enabled)}
       </div>
 
       <!-- General settings -->
-      <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.5rem">
+      <div style="background:var(--bg-1);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.5rem">
         <div class="tickets-panel-row">
           <div class="tickets-panel-row-label">Log channel</div>
           <div class="tickets-panel-row-value" style="max-width:280px">
