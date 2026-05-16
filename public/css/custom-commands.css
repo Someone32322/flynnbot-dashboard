@@ -66,11 +66,16 @@
 
 .cc-card-info { min-width: 0; }
 .cc-card-name { font-size: 0.9rem; font-weight: 600; color: var(--text); }
-.cc-card-trigger { font-size: 0.8rem; color: var(--text-2); margin-top: 0.1rem; }
+.cc-card-trigger { font-size: 0.8rem; color: var(--text-2); margin-top: 0.1rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .cc-card-trigger code {
   font-size: 0.78rem; background: var(--bg-3);
   padding: 0.1rem 0.35rem; border-radius: var(--r-sm);
   color: var(--accent);
+}
+.cc-card-blocks {
+  font-size: 0.72rem; color: var(--text-3);
+  background: var(--bg-3); border: 1px solid var(--border);
+  padding: 0.1rem 0.4rem; border-radius: 20px;
 }
 
 /* Trigger type badge */
