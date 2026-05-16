@@ -1,9 +1,37 @@
 /**
  * Thin wrapper around the Discord REST API using Node's built-in fetch.
  * Uses the BOT_TOKEN from env for privileged guild endpoints.
+ *
+ * Includes:
+ *  - Per-route in-memory cache (TTL varies by endpoint)
+ *  - Automatic 429 retry-after handling (single retry, max 10s wait)
  */
 
 const BASE = 'https://discord.com/api/v10';
+
+// ── Cache ─────────────────────────────────────────────────────
+// cache: Map<key, { data, expiresAt }>
+const _cache = new Map();
+
+function cacheGet(key) {
+  const entry = _cache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) { _cache.delete(key); return null; }
+  return entry.data;
+}
+
+function cacheSet(key, data, ttlMs) {
+  _cache.set(key, { data, expiresAt: Date.now() + ttlMs });
+}
+
+// TTLs (milliseconds)
+const TTL = {
+  guild:    5 * 60 * 1000,  // 5 min
+  roles:    3 * 60 * 1000,  // 3 min
+  channels: 3 * 60 * 1000,  // 3 min
+  emojis:   5 * 60 * 1000,  // 5 min
+  commands: 2 * 60 * 1000,  // 2 min
+};
 
 function authHeaders() {
   const token = process.env.DISCORD_BOT_TOKEN;
@@ -20,6 +48,27 @@ async function discordFetch(path, options = {}) {
     headers: { ...authHeaders(), ...(options.headers ?? {}) },
   });
 
+  // Handle rate limit with one automatic retry
+  if (res.status === 429) {
+    let retryAfter = 1;
+    try {
+      const body = await res.json();
+      retryAfter = Math.min(10, body.retry_after ?? 1);
+    } catch {}
+    await new Promise(r => setTimeout(r, Math.ceil(retryAfter * 1000) + 100));
+    // Retry once
+    const retry = await fetch(`${BASE}${path}`, {
+      ...options,
+      headers: { ...authHeaders(), ...(options.headers ?? {}) },
+    });
+    if (!retry.ok) {
+      const body = await retry.text();
+      throw new Error(`Discord API ${options.method || 'GET'} ${path} → ${retry.status}: ${body}`);
+    }
+    const text = await retry.text();
+    return text ? JSON.parse(text) : null;
+  }
+
   if (!res.ok) {
     const body = await res.text();
     throw new Error(`Discord API ${options.method || 'GET'} ${path} → ${res.status}: ${body}`);
@@ -31,17 +80,31 @@ async function discordFetch(path, options = {}) {
 
 // ── Guild info ────────────────────────────────────────────────
 async function getGuild(guildId) {
-  return discordFetch(`/guilds/${guildId}?with_counts=false`);
+  const key = `guild:${guildId}`;
+  const cached = cacheGet(key);
+  if (cached) return cached;
+  const data = await discordFetch(`/guilds/${guildId}?with_counts=false`);
+  cacheSet(key, data, TTL.guild);
+  return data;
 }
 
 async function getGuildRoles(guildId) {
-  return discordFetch(`/guilds/${guildId}/roles`);
+  const key = `roles:${guildId}`;
+  const cached = cacheGet(key);
+  if (cached) return cached;
+  const data = await discordFetch(`/guilds/${guildId}/roles`);
+  cacheSet(key, data, TTL.roles);
+  return data;
 }
 
 async function getGuildChannels(guildId, { includeVoice = false } = {}) {
-  const channels = await discordFetch(`/guilds/${guildId}/channels`);
+  const key = `channels:${guildId}`;
+  let channels = cacheGet(key);
+  if (!channels) {
+    channels = await discordFetch(`/guilds/${guildId}/channels`);
+    cacheSet(key, channels, TTL.channels);
+  }
   if (includeVoice) return channels;
-  // Only return text/forum channels useful for channel restrictions
   // 0=text, 5=announcement, 10=announcementThread, 11=publicThread, 12=privateThread, 15=forum
   return channels.filter((c) => [0, 5, 10, 11, 12, 15].includes(c.type));
 }
@@ -51,17 +114,28 @@ async function getGuildMember(guildId, userId) {
 }
 
 async function getGuildEmojis(guildId) {
-  return discordFetch(`/guilds/${guildId}/emojis`);
+  const key = `emojis:${guildId}`;
+  const cached = cacheGet(key);
+  if (cached) return cached;
+  const data = await discordFetch(`/guilds/${guildId}/emojis`);
+  cacheSet(key, data, TTL.emojis);
+  return data;
 }
 
 // ── Guild commands ────────────────────────────────────────────
 async function getGuildCommands(guildId) {
+  const key = `commands:${guildId}`;
+  const cached = cacheGet(key);
+  if (cached) return cached;
   const appId = process.env.DISCORD_CLIENT_ID;
-  return discordFetch(`/applications/${appId}/guilds/${guildId}/commands`);
+  const data = await discordFetch(`/applications/${appId}/guilds/${guildId}/commands`);
+  cacheSet(key, data, TTL.commands);
+  return data;
 }
 
 async function registerGuildCommand(guildId, commandBody) {
   const appId = process.env.DISCORD_CLIENT_ID;
+  _cache.delete(`commands:${guildId}`);
   return discordFetch(`/applications/${appId}/guilds/${guildId}/commands`, {
     method: 'POST',
     body: JSON.stringify(commandBody),
@@ -70,6 +144,7 @@ async function registerGuildCommand(guildId, commandBody) {
 
 async function updateGuildCommand(guildId, commandId, commandBody) {
   const appId = process.env.DISCORD_CLIENT_ID;
+  _cache.delete(`commands:${guildId}`);
   return discordFetch(`/applications/${appId}/guilds/${guildId}/commands/${commandId}`, {
     method: 'PATCH',
     body: JSON.stringify(commandBody),
@@ -78,6 +153,7 @@ async function updateGuildCommand(guildId, commandId, commandBody) {
 
 async function deleteGuildCommand(guildId, commandId) {
   const appId = process.env.DISCORD_CLIENT_ID;
+  _cache.delete(`commands:${guildId}`);
   return discordFetch(`/applications/${appId}/guilds/${guildId}/commands/${commandId}`, {
     method: 'DELETE',
   });
@@ -118,6 +194,15 @@ async function getBotGuilds() {
   return discordFetch('/users/@me/guilds?limit=200');
 }
 
+// Invalidate cached data for a guild (call after write operations that may affect roles/channels)
+function invalidateGuildCache(guildId) {
+  _cache.delete(`guild:${guildId}`);
+  _cache.delete(`roles:${guildId}`);
+  _cache.delete(`channels:${guildId}`);
+  _cache.delete(`emojis:${guildId}`);
+  _cache.delete(`commands:${guildId}`);
+}
+
 module.exports = {
   getGuild,
   getGuildRoles,
@@ -139,6 +224,7 @@ module.exports = {
   getAuditLog,
   addRoleToMember,
   removeRoleFromMember,
+  invalidateGuildCache,
 };
 
 // ── Message helpers ───────────────────────────────────────────
