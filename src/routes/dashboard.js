@@ -171,4 +171,4 @@ router.get('/:guildId/applications/review', requireAuth, async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = router; });
