@@ -104,8 +104,7 @@ router.get('/:guildId/workflows/editor/:workflowId', requireAuth, async (req, re
   res.render('workflow-editor', { guild, user: req.user, workflow });
 });
 
-router.get('/:guildId/custom-commands/builder', requireAuth, async (req, res) => {
-
+// (Removed duplicate empty route definition)
 router.get('/:guildId/custom-commands/builder', requireAuth, async (req, res) => {
   const { guildId } = req.params;
   if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
@@ -171,4 +170,4 @@ router.get('/:guildId/applications/review', requireAuth, async (req, res) => {
   }
 });
 
-module.exports = router; });
+module.exports = router;
