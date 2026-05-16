@@ -2333,18 +2333,30 @@ router.get('/guild/:guildId/custom-commands', requireAuth, requireGuildAdmin, as
 
 // ── Shared CC validation helper ───────────────────────────────
 const CC_ALLOWED_BLOCK_TYPES = new Set([
+  // Messages
   'reply', 'send_message', 'send_embed', 'dm_user', 'send_to_channel',
-  'add_role', 'remove_role', 'toggle_role', 'add_reaction',
-  'send_buttons', 'send_select_menu', 'send_modal',
-  'give_coins', 'take_coins', 'set_coins', 'give_xp', 'take_xp',
-  'check_coins', 'check_level', 'check_xp',
+  'edit_message', 'delete_message', 'pin_message',
+  // Components
+  'add_reaction', 'send_buttons', 'send_select_menu', 'send_modal', 'show_modal',
+  // Roles
+  'add_role', 'remove_role', 'toggle_role',
+  // Economy
+  'give_coins', 'take_coins', 'set_coins', 'set_balance', 'check_coins', 'check_balance', 'give_item',
+  // Leveling
+  'give_xp', 'take_xp', 'check_xp', 'check_level', 'get_level',
+  // Moderation
   'timeout_user', 'kick_user', 'ban_user', 'warn_user', 'create_mod_case',
-  'delete_message', 'pin_message', 'create_channel', 'delete_channel',
-  'set_nickname', 'mute_user', 'unmute_user',
-  'condition_if', 'stop_if', 'stop_flow', 'wait',
-  'set_variable', 'math', 'random_number', 'random_choice',
-  'delay', 'log_to_channel',
-  // legacy aliases
+  'purge_messages', 'set_nickname', 'mute_user', 'unmute_user',
+  // Channels
+  'create_thread', 'create_channel', 'delete_channel', 'lock_channel',
+  // Variables
+  'set_variable', 'get_variable', 'increment_variable', 'delete_variable',
+  'random_number', 'random_choice',
+  // Utility
+  'math', 'format_text', 'string_operation', 'fetch_user_info', 'log_to_channel',
+  // Flow
+  'condition_if', 'stop_if', 'loop_times', 'stop_flow', 'delay', 'wait',
+  // Legacy aliases
   'message', 'embed', 'dm', 'react',
 ]);
 const CC_ALLOWED_TRIGGER_TYPES = new Set(['slash', 'prefix', 'contains', 'exact', 'regex']);
@@ -2396,86 +2408,200 @@ function validateCCBody(body) {
 }
 
 function sanitizeCCBlocks(blocks) {
-  return blocks.map(b => {
-    const d = b.data || {};
-    const clean = { type: b.type, data: {} };
-    const nullStrip = s => (typeof s === 'string' ? s.replace(/\0/g, '') : '');
-    if (['reply', 'message', 'dm'].includes(b.type)) {
-      clean.data.content = nullStrip(d.content || '').slice(0, 2000);
-      if (b.type === 'reply') clean.data.ephemeral = !!d.ephemeral;
-    } else if (b.type === 'embed') {
-      clean.data = {
-        title:       nullStrip(d.title || '').slice(0, 256),
-        description: nullStrip(d.description || '').slice(0, 4096),
-        color:       typeof d.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(d.color) ? d.color : '#5865f2',
-        footer:      nullStrip(d.footer || '').slice(0, 2048),
-        thumbnail:   /^https?:\/\//i.test(d.thumbnail || '') ? d.thumbnail.slice(0, 512) : '',
-        image:       /^https?:\/\//i.test(d.image || '') ? d.image.slice(0, 512) : '',
-        timestamp:   !!d.timestamp,
-        showAuthor:  !!d.showAuthor,
-        fields:      Array.isArray(d.fields)
-          ? d.fields.slice(0, 25).map(f => ({
-              name:   nullStrip(f.name || '').slice(0, 256),
-              value:  nullStrip(f.value || '').slice(0, 1024),
-              inline: !!f.inline,
-            })).filter(f => f.name || f.value)
-          : [],
-      };
-    } else if (b.type === 'add_role' || b.type === 'remove_role' || b.type === 'toggle_role') {
-      clean.data.role_id = String(d.role_id || d.roleId || '').replace(/\D/g, '').slice(0, 20);
-    } else if (b.type === 'react' || b.type === 'add_reaction') {
-      clean.data.emoji = nullStrip(d.emoji || '').slice(0, 100);
-    } else if (b.type === 'set_variable') {
-      clean.data.var_name = nullStrip(d.var_name || '').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
-      clean.data.value = nullStrip(d.value || '').slice(0, 500);
-    } else if (['give_coins','take_coins','set_coins','give_xp','take_xp'].includes(b.type)) {
-      clean.data.amount = Math.max(0, Math.min(1000000, parseInt(d.amount)||0));
-    } else if (b.type === 'math') {
-      clean.data.expression = nullStrip(d.expression || '').slice(0, 200);
-      clean.data.store_as = nullStrip(d.store_as || 'result').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
-    } else if (b.type === 'delay') {
-      clean.data.ms = Math.max(100, Math.min(30000, parseInt(d.ms)||1000));
-    } else if (b.type === 'timeout_user') {
-      clean.data.duration_min = Math.max(1, Math.min(40320, parseInt(d.duration_min)||10));
-      clean.data.reason = nullStrip(d.reason || '').slice(0, 512);
-    } else if (['kick_user','ban_user','warn_user'].includes(b.type)) {
-      clean.data.reason = nullStrip(d.reason || '').slice(0, 512);
-    } else if (b.type === 'condition_if' || b.type === 'stop_if') {
-      clean.data.condition_type = nullStrip(d.condition_type || '').slice(0, 50);
-      clean.data.condition_value = nullStrip(d.condition_value || '').slice(0, 200);
-      clean.data.role_id = String(d.role_id || '').replace(/\D/g, '').slice(0, 20);
-      clean.data.channel_id = String(d.channel_id || '').replace(/\D/g, '').slice(0, 20);
-      if (b.type === 'condition_if') {
-        clean.data.if_blocks = Array.isArray(d.if_blocks) ? [] : [];
-        clean.data.else_blocks = Array.isArray(d.else_blocks) ? [] : [];
+  if (!Array.isArray(blocks)) return [];
+  return blocks
+    .filter(b => b && typeof b.type === 'string' && CC_ALLOWED_BLOCK_TYPES.has(b.type))
+    .map(b => {
+      const d = b.data || {};
+      const clean = { type: b.type, data: {} };
+      const ns = s => (typeof s === 'string' ? s.replace(/\0/g, '') : ''); // null-strip
+
+      if (['reply', 'send_message', 'message'].includes(b.type)) {
+        clean.data.content   = ns(d.content || '').slice(0, 2000);
+        clean.data.channel_id = String(d.channel_id || '').replace(/\D/g, '').slice(0, 20);
+        if (b.type === 'reply') {
+          clean.data.ephemeral = !!d.ephemeral;
+          clean.data.ping_user = !!d.ping_user;
+        }
+      } else if (['dm_user', 'dm'].includes(b.type)) {
+        clean.data.content     = ns(d.content || '').slice(0, 2000);
+        clean.data.fail_silent = !!d.fail_silent;
+      } else if (['send_embed', 'embed'].includes(b.type)) {
+        clean.data = {
+          title:       ns(d.title       || '').slice(0, 256),
+          description: ns(d.description || '').slice(0, 4096),
+          color:       typeof d.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(d.color) ? d.color : '#5865f2',
+          footer:      ns(d.footer      || '').slice(0, 2048),
+          thumbnail:   /^https?:\/\//i.test(d.thumbnail || '') ? ns(d.thumbnail).slice(0, 512) : '',
+          image:       /^https?:\/\//i.test(d.image      || '') ? ns(d.image).slice(0, 512) : '',
+          url:         /^https?:\/\//i.test(d.url        || '') ? ns(d.url).slice(0, 512) : '',
+          timestamp:   !!d.timestamp,
+          show_author: !!d.show_author,
+          channel_id:  String(d.channel_id || '').replace(/\D/g, '').slice(0, 20),
+          fields: Array.isArray(d.fields)
+            ? d.fields.slice(0, 25).map(f => ({
+                name:   ns(f.name  || '').slice(0, 256),
+                value:  ns(f.value || '').slice(0, 1024),
+                inline: !!f.inline,
+              })).filter(f => f.name || f.value)
+            : [],
+        };
+      } else if (['add_role', 'remove_role', 'toggle_role'].includes(b.type)) {
+        clean.data.role_id = String(d.role_id || d.roleId || '').replace(/\D/g, '').slice(0, 20);
+        clean.data.reason  = ns(d.reason || '').slice(0, 512);
+      } else if (['react', 'add_reaction'].includes(b.type)) {
+        clean.data.emoji = ns(d.emoji || '').slice(0, 100);
+      } else if (b.type === 'send_buttons') {
+        clean.data.message    = ns(d.message || '').slice(0, 2000);
+        clean.data.channel_id = String(d.channel_id || '').replace(/\D/g, '').slice(0, 20);
+        clean.data.buttons    = Array.isArray(d.buttons) ? d.buttons.slice(0, 5).map(btn => ({
+          label:    ns(btn.label    || '').slice(0, 80),
+          style:    ['Primary','Secondary','Success','Danger','Link'].includes(btn.style) ? btn.style : 'Primary',
+          customId: ns(btn.customId || btn.url || '').slice(0, 512),
+        })).filter(b2 => b2.label) : [];
+      } else if (b.type === 'send_select_menu') {
+        clean.data.placeholder = ns(d.placeholder || '').slice(0, 150);
+        clean.data.message     = ns(d.message     || '').slice(0, 2000);
+        clean.data.channel_id  = String(d.channel_id || '').replace(/\D/g, '').slice(0, 20);
+        clean.data.min_values  = Math.max(1, Math.min(25, parseInt(d.min_values) || 1));
+        clean.data.max_values  = Math.max(1, Math.min(25, parseInt(d.max_values) || 1));
+        clean.data.options     = Array.isArray(d.options) ? d.options.slice(0, 25).map(o => ({
+          label:       ns(o.label       || '').slice(0, 100),
+          value:       ns(o.value       || '').slice(0, 100),
+          description: ns(o.description || '').slice(0, 100),
+        })).filter(o => o.label || o.value) : [];
+      } else if (['give_coins','take_coins','set_coins','set_balance'].includes(b.type)) {
+        clean.data.amount   = Math.max(0, Math.min(1000000, parseInt(d.amount) || 0));
+        clean.data.to       = ['user','target'].includes(d.to)   ? d.to   : 'user';
+        clean.data.from     = ['user','target'].includes(d.from) ? d.from : 'user';
+        clean.data.location = ['wallet','bank'].includes(d.location) ? d.location : 'wallet';
+        clean.data.fail_if_broke = !!d.fail_if_broke;
+      } else if (['give_xp','take_xp'].includes(b.type)) {
+        clean.data.amount = Math.max(0, Math.min(100000, parseInt(d.amount) || 0));
+      } else if (b.type === 'check_coins') {
+        clean.data.store_as = ns(d.store_as || 'coins').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+      } else if (b.type === 'check_balance') {
+        clean.data.var_wallet = ns(d.var_wallet || 'wallet').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+        clean.data.var_bank   = ns(d.var_bank   || 'bank').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+      } else if (['check_level','check_xp'].includes(b.type)) {
+        clean.data.store_as = ns(d.store_as || (b.type === 'check_level' ? 'level' : 'xp')).replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+      } else if (b.type === 'get_level') {
+        clean.data.var_level = ns(d.var_level || 'level').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+        clean.data.var_xp    = ns(d.var_xp    || 'xp').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+      } else if (b.type === 'give_item') {
+        clean.data.item_id   = ns(d.item_id   || '').slice(0, 64);
+        clean.data.item_name = ns(d.item_name || '').slice(0, 64);
+        clean.data.quantity  = Math.max(1, Math.min(999, parseInt(d.quantity) || 1));
+        clean.data.emoji     = ns(d.emoji || '📦').slice(0, 10);
+      } else if (b.type === 'math') {
+        clean.data.expression = ns(d.expression || '').slice(0, 200);
+        clean.data.store_as   = ns(d.store_as || 'result').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+      } else if (b.type === 'format_text') {
+        clean.data.template = ns(d.template || '').slice(0, 2000);
+        clean.data.store_as = ns(d.store_as || 'formatted').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+      } else if (b.type === 'string_operation') {
+        const VALID_OPS = ['uppercase','lowercase','trim','reverse','length','replace','contains'];
+        clean.data.operation   = VALID_OPS.includes(d.operation) ? d.operation : 'uppercase';
+        clean.data.text        = ns(d.text || '').slice(0, 2000);
+        clean.data.store_as    = ns(d.store_as || 'result').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+        clean.data.find        = ns(d.find || '').slice(0, 100);
+        clean.data.replace_with = ns(d.replace_with || '').slice(0, 100);
+        clean.data.search      = ns(d.search || '').slice(0, 200);
+      } else if (b.type === 'fetch_user_info') {
+        clean.data.target     = ['author','mentioned'].includes(d.target) ? d.target : 'author';
+        clean.data.var_prefix = ns(d.var_prefix || 'target').replace(/[^a-z0-9_]/gi, '').slice(0, 20);
+      } else if (b.type === 'log_to_channel') {
+        clean.data.channel_id  = String(d.channel_id || '').replace(/\D/g, '').slice(0, 20);
+        clean.data.message     = ns(d.message || d.content || '').slice(0, 2000);
+        clean.data.as_embed    = !!d.as_embed;
+        clean.data.embed_color = typeof d.embed_color === 'string' && /^#[0-9a-fA-F]{6}$/.test(d.embed_color) ? d.embed_color : '#5865f2';
+      } else if (b.type === 'set_variable') {
+        const VALID_SCOPES = ['flow','user','guild'];
+        clean.data.var_name = ns(d.var_name || '').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+        clean.data.value    = ns(d.value || '').slice(0, 500);
+        clean.data.scope    = VALID_SCOPES.includes(d.scope) ? d.scope : 'flow';
+      } else if (b.type === 'get_variable') {
+        const VALID_SCOPES2 = ['user','guild'];
+        clean.data.var_name      = ns(d.var_name || '').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+        clean.data.scope         = VALID_SCOPES2.includes(d.scope) ? d.scope : 'user';
+        clean.data.default_value = ns(d.default_value ?? '0').slice(0, 500);
+        clean.data.store_as      = ns(d.store_as || '').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+      } else if (b.type === 'increment_variable') {
+        const VALID_SCOPES3 = ['user','guild'];
+        clean.data.var_name = ns(d.var_name || '').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+        clean.data.amount   = Math.max(-99999, Math.min(99999, parseFloat(d.amount) || 1));
+        clean.data.scope    = VALID_SCOPES3.includes(d.scope) ? d.scope : 'user';
+      } else if (b.type === 'delete_variable') {
+        clean.data.var_name = ns(d.var_name || '').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+        clean.data.scope    = ['user','guild'].includes(d.scope) ? d.scope : 'user';
+      } else if (b.type === 'random_number') {
+        clean.data.min      = Math.max(0, Math.min(999999, parseInt(d.min) || 1));
+        clean.data.max      = Math.max(1, Math.min(999999, parseInt(d.max) || 100));
+        clean.data.store_as = ns(d.store_as || 'random').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+      } else if (b.type === 'random_choice') {
+        clean.data.choices  = ns(d.choices || '').slice(0, 1000);
+        clean.data.store_as = ns(d.store_as || 'choice').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+      } else if (b.type === 'delay' || b.type === 'wait') {
+        clean.data.ms = Math.max(100, Math.min(30000, parseInt(d.ms) || 1000));
+      } else if (['timeout_user'].includes(b.type)) {
+        clean.data.duration_min = Math.max(1, Math.min(40320, parseInt(d.duration_min) || 10));
+        clean.data.reason       = ns(d.reason || '').slice(0, 512);
+      } else if (['kick_user','ban_user','warn_user'].includes(b.type)) {
+        clean.data.reason   = ns(d.reason || '').slice(0, 512);
+        clean.data.dm_user  = !!d.dm_user;
+        if (b.type === 'ban_user') clean.data.delete_days = Math.max(0, Math.min(7, parseInt(d.delete_days) || 0));
+      } else if (b.type === 'purge_messages') {
+        clean.data.count  = Math.max(1, Math.min(100, parseInt(d.count) || 5));
+        clean.data.filter = ['all','bots','user'].includes(d.filter) ? d.filter : 'all';
+      } else if (b.type === 'set_nickname') {
+        clean.data.nickname = ns(d.nickname || '').slice(0, 32);
+      } else if (b.type === 'delete_message') {
+        clean.data.target         = ['trigger','bot_last','by_id'].includes(d.target) ? d.target : 'trigger';
+        clean.data.message_id_var = ns(d.message_id_var || '').slice(0, 100);
+        clean.data.delay_ms       = Math.max(0, Math.min(60000, parseInt(d.delay_ms) || 0));
+      } else if (b.type === 'create_thread') {
+        clean.data.name              = ns(d.name || '').slice(0, 100);
+        clean.data.auto_archive_min  = [60,1440,4320,10080].includes(parseInt(d.auto_archive_min)) ? parseInt(d.auto_archive_min) : 1440;
+      } else if (b.type === 'lock_channel') {
+        clean.data.slowmode_seconds = Math.max(0, Math.min(21600, parseInt(d.slowmode_seconds) || 0));
+        clean.data.channel_id       = String(d.channel_id || '').replace(/\D/g, '').slice(0, 20);
+      } else if (b.type === 'condition_if' || b.type === 'stop_if') {
+        const VALID_COND_TYPES = ['has_role','not_has_role','in_channel','not_in_channel',
+          'var_equals','var_not_equals','var_greater','var_less',
+          'is_admin','is_mod','message_contains',
+          'user_has_perm','user_not_perm',
+          'economy_gte','economy_lt','level_gte',
+          'arg_equals','mentioned_user'];
+        const VALID_PERMS = ['ManageMessages','ManageRoles','ManageChannels','Administrator','BanMembers','KickMembers','ModerateMembers'];
+        clean.data.condition_type  = VALID_COND_TYPES.includes(d.condition_type) ? d.condition_type : 'has_role';
+        // Save under both names for forward/backward compat
+        clean.data.compare_value   = ns(d.compare_value || d.condition_value || '').slice(0, 500);
+        clean.data.condition_value = clean.data.compare_value;
+        clean.data.var_name        = ns(d.var_name || '').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+        clean.data.role_id         = String(d.role_id || '').replace(/\D/g, '').slice(0, 20);
+        clean.data.channel_id      = String(d.channel_id || '').replace(/\D/g, '').slice(0, 20);
+        clean.data.permission      = VALID_PERMS.includes(d.permission) ? d.permission : '';
+        clean.data.economy_source  = ['wallet','bank'].includes(d.economy_source) ? d.economy_source : 'wallet';
+        if (b.type === 'condition_if') {
+          // Recursively sanitize nested branch blocks
+          clean.data.if_blocks   = sanitizeCCBlocks(Array.isArray(d.if_blocks)   ? d.if_blocks   : []);
+          clean.data.else_blocks = sanitizeCCBlocks(Array.isArray(d.else_blocks) ? d.else_blocks : []);
+        } else {
+          clean.data.reply_msg = ns(d.reply_msg || '').slice(0, 2000);
+        }
+      } else if (b.type === 'loop_times') {
+        clean.data.times       = Math.max(1, Math.min(10, parseInt(d.times) || 2));
+        clean.data.loop_blocks = sanitizeCCBlocks(Array.isArray(d.loop_blocks) ? d.loop_blocks : []);
+      } else {
+        // Generic pass-through for remaining types — strip nullbytes, cap length
+        for (const [k, v] of Object.entries(d)) {
+          if (typeof v === 'string')  clean.data[k] = ns(v).slice(0, 2000);
+          else if (typeof v === 'number') clean.data[k] = v;
+          else if (typeof v === 'boolean') clean.data[k] = v;
+        }
       }
-    } else if (b.type === 'send_buttons') {
-      clean.data.message = nullStrip(d.message || '').slice(0, 2000);
-      clean.data.channel_id = String(d.channel_id || '').replace(/\D/g, '').slice(0, 20);
-      clean.data.buttons = Array.isArray(d.buttons) ? d.buttons.slice(0, 5).map(btn => ({
-        label: nullStrip(btn.label || '').slice(0, 80),
-        style: ['Primary','Secondary','Success','Danger','Link'].includes(btn.style) ? btn.style : 'Primary',
-        customId: nullStrip(btn.customId || btn.url || '').slice(0, 100),
-      })) : [];
-    } else if (b.type === 'send_select_menu') {
-      clean.data.placeholder = nullStrip(d.placeholder || '').slice(0, 150);
-      clean.data.message = nullStrip(d.message || '').slice(0, 2000);
-      clean.data.channel_id = String(d.channel_id || '').replace(/\D/g, '').slice(0, 20);
-      clean.data.options = Array.isArray(d.options) ? d.options.slice(0, 25).map(o => ({
-        label: nullStrip(o.label || '').slice(0, 100),
-        value: nullStrip(o.value || '').slice(0, 100),
-        description: nullStrip(o.description || '').slice(0, 100),
-      })).filter(o => o.label || o.value) : [];
-    } else {
-      // Generic pass-through for other block types — strip nullbytes, limit data size
-      for (const [k, v] of Object.entries(d)) {
-        if (typeof v === 'string') clean.data[k] = nullStrip(v).slice(0, 2000);
-        else if (typeof v === 'number') clean.data[k] = v;
-        else if (typeof v === 'boolean') clean.data[k] = v;
-      }
-    }
-    return clean;
-  });
+      return clean;
+    });
 }
 
 // ── POST /api/guild/:guildId/custom-commands ──────────────────

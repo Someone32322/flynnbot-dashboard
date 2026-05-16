@@ -538,6 +538,132 @@
       ],
       defaults: { template: '', store_as: 'formatted' },
     },
+    string_operation: {
+      cat: 'utility', label: 'String Operation', icon: 'scissors',
+      color: '#7dd3fc', accent: 'rgba(125,211,252,0.12)',
+      fields: [
+        { key: 'text', type: 'text', label: 'Input Text / Variable', required: true, max: 2000, placeholder: '{my_var} or literal text' },
+        { key: 'operation', type: 'select', label: 'Operation', options: [
+          { v: 'uppercase', l: 'UPPERCASE' },
+          { v: 'lowercase', l: 'lowercase' },
+          { v: 'trim',      l: 'Trim whitespace' },
+          { v: 'reverse',   l: 'Reverse characters' },
+          { v: 'length',    l: 'Get length → variable' },
+          { v: 'replace',   l: 'Find & Replace' },
+          { v: 'contains',  l: 'Contains? (→ "true"/"false")' },
+        ]},
+        { key: 'find',         type: 'text', label: 'Find',         max: 100, showIf: { key: 'operation', value: 'replace' } },
+        { key: 'replace_with', type: 'text', label: 'Replace With', max: 100, showIf: { key: 'operation', value: 'replace' } },
+        { key: 'search',       type: 'text', label: 'Search For',   max: 200, showIf: { key: 'operation', value: 'contains' } },
+        { key: 'store_as', type: 'text', label: 'Store Result As', required: true, max: 32, placeholder: 'result' },
+      ],
+      defaults: { text: '', operation: 'uppercase', find: '', replace_with: '', search: '', store_as: 'result' },
+    },
+
+    // ── NEW VARIABLE BLOCKS ───────────────────────────────────
+    random_choice: {
+      cat: 'variables', label: 'Random Choice → Variable', icon: 'shuffle',
+      color: '#a78bfa', accent: 'rgba(167,139,250,0.12)',
+      fields: [
+        { key: 'choices', type: 'text', label: 'Choices (comma-separated)', required: true, max: 1000,
+          placeholder: 'option1, option2, option3' },
+        { key: 'store_as', type: 'text', label: 'Store Result As', max: 32, placeholder: 'choice' },
+      ],
+      defaults: { choices: '', store_as: 'choice' },
+    },
+    delete_variable: {
+      cat: 'variables', label: 'Delete Variable (DB)', icon: 'trash-2',
+      color: '#f87171', accent: 'rgba(248,113,113,0.12)',
+      fields: [
+        { key: 'var_name', type: 'text', label: 'Variable Name', required: true, max: 32,
+          hint: 'Deletes the stored value from the database for this key.' },
+        { key: 'scope', type: 'select', label: 'Scope', options: [
+          { v: 'user',  l: 'Per-user (DB)' },
+          { v: 'guild', l: 'Per-server (DB)' },
+        ]},
+      ],
+      defaults: { var_name: '', scope: 'user' },
+    },
+
+    // ── NEW ECONOMY BLOCKS ───────────────────────────────────
+    check_balance: {
+      cat: 'economy', label: 'Check Balance → Variables', icon: 'credit-card',
+      color: '#fbbf24', accent: 'rgba(251,191,36,0.12)',
+      fields: [
+        { key: 'var_wallet', type: 'text', label: 'Store Wallet As', max: 32, placeholder: 'wallet',
+          hint: 'Variable name to store the wallet balance.' },
+        { key: 'var_bank', type: 'text', label: 'Store Bank As', max: 32, placeholder: 'bank',
+          hint: 'Variable name to store the bank balance.' },
+      ],
+      defaults: { var_wallet: 'wallet', var_bank: 'bank' },
+    },
+    set_balance: {
+      cat: 'economy', label: 'Set Balance (Exact)', icon: 'dollar-sign',
+      color: '#fbbf24', accent: 'rgba(251,191,36,0.12)',
+      fields: [
+        { key: 'amount',   type: 'number', label: 'Amount',      required: true, min: 0, max: 1000000 },
+        { key: 'location', type: 'select', label: 'Destination',
+          options: [{ v: 'wallet', l: 'Wallet' }, { v: 'bank', l: 'Bank' }] },
+      ],
+      defaults: { amount: 0, location: 'wallet' },
+    },
+    get_level: {
+      cat: 'leveling', label: 'Get Level & XP → Variables', icon: 'bar-chart-2',
+      color: '#818cf8', accent: 'rgba(129,140,248,0.12)',
+      fields: [
+        { key: 'var_level', type: 'text', label: 'Store Level As', max: 32, placeholder: 'level' },
+        { key: 'var_xp',    type: 'text', label: 'Store XP As',    max: 32, placeholder: 'xp' },
+      ],
+      defaults: { var_level: 'level', var_xp: 'xp' },
+    },
+
+    // ── NEW MODERATION BLOCKS ────────────────────────────────
+    set_nickname: {
+      cat: 'moderation', label: 'Set Nickname', icon: 'user-check',
+      color: '#94a3b8', accent: 'rgba(148,163,184,0.12)',
+      fields: [
+        { key: 'nickname', type: 'text', label: 'New Nickname', max: 32,
+          placeholder: '{username} — leave blank to reset' },
+      ],
+      defaults: { nickname: '' },
+    },
+    mute_user: {
+      cat: 'moderation', label: 'Mute User (60s timeout)', icon: 'mic-off',
+      color: '#f87171', accent: 'rgba(248,113,113,0.12)',
+      fields: [],
+      defaults: {},
+    },
+    unmute_user: {
+      cat: 'moderation', label: 'Unmute User', icon: 'mic',
+      color: '#4ade80', accent: 'rgba(74,222,128,0.12)',
+      fields: [],
+      defaults: {},
+    },
+    purge_messages: {
+      cat: 'moderation', label: 'Purge Messages', icon: 'trash',
+      color: '#f87171', accent: 'rgba(248,113,113,0.12)',
+      fields: [
+        { key: 'count',  type: 'number', label: 'Number of Messages', required: true, min: 1, max: 100 },
+        { key: 'filter', type: 'select', label: 'Filter',
+          options: [
+            { v: 'all',  l: 'All messages' },
+            { v: 'bots', l: 'Bot messages only' },
+            { v: 'user', l: 'Author\'s messages only' },
+          ]},
+      ],
+      defaults: { count: 5, filter: 'all' },
+    },
+
+    // ── NEW FLOW BLOCKS ──────────────────────────────────────
+    loop_times: {
+      cat: 'flow', label: 'Loop (Repeat N Times)', icon: 'refresh-cw',
+      color: '#34d399', accent: 'rgba(52,211,153,0.15)',
+      fields: [
+        { key: 'times', type: 'number', label: 'Repeat Count', required: true, min: 1, max: 10,
+          hint: 'Max 10 iterations. Inside loop: {loop_index} (0-based), {loop_count} (1-based).' },
+      ],
+      defaults: { times: 3, loop_blocks: [] },
+    },
 
   }; // END REGISTRY
 
@@ -616,6 +742,10 @@
     'arrow-left':      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>`,
     'zap':             `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
     'warning':         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+    'scissors':        `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>`,
+    'user-check':      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>`,
+    'mic':             `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`,
+    'mic-off':         `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6"/><path d="M17 16.95A7 7 0 015 12v-2m14 0v2a7 7 0 01-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>`,
   };
 
   function icon(name, size = 14) {
@@ -987,6 +1117,7 @@
     const id = b.id; const d = b.data || {};
     if (b.type === 'send_embed') return buildEmbedBody(id, d);
     if (b.type === 'condition_if') return buildConditionBody(id, d);
+    if (b.type === 'loop_times') return buildLoopBody(id, d);
     if (b.type === 'send_buttons') return buildButtonsBody(id, d);
     if (b.type === 'send_select_menu') return buildSelectMenuBody(id, d);
     if (b.type === 'stop_flow') return `<div class="cb-hint cb-hint-center">Stops all further blocks from executing when reached.</div>`;
@@ -1178,6 +1309,32 @@
         </div>
       </div>
       <div class="cb-hint" style="margin-top:8px">Tip: For simpler branching, use Stop-If blocks above this point instead.</div>`;
+  }
+
+  // ── Loop block body ───────────────────────────────────────────
+  function buildLoopBody(id, d) {
+    const timesField = renderField(id,
+      { key: 'times', type: 'number', label: 'Repeat Count', required: true, min: 1, max: 10,
+        hint: 'Max 10 iterations. Inside the loop: {loop_index} (0-based), {loop_count} (1-based).' },
+      d.times ?? 3
+    );
+    const loopBlocks = Array.isArray(d.loop_blocks) ? d.loop_blocks : [];
+    const blockItems = loopBlocks.map(bb => {
+      const br = REGISTRY[bb.type]; if (!br) return '';
+      return `<div class="cb-branch-block" style="border-left-color:${br.color}">
+        <span style="color:${br.color}">${icon(br.icon, 11)}</span> <span>${esc(br.label)}</span>
+      </div>`;
+    }).join('') || `<div class="cb-hint">No loop body blocks yet. (Import via JSON to add loop blocks.)</div>`;
+    return `${timesField}
+      <div class="cb-field">
+        <label class="cb-label">Loop Body <span class="cb-hint-inline">(repeats ${d.times||3}x)</span></label>
+        <div class="cb-condition-branches">
+          <div class="cb-branch cb-branch--if">
+            <div class="cb-branch-label cb-branch-label--if">${icon('refresh-cw', 11)} Loop Body:</div>
+            <div id="cb-f-${id}-loopblocks">${blockItems}</div>
+          </div>
+        </div>
+      </div>`;
   }
 
   // ── Block summaries ───────────────────────────────────────────
