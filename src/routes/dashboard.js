@@ -76,6 +76,35 @@ router.get('/owner', requireAuth, async (req, res) => {
 
 // ── Command builder pages (MUST come before /:guildId) ───────
 const CustomCommand = require('../models/CustomCommand');
+const Workflow = require('../models/Workflow');
+
+// ── Workflow editor pages (MUST come before /:guildId) ────────
+
+// New workflow
+router.get('/:guildId/workflows/editor', requireAuth, async (req, res) => {
+  const { guildId } = req.params;
+  if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
+  const guild = (req.user.guilds || []).find((g) => g.id === guildId && hasAdmin(g.permissions));
+  if (!guild) return res.redirect('/dashboard');
+  res.render('workflow-editor', { guild, user: req.user, workflow: null });
+});
+
+// Edit existing workflow
+router.get('/:guildId/workflows/editor/:workflowId', requireAuth, async (req, res) => {
+  const { guildId, workflowId } = req.params;
+  if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
+  const guild = (req.user.guilds || []).find((g) => g.id === guildId && hasAdmin(g.permissions));
+  if (!guild) return res.redirect('/dashboard');
+  let workflow = null;
+  try {
+    workflow = await Workflow.findOne({ _id: workflowId, guildId }).lean();
+  } catch {
+    // invalid id — render blank editor
+  }
+  res.render('workflow-editor', { guild, user: req.user, workflow });
+});
+
+router.get('/:guildId/custom-commands/builder', requireAuth, async (req, res) => {
 
 router.get('/:guildId/custom-commands/builder', requireAuth, async (req, res) => {
   const { guildId } = req.params;

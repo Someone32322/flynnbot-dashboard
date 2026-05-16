@@ -1,0 +1,136 @@
+<%- include('partials/head', { title: 'Workflow Editor' }) %>
+<link rel="stylesheet" href="/css/workflow-editor.css?v=1">
+<body class="wf-body">
+  <%- include('partials/nav') %>
+
+  <%
+    const guildIconUrl = guild.icon
+      ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.${guild.icon.startsWith('a_') ? 'gif' : 'png'}?size=64`
+      : null;
+
+    const workflowJson = typeof workflow !== 'undefined' && workflow
+      ? JSON.stringify(workflow).replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+      : '';
+
+    const workflowId = typeof workflow !== 'undefined' && workflow
+      ? workflow._id.toString()
+      : '';
+
+    const TRIGGER_LABELS = [
+      { v: '',               l: '— Select Trigger —' },
+      { v: 'slash_command',  l: '/ Slash Command' },
+      { v: 'prefix_command', l: '! Prefix Command' },
+      { v: 'contains',       l: 'Message Contains' },
+      { v: 'exact_match',    l: 'Exact Match' },
+      { v: 'regex',          l: 'Regex Pattern' },
+      { v: 'button_click',   l: '🔘 Button Click' },
+      { v: 'select_menu',    l: '📋 Select Menu' },
+      { v: 'reaction_add',   l: '👍 Reaction Added' },
+      { v: 'member_join',    l: '✅ Member Joins' },
+      { v: 'member_leave',   l: '👋 Member Leaves' },
+      { v: 'scheduled',      l: '⏰ Scheduled' },
+    ];
+
+    const currentTriggerType = (typeof workflow !== 'undefined' && workflow?.trigger?.type) || '';
+    const currentTriggerValue = (typeof workflow !== 'undefined' && workflow?.trigger?.value) || '';
+    const needsTriggerValue = ['slash_command','prefix_command','contains','exact_match','regex'];
+  %>
+
+  <%# ── Hidden data island — read by workflow-editor.js ── %>
+  <div id="wfPageData"
+    data-guild-id="<%= guild.id %>"
+    data-workflow-id="<%= workflowId %>"
+    data-workflow-json="<%= workflowJson %>"
+    style="display:none">
+  </div>
+
+  <div class="wf-editor">
+
+    <%# ── TOP BAR ── %>
+    <header class="wf-topbar">
+      <a href="/dashboard/<%= guild.id %>?section=workflows" class="wf-topbar__back">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        Workflows
+      </a>
+      <div class="wf-topbar__divider"></div>
+
+      <% if (guildIconUrl) { %>
+        <img src="<%= guildIconUrl %>" alt="<%= guild.name %>"
+          style="width:24px;height:24px;border-radius:50%;flex-shrink:0;">
+      <% } %>
+
+      <div class="wf-topbar__name-group">
+        <span class="wf-topbar__name-label">Name</span>
+        <input
+          type="text"
+          id="wf-name-input"
+          class="wf-topbar__name-input"
+          placeholder="my-workflow"
+          maxlength="50"
+          autocomplete="off"
+          spellcheck="false">
+      </div>
+
+      <div class="wf-topbar__divider"></div>
+
+      <div class="wf-topbar__trigger-group">
+        <span class="wf-topbar__trigger-label">Trigger:</span>
+        <select id="wf-trigger-type" class="wf-topbar__select">
+          <% for (const t of TRIGGER_LABELS) { %>
+            <option value="<%= t.v %>" <%= currentTriggerType === t.v ? 'selected' : '' %>>
+              <%= t.l %>
+            </option>
+          <% } %>
+        </select>
+
+        <div id="wf-trigger-value-row"
+          <%= needsTriggerValue.includes(currentTriggerType) ? '' : 'hidden' %>>
+          <input
+            type="text"
+            id="wf-trigger-value"
+            class="wf-topbar__trigger-value"
+            placeholder="command name / pattern"
+            maxlength="100"
+            autocomplete="off">
+        </div>
+      </div>
+
+      <div class="wf-topbar__spacer"></div>
+
+      <div class="wf-topbar__enabled-wrap">
+        <label class="wf-toggle-wrap" title="Enable / disable this workflow">
+          <input type="checkbox" id="wf-enabled-toggle" <%= (typeof workflow === 'undefined' || workflow?.enabled !== false) ? 'checked' : '' %>>
+          <span class="wf-toggle-track"></span>
+        </label>
+        <span>Enabled</span>
+      </div>
+
+      <span id="wf-dirty-dot" class="wf-dirty-dot" hidden title="Unsaved changes"></span>
+
+      <button id="wf-save-btn" class="wf-btn wf-btn--primary" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save
+      </button>
+    </header>
+
+    <%# ── PALETTE (left) ── %>
+    <aside id="wf-palette" class="wf-palette" role="complementary" aria-label="Block palette"></aside>
+
+    <%# ── CANVAS (centre) ── %>
+    <main id="wf-canvas" class="wf-canvas" role="main" aria-label="Workflow canvas"
+      aria-dropeffect="copy"></main>
+
+    <%# ── PROPERTIES PANEL (right) ── %>
+    <aside id="wf-props" class="wf-props" role="complementary" aria-label="Block properties">
+      <p class="wf-props__empty">Select a block to edit its properties.</p>
+    </aside>
+
+  </div><%# /.wf-editor %>
+
+  <%# ── Scripts ── %>
+  <script src="/js/theme.js"></script>
+  <script src="/js/savebar.js"></script>
+  <script src="/js/workflow-registry.js"></script>
+  <script src="/js/workflow-editor.js"></script>
+</body>
+</html>

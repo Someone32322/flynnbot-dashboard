@@ -1,0 +1,969 @@
+/* ================================================================
+   workflow-editor.css — Workflow Builder UI
+   Uses project design tokens only:
+   --bg-0…bg-4, --input-bg, --text, --text-2, --text-3, --text-4,
+   --border, --accent, --red, --green, --yellow,
+   --accent-light, --accent-dim
+   ================================================================ */
+
+/* ── Layout ─────────────────────────────────────────────────── */
+.wf-editor {
+  display: grid;
+  grid-template-areas:
+    "topbar topbar topbar"
+    "palette canvas props";
+  grid-template-columns: 260px 1fr 300px;
+  grid-template-rows: auto 1fr;
+  min-height: calc(100vh - 60px);
+  height: calc(100vh - 60px);
+  overflow: hidden;
+  background: var(--bg-0);
+}
+
+/* ── Top bar ─────────────────────────────────────────────────── */
+.wf-topbar {
+  grid-area: topbar;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.wf-topbar__back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-3);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+.wf-topbar__back:hover {
+  background: var(--bg-2);
+  color: var(--text);
+}
+
+.wf-topbar__divider {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+}
+
+.wf-topbar__name-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 160px;
+}
+
+.wf-topbar__name-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-4);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.wf-topbar__name-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 0;
+  width: 220px;
+  max-width: 100%;
+}
+.wf-topbar__name-input::placeholder { color: var(--text-4); }
+.wf-topbar__name-input:focus {
+  border-bottom: 1px solid var(--accent);
+  padding-bottom: 1px;
+}
+
+.wf-topbar__desc-input {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-2);
+  font-size: 13px;
+  padding: 5px 10px;
+  width: 220px;
+}
+
+.wf-topbar__trigger-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wf-topbar__trigger-label {
+  font-size: 12px;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+.wf-topbar__select,
+.wf-topbar__trigger-value {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  padding: 5px 10px;
+  outline: none;
+}
+.wf-topbar__select:focus,
+.wf-topbar__trigger-value:focus {
+  border-color: var(--accent);
+}
+.wf-topbar__trigger-value { width: 160px; }
+
+.wf-topbar__spacer { flex: 1; }
+
+.wf-topbar__enabled-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+/* toggle */
+.wf-toggle-wrap {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+.wf-toggle-wrap input { opacity: 0; width: 0; height: 0; position: absolute; }
+.wf-toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-3);
+  border-radius: 10px;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+.wf-toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--text-4);
+  transition: transform 0.2s, background 0.2s;
+}
+.wf-toggle-wrap input:checked + .wf-toggle-track { background: var(--accent); }
+.wf-toggle-wrap input:checked + .wf-toggle-track::after {
+  transform: translateX(16px);
+  background: #fff;
+}
+
+.wf-dirty-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--yellow);
+  margin-left: -6px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.wf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: opacity 0.15s, filter 0.15s;
+}
+.wf-btn--primary  { background: var(--accent); color: #fff; }
+.wf-btn--primary:hover  { filter: brightness(1.1); }
+.wf-btn--disabled { opacity: 0.4; pointer-events: none; }
+
+/* ── Palette (left panel) ────────────────────────────────────── */
+.wf-palette {
+  grid-area: palette;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-1);
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.wf-palette__search {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.wf-palette__search-input {
+  width: 100%;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  padding: 6px 10px;
+  outline: none;
+  box-sizing: border-box;
+}
+.wf-palette__search-input:focus { border-color: var(--accent); }
+.wf-palette__search-input::placeholder { color: var(--text-4); }
+
+.wf-palette__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0 16px;
+}
+
+.wf-palette__cat-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 7px 14px;
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: left;
+  transition: background 0.1s;
+}
+.wf-palette__cat-header:hover { background: var(--bg-2); }
+
+.wf-palette__cat-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.wf-palette__cat-label { flex: 1; }
+
+.wf-palette__cat-count {
+  background: var(--bg-3);
+  border-radius: 10px;
+  padding: 1px 6px;
+  font-size: 10px;
+  color: var(--text-3);
+}
+
+.wf-palette__cat-arrow {
+  font-size: 10px;
+  color: var(--text-4);
+  transition: transform 0.15s;
+}
+.wf-palette__cat-header--collapsed .wf-palette__cat-arrow {
+  transform: none;
+}
+
+.wf-palette__blocks {
+  padding: 2px 8px 6px;
+}
+
+.wf-palette__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 13px;
+  user-select: none;
+  transition: background 0.1s, color 0.1s;
+}
+.wf-palette__item:hover {
+  background: var(--bg-2);
+  color: var(--text);
+}
+.wf-palette__item--dragging { opacity: 0.5; }
+
+.wf-palette__item-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.wf-palette__item-label { flex: 1; }
+
+/* ── Canvas (centre panel) ────────────────────────────────────── */
+.wf-canvas {
+  grid-area: canvas;
+  overflow-y: auto;
+  padding: 16px;
+  background: var(--bg-0);
+}
+
+.wf-canvas__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 60%;
+  color: var(--text-4);
+}
+.wf-canvas__empty-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+.wf-canvas__empty-sub {
+  font-size: 13px;
+  margin: 0;
+  text-align: center;
+  max-width: 300px;
+}
+
+.wf-canvas__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* ── Block cards ─────────────────────────────────────────────── */
+.wf-block {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  position: relative;
+  padding-left: 4px;
+}
+.wf-block::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--block-accent, var(--accent));
+  border-radius: 8px 0 0 8px;
+}
+.wf-block:hover { border-color: var(--accent-dim); }
+.wf-block--selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-dim);
+}
+.wf-block--dragging { opacity: 0.4; }
+.wf-block--drag-over { border-color: var(--accent); background: var(--bg-2); }
+
+.wf-block__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+}
+
+.wf-block__accent {
+  display: none; /* replaced by ::before */
+}
+
+.wf-block__type {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.wf-block__summary {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wf-block__actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.wf-block:hover .wf-block__actions,
+.wf-block--selected .wf-block__actions {
+  opacity: 1;
+}
+
+.wf-block__action {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 6px;
+  transition: background 0.1s, color 0.1s;
+}
+.wf-block__action:hover {
+  background: var(--bg-3);
+  color: var(--text);
+}
+.wf-block__action--delete:hover {
+  background: var(--red);
+  color: #fff;
+  border-color: transparent;
+}
+
+/* Nested block sections */
+.wf-block__nested {
+  margin: 0 12px 10px 20px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 8px;
+}
+.wf-block__nested-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid;
+}
+.wf-block__nested-empty {
+  font-size: 12px;
+  color: var(--text-4);
+  text-align: center;
+  padding: 10px 0;
+}
+
+/* ── Properties panel (right panel) ─────────────────────────── */
+.wf-props {
+  grid-area: props;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-1);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.wf-props__empty {
+  margin: auto;
+  color: var(--text-4);
+  font-size: 13px;
+  text-align: center;
+  padding: 20px;
+}
+
+.wf-props__header {
+  padding: 14px 16px 10px;
+  border-bottom: 2px solid;
+  margin-bottom: 4px;
+}
+.wf-props__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+.wf-props__desc {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.wf-props__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.wf-props__row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.wf-props__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.wf-props__label--required::after {
+  content: ' *';
+  color: var(--red);
+}
+.wf-props__hint {
+  font-weight: 400;
+  color: var(--text-4);
+}
+
+.wf-props__input,
+.wf-props__select,
+.wf-props__textarea {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  padding: 7px 10px;
+  outline: none;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.wf-props__input:focus,
+.wf-props__select:focus,
+.wf-props__textarea:focus {
+  border-color: var(--accent);
+}
+.wf-props__textarea { resize: vertical; min-height: 80px; }
+
+.wf-props__color { height: 36px; padding: 2px 4px; cursor: pointer; }
+
+.wf-props__toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+.wf-props__toggle {
+  opacity: 0; position: absolute; width: 0; height: 0;
+}
+.wf-props__toggle-track {
+  position: relative;
+  display: inline-block;
+  width: 36px; height: 20px;
+  background: var(--bg-3);
+  border-radius: 10px;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+.wf-props__toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--text-4);
+  transition: transform 0.2s, background 0.2s;
+}
+.wf-props__toggle:checked + .wf-props__toggle-track { background: var(--accent); }
+.wf-props__toggle:checked + .wf-props__toggle-track::after {
+  transform: translateX(16px);
+  background: #fff;
+}
+
+.wf-props__branch-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  padding: 6px 0 2px;
+  border-top: 1px solid var(--border);
+  margin-top: 4px;
+}
+
+.wf-props__complex-placeholder {
+  font-size: 12px;
+  color: var(--text-4);
+  background: var(--bg-2);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 0;
+}
+
+.wf-props__no-fields {
+  padding: 16px;
+  color: var(--text-3);
+  font-size: 13px;
+  margin: 0;
+}
+
+/* ── Palette icon and search improvements ────────────────────── */
+.wf-palette__search {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.wf-palette__search-icon {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: var(--text-4);
+  pointer-events: none;
+}
+
+.wf-palette__item-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-right: 2px;
+}
+
+.wf-palette__item-dot {
+  display: none; /* replaced by icon */
+}
+
+/* ── Block icon display ──────────────────────────────────────── */
+.wf-block__icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
+.wf-block__accent {
+  display: none; /* replaced by ::before */
+}
+
+/* ── Block nested section collapsing (Phase 2) ────────────────── */
+.wf-block__nested {
+  margin: 0 12px 10px 20px;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  transition: background 0.1s;
+}
+
+.wf-block__nested--collapsed {
+  background: var(--bg-2);
+}
+
+.wf-block__nested--expanded {
+  background: transparent;
+}
+
+.wf-block__nested-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--bg-2);
+  cursor: pointer;
+  user-select: none;
+}
+
+.wf-block__nested-toggle {
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0 2px;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+  transition: color 0.1s;
+}
+.wf-block__nested-toggle:hover {
+  color: var(--text);
+}
+
+.wf-block__nested-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex: 1;
+}
+
+.wf-block__nested-count {
+  font-size: 11px;
+  color: var(--text-4);
+}
+
+.wf-block__nested-content {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wf-block__nested-empty {
+  font-size: 12px;
+  color: var(--text-4);
+  text-align: center;
+  padding: 10px 0;
+}
+
+/* ── Canvas drag feedback improvements ────────────────────────– */
+.wf-block--dragging {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.wf-block--drag-over {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent-dim);
+  background: var(--bg-2);
+}
+
+/* ── Properties panel field info ────────────────────────────── */
+.wf-props__field-info {
+  font-size: 11px;
+  color: var(--text-4);
+  margin: 4px 0 0 0;
+  padding: 4px 8px;
+  background: var(--bg-2);
+  border-radius: 4px;
+}
+
+.wf-props__complex-placeholder {
+  font-size: 12px;
+  color: var(--text-4);
+  background: var(--bg-2);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 0;
+}
+
+/* ── Modal Overlay & Dialog (Phase 2) ────────────────────────── */
+.wf-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.15s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.wf-modal {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  max-width: 500px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.2s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.wf-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.wf-modal__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.wf-modal__close {
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.1s, color 0.1s;
+}
+.wf-modal__close:hover {
+  background: var(--bg-2);
+  color: var(--text);
+}
+
+.wf-modal__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.wf-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-0);
+}
+
+/* ── Field Editor (Complex array editors) ──────────────────── */
+.wf-field-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wf-field-editor > p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.wf-field-editor__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.wf-field-editor__item {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  align-items: flex-start;
+}
+
+.wf-field-editor__input,
+.wf-field-editor__select,
+.wf-field-editor__textarea {
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 6px 8px;
+  outline: none;
+  flex: 1;
+  font-family: inherit;
+  transition: border-color 0.1s;
+}
+
+.wf-field-editor__input:focus,
+.wf-field-editor__select:focus,
+.wf-field-editor__textarea:focus {
+  border-color: var(--accent);
+}
+
+.wf-field-editor__textarea {
+  resize: vertical;
+  min-height: 60px;
+  flex: 1;
+}
+
+.wf-field-editor__select {
+  flex: 0.8;
+}
+
+.wf-field-editor__inline-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.wf-field-editor__inline-label input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.wf-field-editor__remove {
+  background: var(--red);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  transition: opacity 0.1s;
+  flex-shrink: 0;
+}
+.wf-field-editor__remove:hover {
+  opacity: 0.9;
+}
+
+.wf-field-editor__add-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+
+.wf-field-editor__add-btn.wf-btn--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+.wf-palette__list::-webkit-scrollbar,
+.wf-canvas::-webkit-scrollbar,
+.wf-props::-webkit-scrollbar,
+.wf-modal__body::-webkit-scrollbar,
+.wf-field-editor__list::-webkit-scrollbar {
+  width: 5px;
+}
+.wf-palette__list::-webkit-scrollbar-track,
+.wf-canvas::-webkit-scrollbar-track,
+.wf-props::-webkit-scrollbar-track,
+.wf-modal__body::-webkit-scrollbar-track,
+.wf-field-editor__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.wf-palette__list::-webkit-scrollbar-thumb,
+.wf-canvas::-webkit-scrollbar-thumb,
+.wf-props::-webkit-scrollbar-thumb,
+.wf-modal__body::-webkit-scrollbar-thumb,
+.wf-field-editor__list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+.wf-palette__list::-webkit-scrollbar-thumb:hover,
+.wf-canvas::-webkit-scrollbar-thumb:hover,
+.wf-props::-webkit-scrollbar-thumb:hover,
+.wf-modal__body::-webkit-scrollbar-thumb:hover,
+.wf-field-editor__list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-4);
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .wf-editor {
+    grid-template-areas:
+      "topbar"
+      "palette"
+      "canvas"
+      "props";
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr auto;
+    height: auto;
+  }
+  .wf-palette { max-height: 200px; overflow-y: auto; border-right: none; border-bottom: 1px solid var(--border); }
+  .wf-props   { border-left: none; border-top: 1px solid var(--border); }
+}
