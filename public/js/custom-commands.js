@@ -500,8 +500,16 @@
     `;
   }
 
-  // ── Open builder ──────────────────────────────────────────────
+  // ── Open builder (navigate to dedicated builder page) ─────────
   function openBuilder(id) {
+    if (id) {
+      window.location.href = `/dashboard/${_guildId}/custom-commands/builder/${id}`;
+    } else {
+      window.location.href = `/dashboard/${_guildId}/custom-commands/builder`;
+    }
+  }
+
+  function _openBuilderLegacy(id) {
     const cmd = id ? _cmds.find((c) => c._id === id) : null;
     _editing = id || null;
     _blocks = [];

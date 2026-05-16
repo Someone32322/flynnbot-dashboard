@@ -2331,33 +2331,127 @@ router.get('/guild/:guildId/custom-commands', requireAuth, requireGuildAdmin, as
   }
 });
 
+// ── Shared CC validation helper ───────────────────────────────
+const CC_ALLOWED_BLOCK_TYPES = new Set(['reply', 'message', 'embed', 'dm', 'add_role', 'remove_role', 'react']);
+const CC_ALLOWED_TRIGGER_TYPES = new Set(['slash', 'prefix', 'contains', 'exact', 'regex']);
+
+function validateCCBody(body) {
+  const { name, trigger, triggerType, blocks } = body;
+  if (!name || typeof name !== 'string' || !/^[a-z0-9_-]{1,32}$/.test(name.trim())) {
+    return 'name must be 1-32 chars: lowercase letters, digits, hyphens, underscores only';
+  }
+  if (!trigger || typeof trigger !== 'string' || !trigger.trim()) {
+    return 'trigger is required';
+  }
+  if (trigger.trim().length > 200) return 'trigger must be 200 chars or less';
+  const ttype = triggerType || 'exact';
+  if (!CC_ALLOWED_TRIGGER_TYPES.has(ttype)) return 'invalid triggerType';
+  if (ttype === 'regex') {
+    try { new RegExp(trigger.trim()); } catch { return 'invalid regex pattern'; }
+  }
+  if (!Array.isArray(blocks) || blocks.length === 0) return 'at least one block is required';
+  if (blocks.length > 20) return 'maximum 20 blocks per command';
+  for (const b of blocks) {
+    if (!b || typeof b.type !== 'string' || !CC_ALLOWED_BLOCK_TYPES.has(b.type)) {
+      return 'invalid block type: ' + (b?.type || 'unknown');
+    }
+    const d = b.data || {};
+    if (['reply', 'message', 'dm'].includes(b.type)) {
+      if (typeof d.content !== 'string' || !d.content.trim()) return `${b.type} block requires content`;
+      if (d.content.length > 2000) return `${b.type} content must be 2000 chars or less`;
+    }
+    if (b.type === 'embed') {
+      if (!d.title?.trim() && !d.description?.trim()) return 'embed block requires title or description';
+      if (d.title && d.title.length > 256) return 'embed title must be 256 chars or less';
+      if (d.description && d.description.length > 4096) return 'embed description must be 4096 chars or less';
+      if (d.footer && d.footer.length > 2048) return 'embed footer must be 2048 chars or less';
+      if (d.thumbnail && typeof d.thumbnail === 'string' && d.thumbnail && !/^https?:\/\//i.test(d.thumbnail)) {
+        return 'embed thumbnail must be a valid https:// URL';
+      }
+      if (d.image && typeof d.image === 'string' && d.image && !/^https?:\/\//i.test(d.image)) {
+        return 'embed image must be a valid https:// URL';
+      }
+      if (Array.isArray(d.fields) && d.fields.length > 25) return 'embed can have max 25 fields';
+    }
+    if ((b.type === 'add_role' || b.type === 'remove_role') && !d.roleId) {
+      return `${b.type} block requires roleId`;
+    }
+    if (b.type === 'react' && !d.emoji?.trim()) return 'react block requires emoji';
+  }
+  return null;
+}
+
+function sanitizeCCBlocks(blocks) {
+  return blocks.map(b => {
+    const d = b.data || {};
+    const clean = { type: b.type, data: {} };
+    const nullStrip = s => (typeof s === 'string' ? s.replace(/\0/g, '') : '');
+    if (['reply', 'message', 'dm'].includes(b.type)) {
+      clean.data.content = nullStrip(d.content || '').slice(0, 2000);
+      if (b.type === 'reply') clean.data.ephemeral = !!d.ephemeral;
+    } else if (b.type === 'embed') {
+      clean.data = {
+        title:       nullStrip(d.title || '').slice(0, 256),
+        description: nullStrip(d.description || '').slice(0, 4096),
+        color:       typeof d.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(d.color) ? d.color : '#5865f2',
+        footer:      nullStrip(d.footer || '').slice(0, 2048),
+        thumbnail:   /^https?:\/\//i.test(d.thumbnail || '') ? d.thumbnail.slice(0, 512) : '',
+        image:       /^https?:\/\//i.test(d.image || '') ? d.image.slice(0, 512) : '',
+        timestamp:   !!d.timestamp,
+        showAuthor:  !!d.showAuthor,
+        fields:      Array.isArray(d.fields)
+          ? d.fields.slice(0, 25).map(f => ({
+              name:   nullStrip(f.name || '').slice(0, 256),
+              value:  nullStrip(f.value || '').slice(0, 1024),
+              inline: !!f.inline,
+            })).filter(f => f.name || f.value)
+          : [],
+      };
+    } else if (b.type === 'add_role' || b.type === 'remove_role') {
+      clean.data.roleId = String(d.roleId || '').replace(/\D/g, '').slice(0, 20);
+    } else if (b.type === 'react') {
+      // Allow standard emoji, :name:, or custom <:name:id>
+      clean.data.emoji = nullStrip(d.emoji || '').slice(0, 100);
+    }
+    return clean;
+  });
+}
+
 // ── POST /api/guild/:guildId/custom-commands ──────────────────
 router.post('/guild/:guildId/custom-commands', requireAuth, requireGuildAdmin, async (req, res) => {
   try {
-    const { name, trigger, triggerType, response, type, embedColor, embedTitle, embedDescription,
-      allowedRoles, allowedChannels, cooldownSeconds, deleteUserMessage, caseSensitive } = req.body;
-    if (!name?.trim() || !trigger?.trim() || !response?.trim()) {
-      return res.status(400).json({ error: 'name, trigger, and response are required' });
-    }
-    const existing = await CustomCommand.findOne({ guildId: req.params.guildId, name: name.trim() });
+    const guildId = req.params.guildId;
+    const { name, trigger, triggerType, blocks, description, cooldownSeconds,
+      allowedRoles, allowedChannels, caseSensitive, deleteUserMessage, enabled } = req.body;
+
+    const err = validateCCBody(req.body);
+    if (err) return res.status(400).json({ error: err });
+
+    const count = await CustomCommand.countDocuments({ guildId });
+    if (count >= 50) return res.status(400).json({ error: 'Maximum 50 custom commands per guild' });
+
+    const existing = await CustomCommand.findOne({ guildId, name: name.trim() });
     if (existing) return res.status(409).json({ error: 'A command with that name already exists' });
 
+    const cleanBlocks = sanitizeCCBlocks(blocks);
+    // Derive legacy response for bot backward compat
+    const firstTextBlock = cleanBlocks.find(b => ['reply', 'message', 'dm'].includes(b.type));
+    const legacyResponse = firstTextBlock ? firstTextBlock.data.content : '';
+
     const cmd = await CustomCommand.create({
-      guildId: req.params.guildId,
-      name: name.trim().slice(0, 50),
-      trigger: trigger.trim().slice(0, 100),
-      triggerType: triggerType || 'exact',
-      response: response.trim().slice(0, 2000),
-      type: type || 'text',
-      embedColor: embedColor || '#0f52ba',
-      embedTitle: (embedTitle || '').slice(0, 256),
-      embedDescription: (embedDescription || '').slice(0, 2000),
-      allowedRoles: allowedRoles || [],
-      allowedChannels: allowedChannels || [],
-      cooldownSeconds: Number(cooldownSeconds) || 0,
+      guildId,
+      name:             name.trim().slice(0, 32),
+      trigger:          trigger.trim().slice(0, 200),
+      triggerType:      triggerType || 'exact',
+      description:      (description || '').slice(0, 100),
+      response:         legacyResponse.slice(0, 2000),
+      blocks:           cleanBlocks,
+      allowedRoles:     Array.isArray(allowedRoles) ? allowedRoles.filter(r => /^\d+$/.test(r)).slice(0, 50) : [],
+      allowedChannels:  Array.isArray(allowedChannels) ? allowedChannels.filter(c => /^\d+$/.test(c)).slice(0, 50) : [],
+      cooldownSeconds:  Math.max(0, Math.min(86400, Number(cooldownSeconds) || 0)),
       deleteUserMessage: !!deleteUserMessage,
-      caseSensitive: !!caseSensitive,
-      enabled: true,
+      caseSensitive:    !!caseSensitive,
+      enabled:          enabled !== false,
     });
     res.json(cmd);
   } catch (err) {
@@ -2369,15 +2463,40 @@ router.post('/guild/:guildId/custom-commands', requireAuth, requireGuildAdmin, a
 // ── PATCH /api/guild/:guildId/custom-commands/:id ────────────
 router.patch('/guild/:guildId/custom-commands/:id', requireAuth, requireGuildAdmin, async (req, res) => {
   try {
-    const allowed = ['name', 'trigger', 'triggerType', 'response', 'type', 'embedColor',
-      'embedTitle', 'embedDescription', 'enabled', 'allowedRoles', 'allowedChannels',
-      'cooldownSeconds', 'deleteUserMessage', 'caseSensitive'];
-    const update = {};
-    for (const key of allowed) {
-      if (req.body[key] !== undefined) update[key] = req.body[key];
+    const guildId = req.params.guildId;
+    const { name, trigger, triggerType, blocks, description, cooldownSeconds,
+      allowedRoles, allowedChannels, caseSensitive, deleteUserMessage, enabled } = req.body;
+
+    const err = validateCCBody(req.body);
+    if (err) return res.status(400).json({ error: err });
+
+    // Check name uniqueness against OTHER commands
+    if (name) {
+      const conflict = await CustomCommand.findOne({ guildId, name: name.trim(), _id: { $ne: req.params.id } });
+      if (conflict) return res.status(409).json({ error: 'Another command already uses that name' });
     }
+
+    const cleanBlocks = sanitizeCCBlocks(blocks);
+    const firstTextBlock = cleanBlocks.find(b => ['reply', 'message', 'dm'].includes(b.type));
+    const legacyResponse = firstTextBlock ? firstTextBlock.data.content : '';
+
+    const update = {
+      name:             name.trim().slice(0, 32),
+      trigger:          trigger.trim().slice(0, 200),
+      triggerType:      triggerType || 'exact',
+      description:      (description || '').slice(0, 100),
+      response:         legacyResponse.slice(0, 2000),
+      blocks:           cleanBlocks,
+      allowedRoles:     Array.isArray(allowedRoles) ? allowedRoles.filter(r => /^\d+$/.test(r)).slice(0, 50) : [],
+      allowedChannels:  Array.isArray(allowedChannels) ? allowedChannels.filter(c => /^\d+$/.test(c)).slice(0, 50) : [],
+      cooldownSeconds:  Math.max(0, Math.min(86400, Number(cooldownSeconds) || 0)),
+      deleteUserMessage: !!deleteUserMessage,
+      caseSensitive:    !!caseSensitive,
+      enabled:          enabled !== false,
+    };
+
     const cmd = await CustomCommand.findOneAndUpdate(
-      { _id: req.params.id, guildId: req.params.guildId },
+      { _id: req.params.id, guildId },
       { $set: update },
       { returnDocument: 'after' }
     ).lean();

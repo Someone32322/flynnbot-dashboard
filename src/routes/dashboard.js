@@ -74,6 +74,33 @@ router.get('/owner', requireAuth, async (req, res) => {
   }
 });
 
+// ── Command builder pages (MUST come before /:guildId) ───────
+const CustomCommand = require('../models/CustomCommand');
+
+router.get('/:guildId/custom-commands/builder', requireAuth, async (req, res) => {
+  const { guildId } = req.params;
+  if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
+  const guilds = req.user.guilds || [];
+  const guild = guilds.find((g) => g.id === guildId && hasAdmin(g.permissions));
+  if (!guild) return res.redirect('/dashboard');
+  res.render('command-builder', { guild, user: req.user, cmd: null });
+});
+
+router.get('/:guildId/custom-commands/builder/:cmdId', requireAuth, async (req, res) => {
+  const { guildId, cmdId } = req.params;
+  if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
+  const guilds = req.user.guilds || [];
+  const guild = guilds.find((g) => g.id === guildId && hasAdmin(g.permissions));
+  if (!guild) return res.redirect('/dashboard');
+  let cmd = null;
+  try {
+    cmd = await CustomCommand.findOne({ _id: cmdId, guildId }).lean();
+  } catch {
+    // invalid id or not found — render blank builder
+  }
+  res.render('command-builder', { guild, user: req.user, cmd });
+});
+
 // Server detail
 router.get('/:guildId', requireAuth, (req, res) => {
   const { guildId } = req.params;
