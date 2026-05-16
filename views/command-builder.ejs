@@ -60,6 +60,8 @@
         </span>
         <span class="cb-enabled-label" id="cbEnabledLabel">Enabled</span>
       </label>
+      <span class="cb-block-count" id="cbBlockCount">0 blocks</span>
+      <button class="cb-validate-btn" id="cbValidateBtn" title="Validate workflow">Validate</button>
       <button class="cb-save-btn" id="cbSaveBtn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13"/><polyline points="7 3 7 8 15 8"/></svg>
         Save Command
@@ -73,7 +75,13 @@
     <!-- ───────── LEFT PANEL: Block Palette + Variables ───────── -->
     <aside class="cb-panel" id="cbPanel">
 
-      <div class="cb-panel-section">
+      <!-- Dynamic palette rendered by JS -->
+      <div class="cb-palette-search-wrap">
+        <input type="text" id="cbPaletteSearch" class="cb-palette-search" placeholder="Search blocks…" autocomplete="off">
+      </div>
+      <div id="cbPalette"></div>
+
+      <div class="cb-panel-section" style="display:none">
         <div class="cb-panel-label">Trigger</div>
         <div class="cb-palette-item cb-palette--trigger" data-block-type="trigger_settings">
           <span class="cb-palette-icon" style="background:rgba(88,101,242,0.2);color:#5865f2">

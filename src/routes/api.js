@@ -2332,7 +2332,21 @@ router.get('/guild/:guildId/custom-commands', requireAuth, requireGuildAdmin, as
 });
 
 // ── Shared CC validation helper ───────────────────────────────
-const CC_ALLOWED_BLOCK_TYPES = new Set(['reply', 'message', 'embed', 'dm', 'add_role', 'remove_role', 'react']);
+const CC_ALLOWED_BLOCK_TYPES = new Set([
+  'reply', 'send_message', 'send_embed', 'dm_user', 'send_to_channel',
+  'add_role', 'remove_role', 'toggle_role', 'add_reaction',
+  'send_buttons', 'send_select_menu', 'send_modal',
+  'give_coins', 'take_coins', 'set_coins', 'give_xp', 'take_xp',
+  'check_coins', 'check_level', 'check_xp',
+  'timeout_user', 'kick_user', 'ban_user', 'warn_user', 'create_mod_case',
+  'delete_message', 'pin_message', 'create_channel', 'delete_channel',
+  'set_nickname', 'mute_user', 'unmute_user',
+  'condition_if', 'stop_if', 'stop_flow', 'wait',
+  'set_variable', 'math', 'random_number', 'random_choice',
+  'delay', 'log_to_channel',
+  // legacy aliases
+  'message', 'embed', 'dm', 'react',
+]);
 const CC_ALLOWED_TRIGGER_TYPES = new Set(['slash', 'prefix', 'contains', 'exact', 'regex']);
 
 function validateCCBody(body) {
@@ -2350,7 +2364,7 @@ function validateCCBody(body) {
     try { new RegExp(trigger.trim()); } catch { return 'invalid regex pattern'; }
   }
   if (!Array.isArray(blocks) || blocks.length === 0) return 'at least one block is required';
-  if (blocks.length > 20) return 'maximum 20 blocks per command';
+  if (blocks.length > 50) return 'maximum 50 blocks per command';
   for (const b of blocks) {
     if (!b || typeof b.type !== 'string' || !CC_ALLOWED_BLOCK_TYPES.has(b.type)) {
       return 'invalid block type: ' + (b?.type || 'unknown');
@@ -2407,11 +2421,58 @@ function sanitizeCCBlocks(blocks) {
             })).filter(f => f.name || f.value)
           : [],
       };
-    } else if (b.type === 'add_role' || b.type === 'remove_role') {
-      clean.data.roleId = String(d.roleId || '').replace(/\D/g, '').slice(0, 20);
-    } else if (b.type === 'react') {
-      // Allow standard emoji, :name:, or custom <:name:id>
+    } else if (b.type === 'add_role' || b.type === 'remove_role' || b.type === 'toggle_role') {
+      clean.data.role_id = String(d.role_id || d.roleId || '').replace(/\D/g, '').slice(0, 20);
+    } else if (b.type === 'react' || b.type === 'add_reaction') {
       clean.data.emoji = nullStrip(d.emoji || '').slice(0, 100);
+    } else if (b.type === 'set_variable') {
+      clean.data.var_name = nullStrip(d.var_name || '').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+      clean.data.value = nullStrip(d.value || '').slice(0, 500);
+    } else if (['give_coins','take_coins','set_coins','give_xp','take_xp'].includes(b.type)) {
+      clean.data.amount = Math.max(0, Math.min(1000000, parseInt(d.amount)||0));
+    } else if (b.type === 'math') {
+      clean.data.expression = nullStrip(d.expression || '').slice(0, 200);
+      clean.data.store_as = nullStrip(d.store_as || 'result').replace(/[^a-z0-9_]/gi, '').slice(0, 32);
+    } else if (b.type === 'delay') {
+      clean.data.ms = Math.max(100, Math.min(30000, parseInt(d.ms)||1000));
+    } else if (b.type === 'timeout_user') {
+      clean.data.duration_min = Math.max(1, Math.min(40320, parseInt(d.duration_min)||10));
+      clean.data.reason = nullStrip(d.reason || '').slice(0, 512);
+    } else if (['kick_user','ban_user','warn_user'].includes(b.type)) {
+      clean.data.reason = nullStrip(d.reason || '').slice(0, 512);
+    } else if (b.type === 'condition_if' || b.type === 'stop_if') {
+      clean.data.condition_type = nullStrip(d.condition_type || '').slice(0, 50);
+      clean.data.condition_value = nullStrip(d.condition_value || '').slice(0, 200);
+      clean.data.role_id = String(d.role_id || '').replace(/\D/g, '').slice(0, 20);
+      clean.data.channel_id = String(d.channel_id || '').replace(/\D/g, '').slice(0, 20);
+      if (b.type === 'condition_if') {
+        clean.data.if_blocks = Array.isArray(d.if_blocks) ? [] : [];
+        clean.data.else_blocks = Array.isArray(d.else_blocks) ? [] : [];
+      }
+    } else if (b.type === 'send_buttons') {
+      clean.data.message = nullStrip(d.message || '').slice(0, 2000);
+      clean.data.channel_id = String(d.channel_id || '').replace(/\D/g, '').slice(0, 20);
+      clean.data.buttons = Array.isArray(d.buttons) ? d.buttons.slice(0, 5).map(btn => ({
+        label: nullStrip(btn.label || '').slice(0, 80),
+        style: ['Primary','Secondary','Success','Danger','Link'].includes(btn.style) ? btn.style : 'Primary',
+        customId: nullStrip(btn.customId || btn.url || '').slice(0, 100),
+      })) : [];
+    } else if (b.type === 'send_select_menu') {
+      clean.data.placeholder = nullStrip(d.placeholder || '').slice(0, 150);
+      clean.data.message = nullStrip(d.message || '').slice(0, 2000);
+      clean.data.channel_id = String(d.channel_id || '').replace(/\D/g, '').slice(0, 20);
+      clean.data.options = Array.isArray(d.options) ? d.options.slice(0, 25).map(o => ({
+        label: nullStrip(o.label || '').slice(0, 100),
+        value: nullStrip(o.value || '').slice(0, 100),
+        description: nullStrip(o.description || '').slice(0, 100),
+      })).filter(o => o.label || o.value) : [];
+    } else {
+      // Generic pass-through for other block types — strip nullbytes, limit data size
+      for (const [k, v] of Object.entries(d)) {
+        if (typeof v === 'string') clean.data[k] = nullStrip(v).slice(0, 2000);
+        else if (typeof v === 'number') clean.data[k] = v;
+        else if (typeof v === 'boolean') clean.data[k] = v;
+      }
     }
     return clean;
   });
