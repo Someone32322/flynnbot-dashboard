@@ -18,14 +18,14 @@
 
     const TRIGGER_LABELS = [
       { v: '',               l: '— Select Trigger —' },
-      { v: 'slash_command',  l: '/ Slash Command' },
-      { v: 'prefix_command', l: '! Prefix Command' },
+      { v: 'slash',          l: '/ Slash Command' },
+      { v: 'prefix',         l: '! Prefix Command' },
       { v: 'contains',       l: 'Message Contains' },
-      { v: 'exact_match',    l: 'Exact Match' },
+      { v: 'exact',          l: 'Exact Match' },
       { v: 'regex',          l: 'Regex Pattern' },
-      { v: 'button_click',   l: '🔘 Button Click' },
+      { v: 'button',         l: '🔘 Button Click' },
       { v: 'select_menu',    l: '📋 Select Menu' },
-      { v: 'reaction_add',   l: '👍 Reaction Added' },
+      { v: 'reaction',       l: '👍 Reaction Added' },
       { v: 'member_join',    l: '✅ Member Joins' },
       { v: 'member_leave',   l: '👋 Member Leaves' },
       { v: 'scheduled',      l: '⏰ Scheduled' },
@@ -33,7 +33,7 @@
 
     const currentTriggerType = (typeof workflow !== 'undefined' && workflow?.trigger?.type) || '';
     const currentTriggerValue = (typeof workflow !== 'undefined' && workflow?.trigger?.value) || '';
-    const needsTriggerValue = ['slash_command','prefix_command','contains','exact_match','regex'];
+    const needsTriggerValue = ['slash','prefix','contains','exact','regex'];
   %>
 
   <%# ── Hidden data island — read by workflow-editor.js ── %>
@@ -106,6 +106,10 @@
       </div>
 
       <span id="wf-dirty-dot" class="wf-dirty-dot" hidden title="Unsaved changes"></span>
+
+      <button id="wf-validate-btn" class="wf-btn wf-btn--secondary" type="button">
+        Validate
+      </button>
 
       <button id="wf-save-btn" class="wf-btn wf-btn--primary" type="button">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>

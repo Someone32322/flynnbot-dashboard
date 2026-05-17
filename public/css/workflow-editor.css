@@ -188,6 +188,8 @@
 }
 .wf-btn--primary  { background: var(--accent); color: #fff; }
 .wf-btn--primary:hover  { filter: brightness(1.1); }
+.wf-btn--secondary { background: var(--bg-2); color: var(--text-2); border: 1px solid var(--border); }
+.wf-btn--secondary:hover { border-color: var(--accent); color: var(--text); }
 .wf-btn--disabled { opacity: 0.4; pointer-events: none; }
 
 /* ── Palette (left panel) ────────────────────────────────────── */
@@ -203,6 +205,29 @@
 .wf-palette__search {
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
+}
+
+.wf-palette__quick-add {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.wf-palette__quick-select {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 6px 8px;
+  outline: none;
+}
+
+.wf-palette__quick-select:focus {
+  border-color: var(--accent);
 }
 
 .wf-palette__search-input {

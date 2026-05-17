@@ -35,6 +35,19 @@
     return;
   }
 
+  const LEGACY_TRIGGER_MAP = {
+    slash_command: 'slash',
+    prefix_command: 'prefix',
+    exact_match: 'exact',
+    button_click: 'button',
+    reaction_add: 'reaction',
+  };
+
+  function normalizeTriggerType(type) {
+    if (!type) return '';
+    return LEGACY_TRIGGER_MAP[type] || type;
+  }
+
   // ── Unique ID generator ──────────────────────────────────────
   let _uid = Date.now();
   function uid() { return 'blk_' + (++_uid).toString(36); }
@@ -142,6 +155,7 @@
 
       // Ensure all blocks have local IDs for drag/drop
       this._ensureIds(this.state.blocks);
+      this.state.trigger.type = normalizeTriggerType(this.state.trigger.type);
 
       this._dirty       = false;
       this._saving      = false;
@@ -318,6 +332,47 @@
       }
     }
 
+    async validate() {
+      if (!this.wfId) {
+        window.showToast?.('Save the workflow first, then validate.', 'warning');
+        return;
+      }
+
+      const body = {
+        name:        this.state.name,
+        description: this.state.description,
+        enabled:     this.state.enabled,
+        trigger:     this.state.trigger,
+        permissions: this.state.permissions,
+        blocks:      this._stripIds(JSON.parse(JSON.stringify(this.state.blocks))),
+        variables:   this.state.variables,
+      };
+
+      try {
+        const res = await fetch(`/api/guild/${this.guildId}/workflows/${this.wfId}/validate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const json = await res.json();
+
+        if (!res.ok) {
+          window.showToast?.(json.error || 'Validation request failed.', 'error');
+          return;
+        }
+
+        if (json.valid) {
+          window.showToast?.('Validation passed.', 'success');
+        } else {
+          const details = Array.isArray(json.errors) ? json.errors.join('\n') : 'Validation failed.';
+          window.showToast?.(details, 'error');
+        }
+      } catch (err) {
+        console.error('[WorkflowEditor] Validate error:', err);
+        window.showToast?.('Network error while validating.', 'error');
+      }
+    }
+
     /** Remove runtime IDs before sending to API */
     _stripIds(blocks) {
       if (!Array.isArray(blocks)) return blocks;
@@ -364,6 +419,7 @@
       const nameInput = qs('#wf-name-input');
       const descInput = qs('#wf-desc-input');
       const saveBtn   = qs('#wf-save-btn');
+      const validateBtn = qs('#wf-validate-btn');
       const enabledToggle = qs('#wf-enabled-toggle');
       const triggerType   = qs('#wf-trigger-type');
       const triggerValue  = qs('#wf-trigger-value');
@@ -396,7 +452,8 @@
       if (triggerType) {
         triggerType.value = this.state.trigger.type;
         triggerType.addEventListener('change', () => {
-          this.state.trigger.type = triggerType.value;
+          this.state.trigger.type = normalizeTriggerType(triggerType.value);
+          triggerType.value = this.state.trigger.type;
           this._updateTriggerValueVisibility();
           this._markDirty();
         });
@@ -415,12 +472,16 @@
         saveBtn.addEventListener('click', () => this.save());
         if (!this._dirty) saveBtn.classList.add('wf-btn--disabled');
       }
+
+      if (validateBtn) {
+        validateBtn.addEventListener('click', () => this.validate());
+      }
     }
 
     _updateTriggerValueVisibility() {
       const triggerValueRow = qs('#wf-trigger-value-row');
       if (!triggerValueRow) return;
-      const needsValue = ['slash_command','prefix_command','contains','exact_match','regex'];
+      const needsValue = ['slash', 'prefix', 'contains', 'exact', 'regex'];
       const show = needsValue.includes(this.state.trigger.type);
       triggerValueRow.hidden = !show;
     }
@@ -455,12 +516,41 @@
       ]);
       this.container.appendChild(searchWrap);
 
+      const quickAdd = el('div', { class: 'wf-palette__quick-add' }, [
+        el('select', { id: 'wf-palette-quick-select', class: 'wf-palette__quick-select', 'aria-label': 'Add action block' }),
+        el('button', { id: 'wf-palette-quick-btn', type: 'button', class: 'wf-btn wf-btn--secondary', text: 'Add Action Block' }),
+      ]);
+      this.container.appendChild(quickAdd);
+
       // Category list
       const list = el('div', { class: 'wf-palette__list', role: 'navigation', 'aria-label': 'Block categories' });
       this.container.appendChild(list);
       this._list = list;
 
       this._renderCategories('');
+
+      const quickSelect = qs('#wf-palette-quick-select');
+      const quickBtn = qs('#wf-palette-quick-btn');
+      if (quickSelect) {
+        const allBlocks = Object.entries(REG.BLOCKS)
+          .map(([type, def]) => ({ type, label: def.label }))
+          .sort((a, b) => a.label.localeCompare(b.label));
+        quickSelect.appendChild(el('option', { value: '', text: 'Select a block…' }));
+        for (const item of allBlocks) {
+          quickSelect.appendChild(el('option', { value: item.type, text: item.label }));
+        }
+      }
+      if (quickBtn && quickSelect) {
+        quickBtn.addEventListener('click', () => {
+          const type = quickSelect.value;
+          if (!type) {
+            window.showToast?.('Choose a block first.', 'warning');
+            return;
+          }
+          this.editor.addBlock(type);
+          quickSelect.value = '';
+        });
+      }
 
       // Wire up search
       const searchInput = qs('#wf-palette-search');
@@ -842,131 +932,6 @@
       if (this.editor._selectedId) {
         const el = qs(`[data-id="${CSS.escape(this.editor._selectedId)}"]`);
         if (el) el.classList.add('wf-block--selected');
-      }
-    }
-
-    refreshBlockCard(id) {
-      const found = this.editor.findBlock(id);
-      if (!found) return;
-      const cardEl = qs(`[data-id="${CSS.escape(id)}"]`);
-      if (!cardEl) { this.render(); return; }
-
-      const def = REG.getBlock(found.block.type);
-      const summaryEl = cardEl.querySelector('.wf-block__summary');
-      if (summaryEl) summaryEl.textContent = this._summarize(found.block, def);
-    }
-  }
-        card.classList.add('wf-block--dragging');
-      });
-      card.addEventListener('dragend', () => {
-        this._dragId = null;
-        card.classList.remove('wf-block--dragging');
-        qsa('.wf-block--drag-over').forEach((c) => c.classList.remove('wf-block--drag-over'));
-      });
-      card.addEventListener('dragover', (e) => {
-        if (this._dragId && this._dragId !== block.id) {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-          card.classList.add('wf-block--drag-over');
-        }
-      });
-      card.addEventListener('dragleave', () => card.classList.remove('wf-block--drag-over'));
-      card.addEventListener('drop', (e) => {
-        card.classList.remove('wf-block--drag-over');
-        const fromId = e.dataTransfer.getData('application/wf-block-id');
-        if (!fromId || fromId === block.id) return;
-        e.preventDefault();
-        e.stopPropagation();
-        this._reorder(fromId, block.id, parentArray);
-      });
-
-      return card;
-    }
-
-    _buildNestedSection(block, arrayKey, sectionLabel, color, depth) {
-      const nestedBlocks = block.data?.[arrayKey] || [];
-      const wrap = el('div', { class: 'wf-block__nested' });
-
-      const header = el('div', { class: 'wf-block__nested-label', text: sectionLabel,
-        style: { borderColor: color } });
-      wrap.appendChild(header);
-
-      if (nestedBlocks.length) {
-        for (const nb of nestedBlocks) {
-          wrap.appendChild(this._buildCard(nb, depth + 1, nestedBlocks));
-        }
-      } else {
-        wrap.appendChild(el('div', { class: 'wf-block__nested-empty', text: 'Drop blocks here…' }));
-      }
-
-      // Drop zone for nested blocks from palette
-      wrap.addEventListener('dragover', (e) => {
-        if (e.dataTransfer.types.includes('text/plain')) {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'copy';
-        }
-      });
-      wrap.addEventListener('drop', (e) => {
-        const type = e.dataTransfer.getData('text/plain');
-        if (type && REG.getBlock(type)) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (!Array.isArray(block.data[arrayKey])) block.data[arrayKey] = [];
-          this.editor.addBlock(type, block.data[arrayKey]);
-        }
-      });
-
-      return wrap;
-    }
-
-    _reorder(fromId, toId, blocks) {
-      const fromIdx = blocks.findIndex((b) => b.id === fromId);
-      const toIdx   = blocks.findIndex((b) => b.id === toId);
-      if (fromIdx === -1 || toIdx === -1) return;
-      const [item] = blocks.splice(fromIdx, 1);
-      blocks.splice(toIdx, 0, item);
-      this.editor._markDirty();
-      this.editor.canvas.render();
-    }
-
-    /** Inline summary text shown on the collapsed card */
-    _summarize(block, def) {
-      const d = block.data || {};
-      switch (block.type) {
-        case 'reply':
-        case 'followup':
-        case 'send_message':
-        case 'dm_user':
-        case 'format_text':
-          return (d.content || d.template || '').slice(0, 60) || '(empty)';
-        case 'send_embed':
-          return (d.title || d.description || '').slice(0, 60) || '(embed)';
-        case 'set_variable':
-          return d.var_name ? `${d.var_name} = ${String(d.value || '').slice(0, 30)}` : '';
-        case 'add_role':
-        case 'remove_role':
-        case 'toggle_role':
-          return d.role_id ? `Role: ${d.role_id}` : '';
-        case 'condition_if':
-          return d.condition_type || '';
-        case 'stop_if':
-          return d.condition_type || '';
-        case 'loop_times':
-          return d.times ? `${d.times}×` : '';
-        case 'delay':
-          return d.ms ? `${d.ms}ms` : '';
-        case 'math':
-          return d.expression ? `${d.expression} → ${d.store_as}` : '';
-        default:
-          return def.description ? def.description.slice(0, 50) : '';
-      }
-    }
-
-    refreshSelection() {
-      qsa('.wf-block--selected').forEach((c) => c.classList.remove('wf-block--selected'));
-      if (this.editor._selectedId) {
-        qs(`[data-id="${CSS.escape(this.editor._selectedId)}"]`)
-          ?.classList.add('wf-block--selected');
       }
     }
 

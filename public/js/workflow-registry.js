@@ -88,16 +88,16 @@
 
   // ── Category metadata ──────────────────────────────────────
   const CATEGORIES = [
-    { id: 'respond',    label: 'Respond',      icon: 'corner-down-right', color: '#57f287' },
-    { id: 'messages',   label: 'Messages',     icon: 'message-square',    color: '#60a5fa' },
-    { id: 'components', label: 'Components',   icon: 'square',            color: '#818cf8' },
-    { id: 'await',      label: 'Await Input',  icon: 'mouse-pointer',     color: '#34d399' },
-    { id: 'channels',   label: 'Channels',     icon: 'hash',              color: '#38bdf8' },
-    { id: 'roles',      label: 'Roles',        icon: 'shield',            color: '#4ade80' },
-    { id: 'members',    label: 'Members',      icon: 'users',             color: '#fb923c' },
-    { id: 'variables',  label: 'Variables',    icon: 'database',          color: '#38bdf8' },
-    { id: 'math_text',  label: 'Math & Text',  icon: 'hash',              color: '#a78bfa' },
-    { id: 'flow',       label: 'Flow Control', icon: 'git-branch',        color: '#f472b6' },
+    { id: 'respond',    label: 'Discord Responses',         icon: 'corner-down-right', color: '#57f287' },
+    { id: 'messages',   label: 'Discord Message Actions',   icon: 'message-square',    color: '#60a5fa' },
+    { id: 'components', label: 'Discord Interactions',      icon: 'square',            color: '#818cf8' },
+    { id: 'await',      label: 'Interaction Wait/Collect',  icon: 'mouse-pointer',     color: '#34d399' },
+    { id: 'channels',   label: 'Channel Automation',        icon: 'hash',              color: '#38bdf8' },
+    { id: 'roles',      label: 'Role Management',           icon: 'shield',            color: '#4ade80' },
+    { id: 'members',    label: 'Moderation & Member Ops',   icon: 'users',             color: '#fb923c' },
+    { id: 'variables',  label: 'Variables & Storage',       icon: 'database',          color: '#38bdf8' },
+    { id: 'math_text',  label: 'Utilities',                 icon: 'hash',              color: '#a78bfa' },
+    { id: 'flow',       label: 'Logic & Automation',        icon: 'git-branch',        color: '#f472b6' },
   ];
 
   // ── Block definitions ──────────────────────────────────────
