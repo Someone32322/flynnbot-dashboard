@@ -2373,6 +2373,57 @@ function normalizeCCTriggerType(triggerType) {
   return CC_TRIGGER_ALIASES[raw] || raw;
 }
 
+function buildSlashCommandBodyFromCustomCommand(cmd) {
+  const name = String(cmd.trigger || '').trim().toLowerCase();
+  const description = String(cmd.description || '').trim() || `Custom command: ${cmd.name}`;
+  return {
+    name,
+    description: description.slice(0, 100),
+    type: 1,
+    options: Array.isArray(cmd.slashOptions) ? cmd.slashOptions.slice(0, 25) : [],
+    dm_permission: false,
+  };
+}
+
+async function syncSlashCommandForCustomCommand(guildId, cmd, previous = null) {
+  const currentType = normalizeCCTriggerType(cmd.triggerType);
+  const previousType = normalizeCCTriggerType(previous?.triggerType);
+
+  // If command moved away from slash, remove old registered slash command.
+  if (currentType !== 'slash' && previousType === 'slash' && previous?.discordCommandId) {
+    await discordApi.deleteGuildCommand(guildId, previous.discordCommandId).catch(() => null);
+    await CustomCommand.findByIdAndUpdate(cmd._id, { $unset: { discordCommandId: 1 } }).catch(() => null);
+    return { deployed: false, deleted: true };
+  }
+
+  if (currentType !== 'slash') {
+    return { deployed: false };
+  }
+
+  const body = buildSlashCommandBodyFromCustomCommand(cmd);
+  if (!/^[a-z0-9_-]{1,32}$/.test(body.name)) {
+    throw new Error('Slash command trigger must be 1-32 chars: lowercase letters, digits, underscores, or hyphens.');
+  }
+
+  // Prefer known ID; fallback to lookup by name.
+  let discordCommandId = cmd.discordCommandId || previous?.discordCommandId || null;
+  if (!discordCommandId) {
+    const guildCommands = await discordApi.getGuildCommands(guildId);
+    const existingByName = guildCommands.find((c) => c.type === 1 && c.name === body.name);
+    discordCommandId = existingByName?.id || null;
+  }
+
+  const synced = discordCommandId
+    ? await discordApi.updateGuildCommand(guildId, discordCommandId, body)
+    : await discordApi.registerGuildCommand(guildId, body);
+
+  if (synced?.id && synced.id !== cmd.discordCommandId) {
+    await CustomCommand.findByIdAndUpdate(cmd._id, { $set: { discordCommandId: synced.id } }).catch(() => null);
+  }
+
+  return { deployed: true, commandId: synced?.id || discordCommandId || null };
+}
+
 function validateCCBody(body) {
   const { name, trigger, triggerType, blocks } = body;
   if (!name || typeof name !== 'string' || !/^[a-z0-9_-]{1,32}$/.test(name.trim())) {
@@ -2652,7 +2703,8 @@ router.post('/guild/:guildId/custom-commands', requireAuth, requireGuildAdmin, a
       caseSensitive:    !!caseSensitive,
       enabled:          enabled !== false,
     });
-    res.json(cmd);
+    const slashSync = await syncSlashCommandForCustomCommand(guildId, cmd, null);
+    res.json({ ...cmd.toObject(), slashSync });
   } catch (err) {
     console.error('[API] POST custom-commands', err);
     res.status(500).json({ error: 'Failed to create custom command' });
@@ -2674,6 +2726,9 @@ router.patch('/guild/:guildId/custom-commands/:id', requireAuth, requireGuildAdm
       const conflict = await CustomCommand.findOne({ guildId, name: name.trim(), _id: { $ne: req.params.id } });
       if (conflict) return res.status(409).json({ error: 'Another command already uses that name' });
     }
+
+    const previous = await CustomCommand.findOne({ _id: req.params.id, guildId }).lean();
+    if (!previous) return res.status(404).json({ error: 'Command not found' });
 
     const cleanBlocks = sanitizeCCBlocks(blocks);
     const firstTextBlock = cleanBlocks.find(b => ['reply', 'message', 'dm'].includes(b.type));
@@ -2699,8 +2754,8 @@ router.patch('/guild/:guildId/custom-commands/:id', requireAuth, requireGuildAdm
       { $set: update },
       { returnDocument: 'after' }
     ).lean();
-    if (!cmd) return res.status(404).json({ error: 'Command not found' });
-    res.json(cmd);
+    const slashSync = await syncSlashCommandForCustomCommand(guildId, cmd, previous);
+    res.json({ ...cmd, slashSync });
   } catch (err) {
     console.error('[API] PATCH custom-command', err);
     res.status(500).json({ error: 'Failed to update custom command' });
@@ -2712,6 +2767,9 @@ router.delete('/guild/:guildId/custom-commands/:id', requireAuth, requireGuildAd
   try {
     const cmd = await CustomCommand.findOneAndDelete({ _id: req.params.id, guildId: req.params.guildId });
     if (!cmd) return res.status(404).json({ error: 'Command not found' });
+    if (normalizeCCTriggerType(cmd.triggerType) === 'slash' && cmd.discordCommandId) {
+      await discordApi.deleteGuildCommand(req.params.guildId, cmd.discordCommandId).catch(() => null);
+    }
     res.json({ ok: true });
   } catch (err) {
     console.error('[API] DELETE custom-command', err);

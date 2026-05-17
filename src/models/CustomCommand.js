@@ -18,6 +18,7 @@ const customCommandSchema = new mongoose.Schema({
   embedDescription: { type: String, default: '', maxlength: 2000 },
   // New block-based actions
   blocks: { type: [blockSchema], default: [] },
+  discordCommandId: { type: String, default: '' },
   enabled: { type: Boolean, default: true },
   allowedRoles: { type: [String], default: [] },
   allowedChannels: { type: [String], default: [] },
