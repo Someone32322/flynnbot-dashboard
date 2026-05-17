@@ -2359,7 +2359,19 @@ const CC_ALLOWED_BLOCK_TYPES = new Set([
   // Legacy aliases
   'message', 'embed', 'dm', 'react',
 ]);
-const CC_ALLOWED_TRIGGER_TYPES = new Set(['slash', 'prefix', 'contains', 'exact', 'regex']);
+const CC_ALLOWED_TRIGGER_TYPES = new Set(['slash', 'prefix', 'contains', 'exact', 'regex', 'startsWith']);
+const CC_TRIGGER_ALIASES = Object.freeze({
+  slash_command: 'slash',
+  prefix_command: 'prefix',
+  exact_match: 'exact',
+  startswith: 'startsWith',
+});
+
+function normalizeCCTriggerType(triggerType) {
+  const raw = String(triggerType || '').trim();
+  if (!raw) return 'exact';
+  return CC_TRIGGER_ALIASES[raw] || raw;
+}
 
 function validateCCBody(body) {
   const { name, trigger, triggerType, blocks } = body;
@@ -2370,7 +2382,7 @@ function validateCCBody(body) {
     return 'trigger is required';
   }
   if (trigger.trim().length > 200) return 'trigger must be 200 chars or less';
-  const ttype = triggerType || 'exact';
+  const ttype = normalizeCCTriggerType(triggerType);
   if (!CC_ALLOWED_TRIGGER_TYPES.has(ttype)) return 'invalid triggerType';
   if (ttype === 'regex') {
     try { new RegExp(trigger.trim()); } catch { return 'invalid regex pattern'; }
@@ -2629,7 +2641,7 @@ router.post('/guild/:guildId/custom-commands', requireAuth, requireGuildAdmin, a
       guildId,
       name:             name.trim().slice(0, 32),
       trigger:          trigger.trim().slice(0, 200),
-      triggerType:      triggerType || 'exact',
+      triggerType:      normalizeCCTriggerType(triggerType),
       description:      (description || '').slice(0, 100),
       response:         legacyResponse.slice(0, 2000),
       blocks:           cleanBlocks,
@@ -2670,7 +2682,7 @@ router.patch('/guild/:guildId/custom-commands/:id', requireAuth, requireGuildAdm
     const update = {
       name:             name.trim().slice(0, 32),
       trigger:          trigger.trim().slice(0, 200),
-      triggerType:      triggerType || 'exact',
+      triggerType:      normalizeCCTriggerType(triggerType),
       description:      (description || '').slice(0, 100),
       response:         legacyResponse.slice(0, 2000),
       blocks:           cleanBlocks,
