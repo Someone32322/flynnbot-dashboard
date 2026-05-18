@@ -1,5 +1,5 @@
 <%- include('partials/head', { title: 'Workflow Editor' }) %>
-<link rel="stylesheet" href="/css/workflow-editor.css?v=1">
+<link rel="stylesheet" href="/css/workflow-editor.css?v=2">
 <body class="wf-body">
   <%- include('partials/nav') %>
 
@@ -60,11 +60,10 @@
       <% } %>
 
       <div class="wf-topbar__name-group">
-        <span class="wf-topbar__name-label">Name</span>
         <input
           type="text"
           id="wf-name-input"
-          class="wf-topbar__name-input"
+          class="wf-topbar__name"
           placeholder="my-workflow"
           maxlength="50"
           autocomplete="off"
@@ -74,7 +73,7 @@
       <div class="wf-topbar__divider"></div>
 
       <div class="wf-topbar__trigger-group">
-        <span class="wf-topbar__trigger-label">Trigger:</span>
+        <span class="wf-topbar__label">Trigger:</span>
         <select id="wf-trigger-type" class="wf-topbar__select">
           <% for (const t of TRIGGER_LABELS) { %>
             <option value="<%= t.v %>" <%= currentTriggerType === t.v ? 'selected' : '' %>>
@@ -88,7 +87,7 @@
           <input
             type="text"
             id="wf-trigger-value"
-            class="wf-topbar__trigger-value"
+            class="wf-topbar__trigger-val"
             placeholder="command name / pattern"
             maxlength="100"
             autocomplete="off">
@@ -97,15 +96,20 @@
 
       <div class="wf-topbar__spacer"></div>
 
-      <div class="wf-topbar__enabled-wrap">
-        <label class="wf-toggle-wrap" title="Enable / disable this workflow">
-          <input type="checkbox" id="wf-enabled-toggle" <%= (typeof workflow === 'undefined' || workflow?.enabled !== false) ? 'checked' : '' %>>
-          <span class="wf-toggle-track"></span>
-        </label>
-        <span>Enabled</span>
+      <div class="wf-topbar__stats">
+        <span id="wf-step-count" class="wf-topbar__step-count">0 steps</span>
+        <span id="wf-autosave" class="wf-topbar__autosave"></span>
       </div>
 
-      <span id="wf-dirty-dot" class="wf-dirty-dot" hidden title="Unsaved changes"></span>
+      <div class="wf-toggle-wrap" title="Enable / disable this workflow">
+        <label class="wf-toggle">
+          <input type="checkbox" id="wf-enabled-toggle" <%= (typeof workflow === 'undefined' || workflow?.enabled !== false) ? 'checked' : '' %>>
+          <span class="wf-toggle__track"></span>
+        </label>
+        <span class="wf-toggle-label">Enabled</span>
+      </div>
+
+      <span id="wf-dirty-dot" class="wf-dirty-dot" title="Unsaved changes"></span>
 
       <button id="wf-validate-btn" class="wf-btn wf-btn--secondary" type="button">
         Validate
