@@ -116,7 +116,8 @@ const LIMITS = Object.freeze({
 });
 
 // ── Built-in Variable Names (reserved, cannot be overwritten) ─
-const BUILTIN_VARS = Object.freeze([
+// Must be a Set so validator can call .has()
+const BUILTIN_VARS = new Set([
   'user', 'username', 'usertag', 'userid',
   'server', 'guildid', 'membercount',
   'channel', 'channelid',

@@ -628,11 +628,14 @@
   /*  Section navigation                                                  */
   /* ------------------------------------------------------------------ */
   function initSectionNav() {
+    // Support both hash (#section) and query param (?section=) routing
+    const urlParams = new URLSearchParams(window.location.search);
+    const querySection = urlParams.get('section');
     const hash = window.location.hash.replace('#', '');
     // Build valid sections dynamically from DOM — catches all present + future sections
     const domSections = Array.from(document.querySelectorAll('.dash-section[data-section]')).map(s => s.dataset.section);
     const valid = domSections.length ? domSections : ['home'];
-    const initial = valid.includes(hash) ? hash : 'home';
+    const initial = valid.includes(querySection) ? querySection : (valid.includes(hash) ? hash : 'home');
 
     document.querySelectorAll('.sidebar-nav-item[data-section]').forEach((btn) => {
       btn.addEventListener('click', () => switchSection(btn.dataset.section));
