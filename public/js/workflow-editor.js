@@ -88,29 +88,108 @@
 
   /* ── Built-in variables ──────────────────────────────────── */
   const BUILTIN_VARIABLES = [
-    { key: 'user.id',          desc: 'Author user ID' },
-    { key: 'user.name',        desc: 'Author username' },
-    { key: 'user.mention',     desc: '@mention the author' },
-    { key: 'user.avatar',      desc: 'Author avatar URL' },
-    { key: 'guild.id',         desc: 'Server ID' },
-    { key: 'guild.name',       desc: 'Server name' },
-    { key: 'guild.memberCount',desc: 'Total members' },
-    { key: 'channel.id',       desc: 'Channel ID' },
-    { key: 'channel.name',     desc: 'Channel name' },
-    { key: 'channel.mention',  desc: '#mention the channel' },
-    { key: 'message.id',       desc: 'Message ID' },
-    { key: 'message.content',  desc: 'Full message content' },
-    { key: 'message.url',      desc: 'Jump URL to message' },
-    { key: 'arg1',             desc: 'First command argument' },
-    { key: 'arg2',             desc: 'Second command argument' },
-    { key: 'mentioned',        desc: 'Mentioned user (if any)' },
-    { key: 'interaction.value',desc: 'Selected value from interaction' },
+    // Always available (universal)
+    { key: 'user',          desc: '@mention the author' },
+    { key: 'username',      desc: 'Author username' },
+    { key: 'displayname',   desc: 'Author display name' },
+    { key: 'userid',        desc: 'Author user ID' },
+    { key: 'avatar',        desc: 'Author avatar URL' },
+    { key: 'server',        desc: 'Server name' },
+    { key: 'guildid',       desc: 'Server ID' },
+    { key: 'membercount',   desc: 'Total member count' },
+    { key: 'channel',       desc: '#mention the channel' },
+    { key: 'channelname',   desc: 'Channel name' },
+    { key: 'channelid',     desc: 'Channel ID' },
+    { key: 'message',       desc: 'Trigger message content' },
+    { key: 'timestamp',     desc: 'Unix timestamp (seconds)' },
+    { key: 'date',          desc: 'Current date (long format)' },
+    { key: 'time',          desc: 'Current time (UTC)' },
+    { key: 'loop_index',    desc: 'Current loop iteration (0-based)' },
+    { key: 'loop_count',    desc: 'Current loop iteration (1-based)' },
+    { key: 'item',          desc: 'Current for_each item' },
+    { key: 'item_index',    desc: 'Current for_each item index' },
+    { key: '_error_message', desc: 'Error message from try/catch' },
   ];
+
+  // Trigger-specific variables (only shown when that trigger type is selected)
+  const TRIGGER_SPECIFIC_VARS = {
+    slash: [
+      { key: 'command_name', desc: 'Slash command name' },
+      { key: 'args',         desc: 'All arguments as text' },
+    ],
+    prefix: [
+      { key: 'command_name', desc: 'Command name (without prefix)' },
+      { key: 'args',         desc: 'All arguments as text' },
+    ],
+    contains: [
+      { key: 'trigger_value', desc: 'Matched keyword' },
+    ],
+    exact: [
+      { key: 'trigger_value', desc: 'Matched message text' },
+    ],
+    reaction_add: [
+      { key: 'reaction_emoji',    desc: 'The emoji that was reacted' },
+      { key: 'reaction_emoji_id', desc: 'Emoji ID (or name for unicode)' },
+      { key: 'reactor',           desc: '@mention the reactor' },
+      { key: 'reactor_id',        desc: 'Reactor user ID' },
+      { key: 'reactor_name',      desc: 'Reactor username' },
+      { key: 'reacted_message',   desc: 'Content of the reacted message' },
+    ],
+    reaction_remove: [
+      { key: 'reaction_emoji',    desc: 'The emoji that was removed' },
+      { key: 'reaction_emoji_id', desc: 'Emoji ID (or name for unicode)' },
+      { key: 'reactor',           desc: '@mention the user who removed reaction' },
+      { key: 'reactor_id',        desc: 'Reactor user ID' },
+      { key: 'reactor_name',      desc: 'Reactor username' },
+    ],
+    member_join: [
+      { key: 'new_member',       desc: '@mention the new member' },
+      { key: 'new_member_id',    desc: 'New member user ID' },
+      { key: 'new_member_name',  desc: 'New member username' },
+      { key: 'new_member_avatar',desc: 'New member avatar URL' },
+      { key: 'account_age_days', desc: 'Account age in days' },
+      { key: 'account_created',  desc: 'Account creation date' },
+    ],
+    member_leave: [
+      { key: 'left_member_name', desc: 'Left member username' },
+      { key: 'left_member_id',   desc: 'Left member user ID' },
+    ],
+    button: [
+      { key: 'button_id',        desc: 'Custom ID of clicked button' },
+      { key: 'button_user',      desc: '@mention the user who clicked' },
+      { key: 'button_user_id',   desc: 'Clicking user ID' },
+      { key: 'button_user_name', desc: 'Clicking user username' },
+    ],
+    select_menu: [
+      { key: 'selected_values', desc: 'All selected values (comma-separated)' },
+      { key: 'selected_count',  desc: 'Number of selected values' },
+      { key: 'selected_0',      desc: 'First selected value' },
+      { key: 'selected_1',      desc: 'Second selected value' },
+    ],
+    voice_join: [
+      { key: 'voice_channel',      desc: 'Name of voice channel joined' },
+      { key: 'voice_channel_id',   desc: 'ID of voice channel joined' },
+    ],
+    voice_leave: [
+      { key: 'voice_channel',      desc: 'Name of voice channel left' },
+      { key: 'voice_channel_id',   desc: 'ID of voice channel left' },
+    ],
+    scheduled: [
+      { key: 'scheduled_name', desc: 'Name of this scheduled workflow' },
+      { key: 'scheduled_time', desc: 'ISO timestamp when triggered' },
+    ],
+  };
+  // Legacy aliases
+  TRIGGER_SPECIFIC_VARS.reaction = TRIGGER_SPECIFIC_VARS.reaction_add;
 
   const getAvailableVariables = (state) => {
     const vars = [...BUILTIN_VARIABLES];
+    const triggerType = state?.trigger?.type;
+    if (triggerType && TRIGGER_SPECIFIC_VARS[triggerType]) {
+      vars.push(...TRIGGER_SPECIFIC_VARS[triggerType]);
+    }
     for (const v of (state.variables || [])) {
-      if (v.key) vars.push({ key: v.key, desc: v.scope || 'workflow variable' });
+      if (v.name) vars.push({ key: v.name, desc: v.description || v.scope || 'workflow variable' });
     }
     return vars;
   };

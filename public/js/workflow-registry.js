@@ -59,6 +59,13 @@
     { v: 'mentioned_user',   l: 'A user was @mentioned' },
     { v: 'random_chance',    l: 'Random chance (X%)' },
     { v: 'arg_equals',       l: 'Command argument equals value' },
+    { v: 'var_not_empty',    l: 'Variable is NOT empty' },
+    { v: 'var_starts_with',  l: 'Variable starts with' },
+    { v: 'var_ends_with',    l: 'Variable ends with' },
+    { v: 'user_is_bot',      l: 'User is a bot' },
+    { v: 'user_is_human',    l: 'User is NOT a bot' },
+    { v: 'user_equals',      l: 'User ID equals' },
+    { v: 'number_between',   l: 'Number is between range' },
   ];
 
   const PERM_OPTS = [
@@ -97,6 +104,7 @@
     { id: 'members',    label: 'Moderation & Member Ops',   icon: 'users',             color: '#fb923c' },
     { id: 'variables',  label: 'Variables & Storage',       icon: 'database',          color: '#38bdf8' },
     { id: 'math_text',  label: 'Utilities',                 icon: 'hash',              color: '#a78bfa' },
+    { id: 'fetch',      label: 'HTTP & Webhooks',           icon: 'globe',             color: '#f59e0b' },
     { id: 'flow',       label: 'Logic & Automation',        icon: 'git-branch',        color: '#f472b6' },
   ];
 
@@ -680,6 +688,248 @@
       category: 'flow', label: 'Stop Workflow', description: 'Immediately stop all further blocks.',
       fields: [],
       defaults: {},
+    },
+
+    // ── ADVANCED FLOW ──────────────────────────────────────
+    run_workflow: {
+      category: 'flow', label: 'Run Another Workflow',
+      description: 'Execute a different enabled workflow in this server (max depth 3).',
+      fields: [
+        f.text('workflow_name', 'Workflow Name', { required: true, max: 100, placeholder: 'My Other Workflow' }),
+      ],
+      defaults: { workflow_name: '' },
+    },
+
+    try_catch: {
+      category: 'flow', label: 'Try / Catch Error',
+      description: 'Run blocks and catch any errors. Sets {_error_message} in the catch section.',
+      maxNested: true,
+      fields: [
+        f.branch('_try_label',   'Try (run these blocks)'),
+        f.branch('_catch_label', 'Catch (run on error — {_error_message} available)'),
+      ],
+      defaults: { try_blocks: [], catch_blocks: [] },
+    },
+
+    condition_multi: {
+      category: 'flow', label: 'Multi-Condition (AND/OR)',
+      description: 'Branch based on multiple conditions combined with AND or OR logic.',
+      maxNested: true,
+      fields: [
+        f.select('operator', 'Logic Operator', [
+          { v: 'and', l: 'AND — all conditions must pass' },
+          { v: 'or',  l: 'OR  — any condition may pass'  },
+        ]),
+      ],
+      defaults: { operator: 'and', conditions: [], if_blocks: [], else_blocks: [] },
+    },
+
+    for_each: {
+      category: 'flow', label: 'For Each (List Loop)',
+      description: 'Loop over each item in a comma-separated list variable (max 50 items).',
+      maxNested: true,
+      fields: [
+        f.text('list_var',  'List Variable',  { required: true, max: 32, placeholder: 'my_list' }),
+        f.text('item_var',  'Current Item Variable', { required: true, max: 32, placeholder: 'item',
+          hint: 'Use {item} inside the loop. Holds each value in turn.' }),
+        f.text('index_var', 'Index Variable', { max: 32, placeholder: 'item_index' }),
+      ],
+      defaults: { list_var: '', item_var: 'item', index_var: 'item_index', loop_blocks: [] },
+    },
+
+    // ── LIST OPERATIONS ────────────────────────────────────
+    list_push: {
+      category: 'variables', label: 'List: Add Item',
+      description: 'Append a value to the end of a list variable (max 50 items).',
+      fields: [
+        f.text('list_var', 'List Variable', { required: true, max: 32, placeholder: 'my_list' }),
+        f.text('value',    'Value to Add',  { required: true, max: 500, placeholder: '{username}' }),
+      ],
+      defaults: { list_var: '', value: '' },
+    },
+
+    list_pop: {
+      category: 'variables', label: 'List: Remove Last Item',
+      description: 'Remove and store the last item of a list variable.',
+      fields: [
+        f.text('list_var', 'List Variable',       { required: true, max: 32, placeholder: 'my_list' }),
+        f.text('store_as', 'Store Removed Item As', { max: 32, placeholder: 'popped_item' }),
+      ],
+      defaults: { list_var: '', store_as: 'popped_item' },
+    },
+
+    list_get: {
+      category: 'variables', label: 'List: Get Item at Index',
+      description: 'Read a specific item from a list variable (0-based index).',
+      fields: [
+        f.text('list_var', 'List Variable',    { required: true, max: 32, placeholder: 'my_list' }),
+        f.num('index',     'Index (0-based)',  { min: 0, max: 49 }),
+        f.text('store_as', 'Store Result As',  { max: 32, placeholder: 'list_item' }),
+      ],
+      defaults: { list_var: '', index: 0, store_as: 'list_item' },
+    },
+
+    list_length: {
+      category: 'variables', label: 'List: Count Items',
+      description: 'Count how many items are in a list variable.',
+      fields: [
+        f.text('list_var', 'List Variable',  { required: true, max: 32, placeholder: 'my_list' }),
+        f.text('store_as', 'Store Count As', { max: 32, placeholder: 'list_length' }),
+      ],
+      defaults: { list_var: '', store_as: 'list_length' },
+    },
+
+    list_join: {
+      category: 'variables', label: 'List: Join to Text',
+      description: 'Join all items in a list into a single text string.',
+      fields: [
+        f.text('list_var',  'List Variable',  { required: true, max: 32, placeholder: 'my_list' }),
+        f.text('separator', 'Separator',      { max: 20, placeholder: ', ' }),
+        f.text('store_as',  'Store Result As', { max: 32, placeholder: 'joined_list' }),
+      ],
+      defaults: { list_var: '', separator: ', ', store_as: 'joined_list' },
+    },
+
+    list_clear: {
+      category: 'variables', label: 'List: Clear',
+      description: 'Remove all items from a list variable.',
+      fields: [
+        f.text('list_var', 'List Variable', { required: true, max: 32, placeholder: 'my_list' }),
+      ],
+      defaults: { list_var: '' },
+    },
+
+    list_contains: {
+      category: 'variables', label: 'List: Check If Contains',
+      description: 'Check if a list variable contains a specific value. Stores "true" or "false".',
+      fields: [
+        f.text('list_var', 'List Variable',        { required: true, max: 32, placeholder: 'my_list' }),
+        f.text('value',    'Value to Find',        { required: true, max: 500, placeholder: '{username}' }),
+        f.text('store_as', 'Store true/false As',  { max: 32, placeholder: 'list_has_item' }),
+      ],
+      defaults: { list_var: '', value: '', store_as: 'list_has_item' },
+    },
+
+    // ── HTTP & WEBHOOKS ────────────────────────────────────
+    fetch_api: {
+      category: 'fetch', label: 'HTTP Request (Fetch)',
+      description: 'Make a safe HTTP request to an external API. Private IPs are blocked.',
+      fields: [
+        f.text('url', 'URL', { required: true, max: 500, placeholder: 'https://api.example.com/data' }),
+        f.select('method', 'Method', [
+          { v: 'GET',    l: 'GET'    },
+          { v: 'POST',   l: 'POST'   },
+          { v: 'PUT',    l: 'PUT'    },
+          { v: 'PATCH',  l: 'PATCH'  },
+          { v: 'DELETE', l: 'DELETE' },
+        ]),
+        f.area('body', 'Request Body (JSON)', { max: 2000,
+          showIf: { key: 'method', value: ['POST','PUT','PATCH'] },
+          placeholder: '{"key": "value"}' }),
+        f.text('auth_header', 'Authorization Header Value', { max: 256, placeholder: 'Bearer my-token' }),
+        f.text('store_status_as', 'Store HTTP Status Code As', { max: 32, placeholder: 'http_status' }),
+        f.text('store_body_as',   'Store Response Body As',    { max: 32, placeholder: 'response_body' }),
+        f.text('extract_path',    'JSON Field to Extract',     { max: 200, placeholder: 'data.user.name' }),
+        f.text('store_extract_as', 'Store Extracted Value As', { max: 32, placeholder: 'extracted_value' }),
+        f.select('on_error', 'On Failure', [
+          { v: 'continue', l: 'Continue workflow' },
+          { v: 'stop',     l: 'Stop workflow'      },
+        ]),
+      ],
+      defaults: {
+        url: '', method: 'GET', body: '', auth_header: '',
+        store_status_as: 'http_status', store_body_as: 'response_body',
+        extract_path: '', store_extract_as: 'extracted_value', on_error: 'continue',
+      },
+    },
+
+    send_webhook: {
+      category: 'fetch', label: 'Send to Discord Webhook',
+      description: 'POST a message to a Discord webhook URL.',
+      fields: [
+        f.text('webhook_url', 'Webhook URL', { required: true, max: 300,
+          placeholder: 'https://discord.com/api/webhooks/...' }),
+        f.area('content',  'Message Content', { max: 2000, placeholder: 'Hello from FlynnBot!' }),
+        f.text('username', 'Override Username', { max: 80 }),
+        f.text('avatar_url', 'Override Avatar URL', { max: 300 }),
+        f.branch('_embed_label', 'Optional Embed'),
+        f.text('embed_title',       'Embed Title',       { max: 256  }),
+        f.area('embed_description', 'Embed Description', { max: 4096 }),
+        f.color('embed_color', 'Embed Color'),
+      ],
+      defaults: {
+        webhook_url: '', content: '', username: '', avatar_url: '',
+        embed_title: '', embed_description: '', embed_color: '#5865f2',
+      },
+    },
+
+    // ── MEMBER UTILITIES ───────────────────────────────────
+    add_temp_role: {
+      category: 'roles', label: 'Add Temporary Role',
+      description: 'Give a role that is automatically removed after a set time (best-effort).',
+      fields: [
+        f.role('role_id', 'Role to Add', { required: true }),
+        f.select('target', 'Apply To', TARGET_OPTS),
+        f.num('duration_minutes', 'Duration (minutes)', { required: true, min: 1, max: 10080,
+          hint: 'Max 10080 min (7 days). Best-effort — not persistent across restarts.' }),
+      ],
+      defaults: { role_id: '', target: 'author', duration_minutes: 60 },
+    },
+
+    get_random_member: {
+      category: 'members', label: 'Get Random Member',
+      description: 'Pick a random non-bot member and store their info.',
+      fields: [
+        f.text('var_prefix', 'Variable Prefix', { max: 32, placeholder: 'random_member',
+          hint: 'Creates: {prefix_id}, {prefix_username}, {prefix_mention}, {prefix_nickname}' }),
+      ],
+      defaults: { var_prefix: 'random_member' },
+    },
+
+    user_lookup: {
+      category: 'members', label: 'Look Up Member',
+      description: 'Find a member by user ID and store their information.',
+      fields: [
+        f.text('user_id', 'User ID or {variable}', { required: true, max: 100,
+          placeholder: '{userid} or 123456789012345678' }),
+        f.text('var_prefix', 'Variable Prefix', { max: 32, placeholder: 'lookup',
+          hint: 'Creates: {prefix_id}, {prefix_username}, {prefix_mention}, {prefix_nickname}, {prefix_joined}, {prefix_roles}, {prefix_found}' }),
+      ],
+      defaults: { user_id: '', var_prefix: 'lookup' },
+    },
+
+    create_role: {
+      category: 'roles', label: 'Create Role',
+      description: 'Create a new role in the server.',
+      fields: [
+        f.text('name', 'Role Name', { required: true, max: 100, placeholder: 'New Role' }),
+        f.color('color', 'Role Color'),
+        f.toggle('hoist', 'Show separately in member list'),
+        f.text('reason', 'Audit Log Reason', { max: 200 }),
+        f.text('store_id_as', 'Store New Role ID As', { max: 32, placeholder: 'new_role_id' }),
+      ],
+      defaults: { name: 'New Role', color: '#99aab5', hoist: false, reason: '', store_id_as: '' },
+    },
+
+    delete_role: {
+      category: 'roles', label: 'Delete Role',
+      description: 'Delete a role from the server.',
+      fields: [
+        f.role('role_id', 'Role to Delete', { required: true }),
+        f.text('reason', 'Audit Log Reason', { max: 200 }),
+      ],
+      defaults: { role_id: '', reason: '' },
+    },
+
+    use_template: {
+      category: 'messages', label: 'Use Embed Template',
+      description: 'Send a saved embed template with variable substitution.',
+      fields: [
+        f.text('template_name', 'Template Name', { required: true, max: 100, placeholder: 'welcome-embed' }),
+        f.channel('channel_id', 'Send To Channel (blank = current)'),
+        f.text('store_id_as', 'Store Message ID As', { max: 32, placeholder: 'sent_msg_id' }),
+      ],
+      defaults: { template_name: '', channel_id: '', store_id_as: '' },
     },
   };
 

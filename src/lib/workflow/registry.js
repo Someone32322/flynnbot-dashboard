@@ -52,12 +52,19 @@ const CONDITION_TYPE_OPTS = [
   { v: 'var_less',         l: 'Variable is less than' },
   { v: 'var_contains',     l: 'Variable contains text' },
   { v: 'var_is_empty',     l: 'Variable is empty / unset' },
+  { v: 'var_not_empty',    l: 'Variable is NOT empty' },
+  { v: 'var_starts_with',  l: 'Variable starts with' },
+  { v: 'var_ends_with',    l: 'Variable ends with' },
   { v: 'user_has_perm',    l: 'User has Discord permission' },
   { v: 'user_not_perm',    l: 'User is missing permission' },
   { v: 'message_contains', l: 'Message contains text' },
   { v: 'mentioned_user',   l: 'A user was @mentioned' },
   { v: 'random_chance',    l: 'Random chance (X%)' },
   { v: 'arg_equals',       l: 'Command argument equals value' },
+  { v: 'user_is_bot',      l: 'User is a bot' },
+  { v: 'user_is_human',    l: 'User is NOT a bot' },
+  { v: 'user_equals',      l: 'User ID equals' },
+  { v: 'number_between',   l: 'Number is between range' },
 ];
 
 const PERM_OPTS = [
@@ -788,6 +795,297 @@ const REGISTRY = {
     defaults: {},
   },
 
+  // ── ADVANCED FLOW ─────────────────────────────────────────
+  run_workflow: {
+    category: BLOCK_CATEGORIES.FLOW,
+    label: 'Run Another Workflow',
+    description: 'Execute another workflow in this server (max nesting depth 3).',
+    fields: [
+      f.text('workflow_name', 'Workflow Name', { required: true, max: 100,
+        placeholder: 'My Other Workflow', hint: 'Exact name of another enabled workflow in this server.' }),
+    ],
+    defaults: { workflow_name: '' },
+    validate: (d) => !d.workflow_name ? 'Workflow name is required.' : null,
+  },
+
+  try_catch: {
+    category: BLOCK_CATEGORIES.FLOW,
+    label: 'Try / Catch Error',
+    description: 'Run blocks and catch any errors that occur.',
+    maxNested: true,
+    fields: [
+      f.branch('_try_label',   'Try (blocks below run first)'),
+      f.branch('_catch_label', 'Catch (blocks run only on error — {_error_message} is set)'),
+    ],
+    defaults: { try_blocks: [], catch_blocks: [] },
+  },
+
+  condition_multi: {
+    category: BLOCK_CATEGORIES.FLOW,
+    label: 'Multi-Condition (AND/OR)',
+    description: 'Branch based on multiple conditions combined with AND or OR.',
+    maxNested: true,
+    fields: [
+      f.select('operator', 'Logic', [
+        { v: 'and', l: 'AND — all conditions must pass' },
+        { v: 'or',  l: 'OR  — any condition may pass' },
+      ]),
+    ],
+    defaults: { operator: 'and', conditions: [], if_blocks: [], else_blocks: [] },
+  },
+
+  for_each: {
+    category: BLOCK_CATEGORIES.FLOW,
+    label: 'For Each (List Loop)',
+    description: 'Iterate over each item in a list variable (comma-separated, max 50 items).',
+    maxNested: true,
+    fields: [
+      f.text('list_var',  'List Variable Name', { required: true, max: 32, placeholder: 'my_list' }),
+      f.text('item_var',  'Item Variable Name',  { required: true, max: 32, placeholder: 'item',
+        hint: 'Holds the current item. Use {item} inside loop blocks.' }),
+      f.text('index_var', 'Index Variable Name', { max: 32, placeholder: 'item_index' }),
+    ],
+    defaults: { list_var: '', item_var: 'item', index_var: 'item_index', loop_blocks: [] },
+    validate: (d) => !d.list_var ? 'List variable name is required.' : null,
+  },
+
+  // ── LIST OPERATIONS ───────────────────────────────────────
+  list_push: {
+    category: BLOCK_CATEGORIES.VARIABLES,
+    label: 'List: Add Item',
+    description: 'Append a value to the end of a list variable (capped at 50 items).',
+    fields: [
+      f.text('list_var', 'List Variable Name', { required: true, max: 32, placeholder: 'my_list' }),
+      f.text('value',    'Value to Add',       { required: true, max: 500, placeholder: '{username}' }),
+    ],
+    defaults: { list_var: '', value: '' },
+    validate: (d) => !d.list_var ? 'List variable name is required.' : null,
+  },
+
+  list_pop: {
+    category: BLOCK_CATEGORIES.VARIABLES,
+    label: 'List: Remove Last Item',
+    description: 'Remove and store the last item from a list variable.',
+    fields: [
+      f.text('list_var', 'List Variable Name', { required: true, max: 32, placeholder: 'my_list' }),
+      f.text('store_as', 'Store Removed Item As', { max: 32, placeholder: 'popped_item' }),
+    ],
+    defaults: { list_var: '', store_as: 'popped_item' },
+    validate: (d) => !d.list_var ? 'List variable name is required.' : null,
+  },
+
+  list_get: {
+    category: BLOCK_CATEGORIES.VARIABLES,
+    label: 'List: Get Item at Index',
+    description: 'Read a specific item from a list variable by position (0-based).',
+    fields: [
+      f.text('list_var', 'List Variable Name', { required: true, max: 32, placeholder: 'my_list' }),
+      f.num('index',    'Index (0-based)', { min: 0, max: 49 }),
+      f.text('store_as', 'Store Result As', { max: 32, placeholder: 'list_item' }),
+    ],
+    defaults: { list_var: '', index: 0, store_as: 'list_item' },
+    validate: (d) => !d.list_var ? 'List variable name is required.' : null,
+  },
+
+  list_length: {
+    category: BLOCK_CATEGORIES.VARIABLES,
+    label: 'List: Count Items',
+    description: 'Count how many items are in a list variable.',
+    fields: [
+      f.text('list_var', 'List Variable Name', { required: true, max: 32, placeholder: 'my_list' }),
+      f.text('store_as', 'Store Count As', { max: 32, placeholder: 'list_length' }),
+    ],
+    defaults: { list_var: '', store_as: 'list_length' },
+    validate: (d) => !d.list_var ? 'List variable name is required.' : null,
+  },
+
+  list_join: {
+    category: BLOCK_CATEGORIES.VARIABLES,
+    label: 'List: Join to Text',
+    description: 'Combine all list items into a single text string.',
+    fields: [
+      f.text('list_var',   'List Variable Name', { required: true, max: 32, placeholder: 'my_list' }),
+      f.text('separator',  'Separator', { max: 20, placeholder: ', ' }),
+      f.text('store_as',   'Store Result As', { max: 32, placeholder: 'joined_list' }),
+    ],
+    defaults: { list_var: '', separator: ', ', store_as: 'joined_list' },
+    validate: (d) => !d.list_var ? 'List variable name is required.' : null,
+  },
+
+  list_clear: {
+    category: BLOCK_CATEGORIES.VARIABLES,
+    label: 'List: Clear All Items',
+    description: 'Empty a list variable, removing all items.',
+    fields: [
+      f.text('list_var', 'List Variable Name', { required: true, max: 32, placeholder: 'my_list' }),
+    ],
+    defaults: { list_var: '' },
+    validate: (d) => !d.list_var ? 'List variable name is required.' : null,
+  },
+
+  list_contains: {
+    category: BLOCK_CATEGORIES.VARIABLES,
+    label: 'List: Check If Contains',
+    description: 'Check whether a list variable contains a specific value.',
+    fields: [
+      f.text('list_var', 'List Variable Name', { required: true, max: 32, placeholder: 'my_list' }),
+      f.text('value',    'Value to Find', { required: true, max: 500, placeholder: '{username}' }),
+      f.text('store_as', 'Store true/false As', { max: 32, placeholder: 'list_has_item' }),
+    ],
+    defaults: { list_var: '', value: '', store_as: 'list_has_item' },
+    validate: (d) => (!d.list_var || !d.value) ? 'List variable and value are required.' : null,
+  },
+
+  // ── HTTP & WEBHOOKS ───────────────────────────────────────
+  fetch_api: {
+    category: 'fetch',
+    label: 'HTTP Request (Fetch)',
+    description: 'Make an HTTP GET or POST request to an external API. No private IPs allowed.',
+    fields: [
+      f.text('url', 'URL', { required: true, max: 500, placeholder: 'https://api.example.com/data' }),
+      f.select('method', 'Method', [
+        { v: 'GET',    l: 'GET'    },
+        { v: 'POST',   l: 'POST'   },
+        { v: 'PUT',    l: 'PUT'    },
+        { v: 'PATCH',  l: 'PATCH'  },
+        { v: 'DELETE', l: 'DELETE' },
+      ]),
+      f.area('body', 'Request Body (JSON)', { max: 2000,
+        showIf: { key: 'method', value: ['POST','PUT','PATCH'] },
+        placeholder: '{"key": "value"}' }),
+      f.text('auth_header', 'Authorization Header Value', { max: 256,
+        placeholder: 'Bearer my-token (optional)' }),
+      f.text('store_status_as', 'Store HTTP Status Code As', { max: 32, placeholder: 'http_status' }),
+      f.text('store_body_as',   'Store Response Body As',    { max: 32, placeholder: 'response_body' }),
+      f.text('extract_path',    'JSON Field Path to Extract', { max: 200,
+        placeholder: 'data.user.name' }),
+      f.text('store_extract_as', 'Store Extracted Value As', { max: 32,
+        placeholder: 'extracted_value',
+        showIf: { key: 'extract_path', value: '!empty' } }),
+      f.select('on_error', 'On Request Failure', [
+        { v: 'continue', l: 'Continue workflow' },
+        { v: 'stop',     l: 'Stop workflow' },
+      ]),
+    ],
+    defaults: {
+      url: '', method: 'GET', body: '', auth_header: '',
+      store_status_as: 'http_status', store_body_as: 'response_body',
+      extract_path: '', store_extract_as: 'extracted_value',
+      on_error: 'continue',
+    },
+    validate: (d) => {
+      if (!d.url) return 'URL is required.';
+      try { new URL(d.url); } catch { return 'URL must be a valid URL.'; }
+      return null;
+    },
+  },
+
+  send_webhook: {
+    category: 'fetch',
+    label: 'Send to Discord Webhook',
+    description: 'POST a message to a Discord webhook URL.',
+    fields: [
+      f.text('webhook_url', 'Webhook URL', { required: true, max: 300,
+        placeholder: 'https://discord.com/api/webhooks/...' }),
+      f.area('content',     'Message Content', { max: 2000, placeholder: 'Hello from FlynnBot!' }),
+      f.text('username',    'Override Username', { max: 80, placeholder: 'MyBot' }),
+      f.text('avatar_url',  'Override Avatar URL', { max: 300, placeholder: 'https://...' }),
+      f.branch('_embed_label', 'Optional Embed'),
+      f.text('embed_title',       'Embed Title',       { max: 256  }),
+      f.area('embed_description', 'Embed Description', { max: 4096 }),
+      f.color('embed_color', 'Embed Color'),
+    ],
+    defaults: {
+      webhook_url: '', content: '', username: '', avatar_url: '',
+      embed_title: '', embed_description: '', embed_color: '#5865f2',
+    },
+    validate: (d) => {
+      if (!d.webhook_url) return 'Webhook URL is required.';
+      if (!d.webhook_url.includes('discord.com/api/webhooks')) return 'Must be a discord.com webhook URL.';
+      return null;
+    },
+  },
+
+  // ── MEMBER UTILITIES ──────────────────────────────────────
+  add_temp_role: {
+    category: BLOCK_CATEGORIES.ROLES,
+    label: 'Add Temporary Role',
+    description: 'Give a member a role that is automatically removed after a duration.',
+    fields: [
+      f.role('role_id', 'Role to Add', { required: true }),
+      f.select('target', 'Apply To', TARGET_OPTS),
+      f.num('duration_minutes', 'Duration (minutes)', { required: true, min: 1, max: 10080,
+        hint: 'Max 10080 minutes (7 days). Note: removal is not persistent across restarts.' }),
+    ],
+    defaults: { role_id: '', target: 'author', duration_minutes: 60 },
+    validate: (d) => !d.role_id ? 'A role is required.' : null,
+  },
+
+  get_random_member: {
+    category: BLOCK_CATEGORIES.MEMBERS,
+    label: 'Get Random Member',
+    description: 'Pick a random non-bot server member and store their info as variables.',
+    fields: [
+      f.text('var_prefix', 'Variable Prefix', { max: 32, placeholder: 'random_member',
+        hint: 'Creates: {prefix_id}, {prefix_username}, {prefix_mention}, {prefix_nickname}' }),
+    ],
+    defaults: { var_prefix: 'random_member' },
+  },
+
+  user_lookup: {
+    category: BLOCK_CATEGORIES.MEMBERS,
+    label: 'Look Up Member',
+    description: 'Look up a member by user ID and store their information as variables.',
+    fields: [
+      f.text('user_id', 'User ID (or {variable})', { required: true, max: 100,
+        placeholder: '{userid} or 123456789012345678' }),
+      f.text('var_prefix', 'Variable Prefix', { max: 32, placeholder: 'lookup',
+        hint: 'Creates: {prefix_id}, {prefix_username}, {prefix_mention}, {prefix_nickname}, {prefix_joined}, {prefix_roles}, {prefix_found}' }),
+    ],
+    defaults: { user_id: '', var_prefix: 'lookup' },
+    validate: (d) => !d.user_id ? 'User ID is required.' : null,
+  },
+
+  create_role: {
+    category: BLOCK_CATEGORIES.ROLES,
+    label: 'Create Role',
+    description: 'Create a new role in the server.',
+    fields: [
+      f.text('name', 'Role Name', { required: true, max: 100, placeholder: 'New Role' }),
+      f.color('color', 'Role Color'),
+      f.toggle('hoist', 'Display separately in member list'),
+      f.text('reason', 'Audit Log Reason', { max: 200 }),
+      f.text('store_id_as', 'Store Role ID As', { max: 32, placeholder: 'new_role_id' }),
+    ],
+    defaults: { name: 'New Role', color: '#99aab5', hoist: false, reason: '', store_id_as: '' },
+    validate: (d) => !d.name ? 'Role name is required.' : null,
+  },
+
+  delete_role: {
+    category: BLOCK_CATEGORIES.ROLES,
+    label: 'Delete Role',
+    description: 'Delete a role from the server.',
+    fields: [
+      f.role('role_id', 'Role to Delete', { required: true }),
+      f.text('reason', 'Audit Log Reason', { max: 200 }),
+    ],
+    defaults: { role_id: '', reason: '' },
+    validate: (d) => !d.role_id ? 'A role is required.' : null,
+  },
+
+  use_template: {
+    category: BLOCK_CATEGORIES.MESSAGES,
+    label: 'Use Embed Template',
+    description: 'Send a saved embed template (from the Embeds page) with variable substitution.',
+    fields: [
+      f.text('template_name', 'Template Name', { required: true, max: 100, placeholder: 'welcome-embed' }),
+      f.channel('channel_id', 'Send To Channel (blank = current)', {}),
+      f.text('store_id_as', 'Store Message ID As', { max: 32, placeholder: 'sent_msg_id' }),
+    ],
+    defaults: { template_name: '', channel_id: '', store_id_as: '' },
+    validate: (d) => !d.template_name ? 'Template name is required.' : null,
+  },
+
 }; // END REGISTRY
 
 // ── Public API ────────────────────────────────────────────────
@@ -797,16 +1095,17 @@ const ALLOWED_TYPES = new Set(Object.keys(REGISTRY));
 
 /** Ordered list of categories with display metadata */
 const CATEGORY_META = [
-  { id: 'respond',    label: 'Respond',      icon: 'corner-down-right', color: '#57f287' },
-  { id: 'messages',   label: 'Messages',     icon: 'message-square',    color: '#60a5fa' },
-  { id: 'components', label: 'Components',   icon: 'square',            color: '#818cf8' },
-  { id: 'await',      label: 'Await Input',  icon: 'mouse-pointer',     color: '#34d399' },
-  { id: 'channels',   label: 'Channels',     icon: 'hash',              color: '#38bdf8' },
-  { id: 'roles',      label: 'Roles',        icon: 'shield',            color: '#4ade80' },
-  { id: 'members',    label: 'Members',      icon: 'users',             color: '#fb923c' },
-  { id: 'variables',  label: 'Variables',    icon: 'database',          color: '#38bdf8' },
-  { id: 'math_text',  label: 'Math & Text',  icon: 'hash',              color: '#a78bfa' },
-  { id: 'flow',       label: 'Flow Control', icon: 'git-branch',        color: '#f472b6' },
+  { id: 'respond',    label: 'Respond',        icon: 'corner-down-right', color: '#57f287' },
+  { id: 'messages',   label: 'Messages',       icon: 'message-square',    color: '#60a5fa' },
+  { id: 'components', label: 'Components',     icon: 'square',            color: '#818cf8' },
+  { id: 'await',      label: 'Await Input',    icon: 'mouse-pointer',     color: '#34d399' },
+  { id: 'channels',   label: 'Channels',       icon: 'hash',              color: '#38bdf8' },
+  { id: 'roles',      label: 'Roles',          icon: 'shield',            color: '#4ade80' },
+  { id: 'members',    label: 'Members',        icon: 'users',             color: '#fb923c' },
+  { id: 'variables',  label: 'Variables',      icon: 'database',          color: '#38bdf8' },
+  { id: 'math_text',  label: 'Math & Text',    icon: 'hash',              color: '#a78bfa' },
+  { id: 'fetch',      label: 'HTTP & Webhooks', icon: 'globe',            color: '#f59e0b' },
+  { id: 'flow',       label: 'Flow Control',   icon: 'git-branch',        color: '#f472b6' },
 ];
 
 /**
