@@ -34,12 +34,12 @@
 
     // Handle section activation (lazy load)
     document.addEventListener('sectionActivated', (e) => {
-      if (e.detail?.section !== 'workflows') return;
+      if (e.detail?.section !== 'custom-commands') return;
       if (!_loaded) loadWorkflows();
     });
 
-    // If already on workflows section (e.g. navigated here via hash)
-    const sec = document.getElementById('section-workflows');
+    // If already on custom-commands section (e.g. navigated here via hash)
+    const sec = document.getElementById('section-custom-commands');
     if (sec && sec.style.display !== 'none') {
       if (!_loaded) loadWorkflows();
     }

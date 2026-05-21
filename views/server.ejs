@@ -98,12 +98,6 @@
             </span>
             <span class="sidebar-nav-text">AI Chat</span>
           </button>
-          <button class="sidebar-nav-item" data-section="workflows">
-            <span class="sidebar-nav-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="3" width="6" height="6" rx="1"/><rect x="9" y="15" width="6" height="6" rx="1"/><path d="M6 9v3a3 3 0 003 3h6a3 3 0 003-3V9"/><line x1="12" y1="9" x2="12" y2="12"/></svg>
-            </span>
-            <span class="sidebar-nav-text">Workflows</span>
-          </button>
         </div>
         <div class="sidebar-nav-group">
           <div class="sidebar-nav-label">Community</div>
@@ -1428,16 +1422,29 @@
         <div id="slowmode-root" style="display:none"></div>
       </section>
 
-      <!-- ── CUSTOM COMMANDS SECTION ── -->
+      <!-- ── CUSTOM COMMANDS + WORKFLOWS SECTION ── -->
       <section class="dash-section" id="section-custom-commands" data-section="custom-commands" style="display:none">
         <div class="section-header">
           <div>
             <h2 class="section-page-title">Custom Commands</h2>
-            <p class="section-page-sub">Create your own text commands with custom trigger words and responses. Supports embed responses and variables.</p>
+            <p class="section-page-sub">Build commands and automated interactions with a block-based editor. Create triggers, actions, conditions, and variables — no code required.</p>
           </div>
         </div>
         <div id="customCommandsContent">
           <div class="commands-loading"><div class="spinner"></div>Loading custom commands…</div>
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--border);margin:2.5rem 0">
+
+        <div class="section-header">
+          <div>
+            <h2 class="section-page-title">Workflows</h2>
+            <p class="section-page-sub">Advanced event-driven automation — react to member joins, reactions, voice activity, scheduled tasks, and more.</p>
+          </div>
+          <button class="btn btn-primary" id="wfNewBtn">+ New Workflow</button>
+        </div>
+        <div id="wfList" class="apps-list">
+          <div class="commands-loading"><div class="spinner"></div>Loading workflows…</div>
         </div>
       </section>
 
@@ -1451,23 +1458,6 @@
         </div>
         <div id="aiContent">
           <div class="commands-loading"><div class="spinner"></div>Loading AI config…</div>
-        </div>
-      </section>
-
-
-
-      <!-- ── WORKFLOWS SECTION ── -->
-      <section class="dash-section" id="section-workflows" data-section="workflows" style="display:none">
-        <div class="section-header">
-          <div>
-            <h2 class="section-page-title">Workflows</h2>
-            <p class="section-page-sub">Build powerful automated interactions with a visual block-based editor. Connect triggers, actions, conditions and variables without writing code.</p>
-          </div>
-          <button class="btn btn-primary" id="wfNewBtn">+ New Workflow</button>
-        </div>
-
-        <div id="wfList" class="apps-list">
-          <div class="commands-loading"><div class="spinner"></div>Loading workflows…</div>
         </div>
       </section>
 
