@@ -2347,6 +2347,7 @@ const CC_ALLOWED_BLOCK_TYPES = new Set([
   // Moderation
   'timeout_user', 'kick_user', 'ban_user', 'warn_user', 'create_mod_case',
   'purge_messages', 'set_nickname', 'mute_user', 'unmute_user',
+  'timeout_member', 'kick_member', 'ban_member', 'warn_member', 'remove_timeout',
   // Channels
   'create_thread', 'create_channel', 'delete_channel', 'lock_channel',
   // Variables
@@ -2357,7 +2358,9 @@ const CC_ALLOWED_BLOCK_TYPES = new Set([
   // Flow
   'condition_if', 'stop_if', 'loop_times', 'stop_flow', 'delay', 'wait',
   // Legacy aliases
-  'message', 'embed', 'dm', 'react',
+  'message', 'embed', 'dm', 'react', 'wait',
+  'ban_user', 'kick_user', 'timeout_user', 'mute_user', 'unmute_user', 'warn_user',
+  'fetch_user_info', 'get_member_info', 'dm_user', 'send_embed', 'send_message',
 ]);
 const CC_ALLOWED_TRIGGER_TYPES = new Set(['slash', 'prefix', 'contains', 'exact', 'regex', 'startsWith']);
 const CC_TRIGGER_ALIASES = Object.freeze({
@@ -2424,6 +2427,15 @@ async function syncSlashCommandForCustomCommand(guildId, cmd, previous = null) {
   return { deployed: true, commandId: synced?.id || discordCommandId || null };
 }
 
+function isSafeRegex(pattern) {
+  if (!pattern || typeof pattern !== 'string' || pattern.length > 200) return false;
+  try {
+    const start = Date.now();
+    new RegExp(pattern).test('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa');
+    return (Date.now() - start) < 50;
+  } catch { return false; }
+}
+
 function validateCCBody(body) {
   const { name, trigger, triggerType, blocks } = body;
   if (!name || typeof name !== 'string' || !/^[a-z0-9_-]{1,32}$/.test(name.trim())) {
@@ -2436,7 +2448,29 @@ function validateCCBody(body) {
   const ttype = normalizeCCTriggerType(triggerType);
   if (!CC_ALLOWED_TRIGGER_TYPES.has(ttype)) return 'invalid triggerType';
   if (ttype === 'regex') {
-    try { new RegExp(trigger.trim()); } catch { return 'invalid regex pattern'; }
+    if (!isSafeRegex(trigger.trim())) return 'invalid or potentially unsafe regex pattern';
+  }
+  // Optional field validation
+  if (body.description !== undefined && body.description !== null) {
+    if (typeof body.description !== 'string' || body.description.length > 100)
+      return 'description must be a string of max 100 chars';
+  }
+  if (body.cooldownScope !== undefined && body.cooldownScope !== null) {
+    if (!['user', 'guild', 'channel'].includes(body.cooldownScope))
+      return 'cooldownScope must be user, guild, or channel';
+  }
+  if (body.ephemeralErrors !== undefined && body.ephemeralErrors !== null) {
+    if (typeof body.ephemeralErrors !== 'boolean')
+      return 'ephemeralErrors must be a boolean';
+  }
+  if (body.tags !== undefined && body.tags !== null) {
+    if (!Array.isArray(body.tags) || body.tags.length > 10
+      || body.tags.some(t => typeof t !== 'string' || t.length > 32))
+      return 'tags must be an array of up to 10 strings (max 32 chars each)';
+  }
+  if (body.category !== undefined && body.category !== null) {
+    if (typeof body.category !== 'string' || body.category.length > 50)
+      return 'category must be a string of max 50 chars';
   }
   if (!Array.isArray(blocks) || blocks.length === 0) return 'at least one block is required';
   if (blocks.length > 50) return 'maximum 50 blocks per command';
@@ -2672,7 +2706,8 @@ router.post('/guild/:guildId/custom-commands', requireAuth, requireGuildAdmin, a
   try {
     const guildId = req.params.guildId;
     const { name, trigger, triggerType, blocks, description, cooldownSeconds,
-      allowedRoles, allowedChannels, caseSensitive, deleteUserMessage, enabled } = req.body;
+      allowedRoles, allowedChannels, caseSensitive, deleteUserMessage, enabled,
+      cooldownScope, ephemeralErrors, tags, category } = req.body;
 
     const err = validateCCBody(req.body);
     if (err) return res.status(400).json({ error: err });
@@ -2699,6 +2734,10 @@ router.post('/guild/:guildId/custom-commands', requireAuth, requireGuildAdmin, a
       allowedRoles:     Array.isArray(allowedRoles) ? allowedRoles.filter(r => /^\d+$/.test(r)).slice(0, 50) : [],
       allowedChannels:  Array.isArray(allowedChannels) ? allowedChannels.filter(c => /^\d+$/.test(c)).slice(0, 50) : [],
       cooldownSeconds:  Math.max(0, Math.min(86400, Number(cooldownSeconds) || 0)),
+      cooldownScope:    ['user','guild','channel'].includes(cooldownScope) ? cooldownScope : 'user',
+      ephemeralErrors:  ephemeralErrors === true,
+      tags:             Array.isArray(tags) ? tags.map(t => String(t).slice(0, 32)).slice(0, 10) : [],
+      category:         (category || '').slice(0, 50),
       deleteUserMessage: !!deleteUserMessage,
       caseSensitive:    !!caseSensitive,
       enabled:          enabled !== false,
@@ -2716,7 +2755,8 @@ router.patch('/guild/:guildId/custom-commands/:id', requireAuth, requireGuildAdm
   try {
     const guildId = req.params.guildId;
     const { name, trigger, triggerType, blocks, description, cooldownSeconds,
-      allowedRoles, allowedChannels, caseSensitive, deleteUserMessage, enabled } = req.body;
+      allowedRoles, allowedChannels, caseSensitive, deleteUserMessage, enabled,
+      cooldownScope, ephemeralErrors, tags, category } = req.body;
 
     const err = validateCCBody(req.body);
     if (err) return res.status(400).json({ error: err });
@@ -2744,6 +2784,10 @@ router.patch('/guild/:guildId/custom-commands/:id', requireAuth, requireGuildAdm
       allowedRoles:     Array.isArray(allowedRoles) ? allowedRoles.filter(r => /^\d+$/.test(r)).slice(0, 50) : [],
       allowedChannels:  Array.isArray(allowedChannels) ? allowedChannels.filter(c => /^\d+$/.test(c)).slice(0, 50) : [],
       cooldownSeconds:  Math.max(0, Math.min(86400, Number(cooldownSeconds) || 0)),
+      cooldownScope:    ['user','guild','channel'].includes(cooldownScope) ? cooldownScope : 'user',
+      ephemeralErrors:  ephemeralErrors === true,
+      tags:             Array.isArray(tags) ? tags.map(t => String(t).slice(0, 32)).slice(0, 10) : [],
+      category:         (category || '').slice(0, 50),
       deleteUserMessage: !!deleteUserMessage,
       caseSensitive:    !!caseSensitive,
       enabled:          enabled !== false,
