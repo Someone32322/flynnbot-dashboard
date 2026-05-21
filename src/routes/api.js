@@ -2362,18 +2362,64 @@ const CC_ALLOWED_BLOCK_TYPES = new Set([
   'ban_user', 'kick_user', 'timeout_user', 'mute_user', 'unmute_user', 'warn_user',
   'fetch_user_info', 'get_member_info', 'dm_user', 'send_embed', 'send_message',
 ]);
-const CC_ALLOWED_TRIGGER_TYPES = new Set(['slash', 'prefix', 'contains', 'exact', 'regex', 'startsWith']);
+const CC_ALLOWED_TRIGGER_TYPES = new Set([
+  'slash', 'prefix', 'contains', 'exact', 'regex', 'startsWith',
+  'button', 'select_menu',
+  'reaction_add', 'reaction_remove',
+  'member_join', 'member_leave',
+  'voice_join', 'voice_leave',
+  'message_delete', 'scheduled',
+]);
 const CC_TRIGGER_ALIASES = Object.freeze({
-  slash_command: 'slash',
+  slash_command:  'slash',
   prefix_command: 'prefix',
-  exact_match: 'exact',
-  startswith: 'startsWith',
+  exact_match:    'exact',
+  startswith:     'startsWith',
+  reaction:       'reaction_add', // legacy alias
 });
 
 function normalizeCCTriggerType(triggerType) {
   const raw = String(triggerType || '').trim();
   if (!raw) return 'exact';
-  return CC_TRIGGER_ALIASES[raw] || raw;
+  // Exact alias match (handles 'startswith' → 'startsWith', 'reaction' → 'reaction_add', etc.)
+  if (CC_TRIGGER_ALIASES[raw]) return CC_TRIGGER_ALIASES[raw];
+  // Case-insensitive alias match (handles UPPERCASE inputs from old editor)
+  const lower = raw.toLowerCase();
+  if (CC_TRIGGER_ALIASES[lower]) return CC_TRIGGER_ALIASES[lower];
+  // Restore camelCase for startsWith
+  if (lower === 'startswith') return 'startsWith';
+  return lower;
+}
+
+/**
+ * Normalise a raw request body into flat CC fields.
+ * Supports the workflow-editor's nested format:
+ *   { trigger: { type, value }, permissions: { allowedRoles, … }, … }
+ * as well as the legacy flat format:
+ *   { trigger: "value", triggerType: "slash", allowedRoles: [], … }
+ */
+function normalizeCCBody(body) {
+  const trigObj = body.trigger !== null && typeof body.trigger === 'object' ? body.trigger : null;
+  const perm    = body.permissions !== null && typeof body.permissions === 'object' ? body.permissions : {};
+  return {
+    name:              body.name,
+    trigger:           trigObj ? (trigObj.value  || '') : (typeof body.trigger === 'string' ? body.trigger : ''),
+    triggerType:       trigObj ? (trigObj.type   || '') : body.triggerType,
+    description:       body.description,
+    enabled:           body.enabled,
+    blocks:            body.blocks,
+    variables:         Array.isArray(body.variables) ? body.variables : [],
+    tags:              body.tags,
+    category:          body.category,
+    slashOptions:      body.slashOptions,
+    allowedRoles:      perm.allowedRoles      !== undefined ? perm.allowedRoles      : body.allowedRoles,
+    allowedChannels:   perm.allowedChannels   !== undefined ? perm.allowedChannels   : body.allowedChannels,
+    caseSensitive:     perm.caseSensitive      !== undefined ? perm.caseSensitive     : body.caseSensitive,
+    deleteUserMessage: perm.deleteUserMessage  !== undefined ? perm.deleteUserMessage : body.deleteUserMessage,
+    cooldownSeconds:   perm.cooldownSeconds    !== undefined ? perm.cooldownSeconds   : body.cooldownSeconds,
+    cooldownScope:     perm.cooldownScope      !== undefined ? perm.cooldownScope     : body.cooldownScope,
+    ephemeralErrors:   perm.ephemeralErrors    !== undefined ? perm.ephemeralErrors   : body.ephemeralErrors,
+  };
 }
 
 function buildSlashCommandBodyFromCustomCommand(cmd) {
@@ -2437,39 +2483,42 @@ function isSafeRegex(pattern) {
 }
 
 function validateCCBody(body) {
-  const { name, trigger, triggerType, blocks } = body;
+  const n = normalizeCCBody(body);
+  const { name, trigger, triggerType, blocks } = n;
   if (!name || typeof name !== 'string' || !/^[a-z0-9_-]{1,32}$/.test(name.trim())) {
     return 'name must be 1-32 chars: lowercase letters, digits, hyphens, underscores only';
   }
-  if (!trigger || typeof trigger !== 'string' || !trigger.trim()) {
-    return 'trigger is required';
-  }
-  if (trigger.trim().length > 200) return 'trigger must be 200 chars or less';
   const ttype = normalizeCCTriggerType(triggerType);
+  // Text-based triggers require a non-empty trigger value; event-based do not
+  const needsTriggerValue = ['slash', 'prefix', 'contains', 'exact', 'regex', 'startsWith'].includes(ttype);
+  if (needsTriggerValue && (!trigger || typeof trigger !== 'string' || !trigger.trim())) {
+    return 'trigger value is required for this trigger type';
+  }
+  if (trigger && trigger.trim().length > 200) return 'trigger must be 200 chars or less';
   if (!CC_ALLOWED_TRIGGER_TYPES.has(ttype)) return 'invalid triggerType';
-  if (ttype === 'regex') {
+  if (ttype === 'regex' && trigger) {
     if (!isSafeRegex(trigger.trim())) return 'invalid or potentially unsafe regex pattern';
   }
   // Optional field validation
-  if (body.description !== undefined && body.description !== null) {
-    if (typeof body.description !== 'string' || body.description.length > 100)
+  if (n.description !== undefined && n.description !== null) {
+    if (typeof n.description !== 'string' || n.description.length > 100)
       return 'description must be a string of max 100 chars';
   }
-  if (body.cooldownScope !== undefined && body.cooldownScope !== null) {
-    if (!['user', 'guild', 'channel'].includes(body.cooldownScope))
+  if (n.cooldownScope !== undefined && n.cooldownScope !== null) {
+    if (!['user', 'guild', 'channel'].includes(n.cooldownScope))
       return 'cooldownScope must be user, guild, or channel';
   }
-  if (body.ephemeralErrors !== undefined && body.ephemeralErrors !== null) {
-    if (typeof body.ephemeralErrors !== 'boolean')
+  if (n.ephemeralErrors !== undefined && n.ephemeralErrors !== null) {
+    if (typeof n.ephemeralErrors !== 'boolean')
       return 'ephemeralErrors must be a boolean';
   }
-  if (body.tags !== undefined && body.tags !== null) {
-    if (!Array.isArray(body.tags) || body.tags.length > 10
-      || body.tags.some(t => typeof t !== 'string' || t.length > 32))
+  if (n.tags !== undefined && n.tags !== null) {
+    if (!Array.isArray(n.tags) || n.tags.length > 10
+      || n.tags.some(t => typeof t !== 'string' || t.length > 32))
       return 'tags must be an array of up to 10 strings (max 32 chars each)';
   }
-  if (body.category !== undefined && body.category !== null) {
-    if (typeof body.category !== 'string' || body.category.length > 50)
+  if (n.category !== undefined && n.category !== null) {
+    if (typeof n.category !== 'string' || n.category.length > 50)
       return 'category must be a string of max 50 chars';
   }
   if (!Array.isArray(blocks) || blocks.length === 0) return 'at least one block is required';
@@ -2701,13 +2750,18 @@ function sanitizeCCBlocks(blocks) {
     });
 }
 
+// ── POST /api/guild/:guildId/custom-commands/validate ─────────
+router.post('/guild/:guildId/custom-commands/validate', requireAuth, requireGuildAdmin, (req, res) => {
+  const err = validateCCBody(req.body);
+  if (err) return res.json({ valid: false, errors: [err] });
+  return res.json({ valid: true });
+});
+
 // ── POST /api/guild/:guildId/custom-commands ──────────────────
 router.post('/guild/:guildId/custom-commands', requireAuth, requireGuildAdmin, async (req, res) => {
   try {
     const guildId = req.params.guildId;
-    const { name, trigger, triggerType, blocks, description, cooldownSeconds,
-      allowedRoles, allowedChannels, caseSensitive, deleteUserMessage, enabled,
-      cooldownScope, ephemeralErrors, tags, category } = req.body;
+    const n = normalizeCCBody(req.body);
 
     const err = validateCCBody(req.body);
     if (err) return res.status(400).json({ error: err });
@@ -2715,32 +2769,33 @@ router.post('/guild/:guildId/custom-commands', requireAuth, requireGuildAdmin, a
     const count = await CustomCommand.countDocuments({ guildId });
     if (count >= 50) return res.status(400).json({ error: 'Maximum 50 custom commands per guild' });
 
-    const existing = await CustomCommand.findOne({ guildId, name: name.trim() });
+    const existing = await CustomCommand.findOne({ guildId, name: n.name.trim() });
     if (existing) return res.status(409).json({ error: 'A command with that name already exists' });
 
-    const cleanBlocks = sanitizeCCBlocks(blocks);
+    const cleanBlocks = sanitizeCCBlocks(n.blocks);
     // Derive legacy response for bot backward compat
     const firstTextBlock = cleanBlocks.find(b => ['reply', 'message', 'dm'].includes(b.type));
     const legacyResponse = firstTextBlock ? firstTextBlock.data.content : '';
 
     const cmd = await CustomCommand.create({
       guildId,
-      name:             name.trim().slice(0, 32),
-      trigger:          trigger.trim().slice(0, 200),
-      triggerType:      normalizeCCTriggerType(triggerType),
-      description:      (description || '').slice(0, 100),
+      name:             n.name.trim().slice(0, 32),
+      trigger:          (n.trigger || '').trim().slice(0, 200),
+      triggerType:      normalizeCCTriggerType(n.triggerType),
+      description:      (n.description || '').slice(0, 100),
       response:         legacyResponse.slice(0, 2000),
       blocks:           cleanBlocks,
-      allowedRoles:     Array.isArray(allowedRoles) ? allowedRoles.filter(r => /^\d+$/.test(r)).slice(0, 50) : [],
-      allowedChannels:  Array.isArray(allowedChannels) ? allowedChannels.filter(c => /^\d+$/.test(c)).slice(0, 50) : [],
-      cooldownSeconds:  Math.max(0, Math.min(86400, Number(cooldownSeconds) || 0)),
-      cooldownScope:    ['user','guild','channel'].includes(cooldownScope) ? cooldownScope : 'user',
-      ephemeralErrors:  ephemeralErrors === true,
-      tags:             Array.isArray(tags) ? tags.map(t => String(t).slice(0, 32)).slice(0, 10) : [],
-      category:         (category || '').slice(0, 50),
-      deleteUserMessage: !!deleteUserMessage,
-      caseSensitive:    !!caseSensitive,
-      enabled:          enabled !== false,
+      variables:        Array.isArray(n.variables) ? n.variables.slice(0, 50) : [],
+      allowedRoles:     Array.isArray(n.allowedRoles) ? n.allowedRoles.filter(r => /^\d+$/.test(r)).slice(0, 50) : [],
+      allowedChannels:  Array.isArray(n.allowedChannels) ? n.allowedChannels.filter(c => /^\d+$/.test(c)).slice(0, 50) : [],
+      cooldownSeconds:  Math.max(0, Math.min(86400, Number(n.cooldownSeconds) || 0)),
+      cooldownScope:    ['user','guild','channel'].includes(n.cooldownScope) ? n.cooldownScope : 'user',
+      ephemeralErrors:  n.ephemeralErrors === true,
+      tags:             Array.isArray(n.tags) ? n.tags.map(t => String(t).slice(0, 32)).slice(0, 10) : [],
+      category:         (n.category || '').slice(0, 50),
+      deleteUserMessage: !!n.deleteUserMessage,
+      caseSensitive:    !!n.caseSensitive,
+      enabled:          n.enabled !== false,
     });
     const slashSync = await syncSlashCommandForCustomCommand(guildId, cmd, null);
     res.json({ ...cmd.toObject(), slashSync });
@@ -2754,43 +2809,42 @@ router.post('/guild/:guildId/custom-commands', requireAuth, requireGuildAdmin, a
 router.patch('/guild/:guildId/custom-commands/:id', requireAuth, requireGuildAdmin, async (req, res) => {
   try {
     const guildId = req.params.guildId;
-    const { name, trigger, triggerType, blocks, description, cooldownSeconds,
-      allowedRoles, allowedChannels, caseSensitive, deleteUserMessage, enabled,
-      cooldownScope, ephemeralErrors, tags, category } = req.body;
+    const n = normalizeCCBody(req.body);
 
     const err = validateCCBody(req.body);
     if (err) return res.status(400).json({ error: err });
 
     // Check name uniqueness against OTHER commands
-    if (name) {
-      const conflict = await CustomCommand.findOne({ guildId, name: name.trim(), _id: { $ne: req.params.id } });
+    if (n.name) {
+      const conflict = await CustomCommand.findOne({ guildId, name: n.name.trim(), _id: { $ne: req.params.id } });
       if (conflict) return res.status(409).json({ error: 'Another command already uses that name' });
     }
 
     const previous = await CustomCommand.findOne({ _id: req.params.id, guildId }).lean();
     if (!previous) return res.status(404).json({ error: 'Command not found' });
 
-    const cleanBlocks = sanitizeCCBlocks(blocks);
+    const cleanBlocks = sanitizeCCBlocks(n.blocks);
     const firstTextBlock = cleanBlocks.find(b => ['reply', 'message', 'dm'].includes(b.type));
     const legacyResponse = firstTextBlock ? firstTextBlock.data.content : '';
 
     const update = {
-      name:             name.trim().slice(0, 32),
-      trigger:          trigger.trim().slice(0, 200),
-      triggerType:      normalizeCCTriggerType(triggerType),
-      description:      (description || '').slice(0, 100),
+      name:             n.name.trim().slice(0, 32),
+      trigger:          (n.trigger || '').trim().slice(0, 200),
+      triggerType:      normalizeCCTriggerType(n.triggerType),
+      description:      (n.description || '').slice(0, 100),
       response:         legacyResponse.slice(0, 2000),
       blocks:           cleanBlocks,
-      allowedRoles:     Array.isArray(allowedRoles) ? allowedRoles.filter(r => /^\d+$/.test(r)).slice(0, 50) : [],
-      allowedChannels:  Array.isArray(allowedChannels) ? allowedChannels.filter(c => /^\d+$/.test(c)).slice(0, 50) : [],
-      cooldownSeconds:  Math.max(0, Math.min(86400, Number(cooldownSeconds) || 0)),
-      cooldownScope:    ['user','guild','channel'].includes(cooldownScope) ? cooldownScope : 'user',
-      ephemeralErrors:  ephemeralErrors === true,
-      tags:             Array.isArray(tags) ? tags.map(t => String(t).slice(0, 32)).slice(0, 10) : [],
-      category:         (category || '').slice(0, 50),
-      deleteUserMessage: !!deleteUserMessage,
-      caseSensitive:    !!caseSensitive,
-      enabled:          enabled !== false,
+      variables:        Array.isArray(n.variables) ? n.variables.slice(0, 50) : [],
+      allowedRoles:     Array.isArray(n.allowedRoles) ? n.allowedRoles.filter(r => /^\d+$/.test(r)).slice(0, 50) : [],
+      allowedChannels:  Array.isArray(n.allowedChannels) ? n.allowedChannels.filter(c => /^\d+$/.test(c)).slice(0, 50) : [],
+      cooldownSeconds:  Math.max(0, Math.min(86400, Number(n.cooldownSeconds) || 0)),
+      cooldownScope:    ['user','guild','channel'].includes(n.cooldownScope) ? n.cooldownScope : 'user',
+      ephemeralErrors:  n.ephemeralErrors === true,
+      tags:             Array.isArray(n.tags) ? n.tags.map(t => String(t).slice(0, 32)).slice(0, 10) : [],
+      category:         (n.category || '').slice(0, 50),
+      deleteUserMessage: !!n.deleteUserMessage,
+      caseSensitive:    !!n.caseSensitive,
+      enabled:          n.enabled !== false,
     };
 
     const cmd = await CustomCommand.findOneAndUpdate(

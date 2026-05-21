@@ -31,7 +31,7 @@ const customCommandSchema = new mongoose.Schema({
   name:    { type: String, required: true, maxlength: 50 },
 
   // Trigger configuration
-  trigger:     { type: String, required: true, maxlength: 200 },
+  trigger:     { type: String, default: '', maxlength: 200 },
   triggerType: {
     type:    String,
     enum:    ['slash', 'prefix', 'exact', 'contains', 'startsWith', 'regex',
@@ -88,7 +88,7 @@ const customCommandSchema = new mongoose.Schema({
   embedColor:       { type: String, default: '#0f52ba' },
   embedTitle:       { type: String, default: '', maxlength: 256 },
   embedDescription: { type: String, default: '', maxlength: 2000 },
-  variables:        { type: mongoose.Schema.Types.Mixed, default: {} },
+  variables:        { type: [mongoose.Schema.Types.Mixed], default: [] },
 
   // Discord registered slash-command ID (for deregistration)
   discordCommandId: { type: String, default: '' },

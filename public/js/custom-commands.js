@@ -54,13 +54,41 @@
     if (!container) return;
 
     const TRIGGER_ICONS = {
-      slash:    `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`,
-      prefix:   `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`,
-      contains: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
-      exact:    `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>`,
-      regex:    `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 9h6v6H9z"/><path d="M3 3h18v18H3z"/></svg>`,
+      slash:           `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`,
+      prefix:          `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`,
+      contains:        `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>`,
+      exact:           `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>`,
+      regex:           `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 9h6v6H9z"/><path d="M3 3h18v18H3z"/></svg>`,
+      startsWith:      `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`,
+      button:          `<span style="font-size:12px;line-height:1">\ud83d\udd18</span>`,
+      select_menu:     `<span style="font-size:12px;line-height:1">\ud83d\udccb</span>`,
+      reaction_add:    `<span style="font-size:12px;line-height:1">\ud83d\udc4d</span>`,
+      reaction_remove: `<span style="font-size:12px;line-height:1">\ud83d\udc4e</span>`,
+      member_join:     `<span style="font-size:12px;line-height:1">\u2705</span>`,
+      member_leave:    `<span style="font-size:12px;line-height:1">\ud83d\udc4b</span>`,
+      voice_join:      `<span style="font-size:12px;line-height:1">\ud83d\udd0a</span>`,
+      voice_leave:     `<span style="font-size:12px;line-height:1">\ud83d\udd07</span>`,
+      message_delete:  `<span style="font-size:12px;line-height:1">\ud83d\uddd1\ufe0f</span>`,
+      scheduled:       `<span style="font-size:12px;line-height:1">\u23f0</span>`,
     };
-    const TRIGGER_LABELS = { slash: 'Slash', prefix: 'Prefix', contains: 'Contains', exact: 'Exact', regex: 'Regex' };
+    const TRIGGER_LABELS = {
+      slash:           'Slash',
+      prefix:          'Prefix',
+      contains:        'Contains',
+      exact:           'Exact',
+      regex:           'Regex',
+      startsWith:      'Starts With',
+      button:          'Button',
+      select_menu:     'Select Menu',
+      reaction_add:    'Reaction',
+      reaction_remove: 'Unreaction',
+      member_join:     'Member Join',
+      member_leave:    'Member Leave',
+      voice_join:      'Voice Join',
+      voice_leave:     'Voice Leave',
+      message_delete:  'Msg Delete',
+      scheduled:       'Scheduled',
+    };
 
     const listHTML = _cmds.length === 0 ? `
       <div class="cc-empty">
@@ -89,7 +117,7 @@
                 <div class="cc-card-info">
                   <div class="cc-card-name">${esc(cmd.name)}</div>
                   <div class="cc-card-trigger">
-                    <code>${esc(cmd.trigger)}</code>
+                    ${cmd.trigger ? `<code>${esc(cmd.trigger)}</code>` : ''}
                     ${blockCount > 0 ? `<span class="cc-card-blocks">${blockCount} block${blockCount !== 1 ? 's' : ''}</span>` : ''}
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-<%- include('partials/head', { title: 'Workflow Editor' }) %>
+<%- include('partials/head', { title: 'Command Builder' }) %>
 <link rel="stylesheet" href="/css/workflow-editor.css?v=2">
 <body class="wf-body">
   <%- include('partials/nav') %>
@@ -8,39 +8,44 @@
       ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.${guild.icon.startsWith('a_') ? 'gif' : 'png'}?size=64`
       : null;
 
-    const workflowJson = typeof workflow !== 'undefined' && workflow
-      ? JSON.stringify(workflow).replace(/&/g,'&amp;').replace(/"/g,'&quot;')
+    const cmdJson = typeof cmd !== 'undefined' && cmd
+      ? JSON.stringify(cmd).replace(/&/g,'&amp;').replace(/"/g,'&quot;')
       : '';
 
-    const workflowId = typeof workflow !== 'undefined' && workflow
-      ? workflow._id.toString()
+    const cmdId = typeof cmd !== 'undefined' && cmd
+      ? cmd._id.toString()
       : '';
 
     const TRIGGER_LABELS = [
-      { v: '',               l: '— Select Trigger —' },
-      { v: 'slash',          l: '/ Slash Command' },
-      { v: 'prefix',         l: '! Prefix Command' },
-      { v: 'contains',       l: 'Message Contains' },
-      { v: 'exact',          l: 'Exact Match' },
-      { v: 'regex',          l: 'Regex Pattern' },
-      { v: 'button',         l: '🔘 Button Click' },
-      { v: 'select_menu',    l: '📋 Select Menu' },
-      { v: 'reaction',       l: '👍 Reaction Added' },
-      { v: 'member_join',    l: '✅ Member Joins' },
-      { v: 'member_leave',   l: '👋 Member Leaves' },
-      { v: 'scheduled',      l: '⏰ Scheduled' },
+      { v: '',                l: '— Select Trigger —' },
+      { v: 'slash',           l: '/ Slash Command' },
+      { v: 'prefix',          l: '! Prefix Command' },
+      { v: 'contains',        l: 'Message Contains' },
+      { v: 'exact',           l: 'Exact Match' },
+      { v: 'regex',           l: 'Regex Pattern' },
+      { v: 'startsWith',      l: 'Starts With' },
+      { v: 'button',          l: '🔘 Button Click' },
+      { v: 'select_menu',     l: '📋 Select Menu' },
+      { v: 'reaction_add',    l: '👍 Reaction Added' },
+      { v: 'reaction_remove', l: '👎 Reaction Removed' },
+      { v: 'member_join',     l: '✅ Member Joins' },
+      { v: 'member_leave',    l: '👋 Member Leaves' },
+      { v: 'voice_join',      l: '🔊 Voice Join' },
+      { v: 'voice_leave',     l: '🔇 Voice Leave' },
+      { v: 'message_delete',  l: '🗑️ Message Deleted' },
+      { v: 'scheduled',       l: '⏰ Scheduled' },
     ];
 
-    const currentTriggerType = (typeof workflow !== 'undefined' && workflow?.trigger?.type) || '';
-    const currentTriggerValue = (typeof workflow !== 'undefined' && workflow?.trigger?.value) || '';
-    const needsTriggerValue = ['slash','prefix','contains','exact','regex'];
+    const currentTriggerType = (typeof cmd !== 'undefined' && cmd?.trigger?.type) || '';
+    const currentTriggerValue = (typeof cmd !== 'undefined' && cmd?.trigger?.value) || '';
+    const needsTriggerValue = ['slash','prefix','contains','exact','regex','startsWith'];
   %>
 
   <%# ── Hidden data island — read by workflow-editor.js ── %>
   <div id="wfPageData"
     data-guild-id="<%= guild.id %>"
-    data-workflow-id="<%= workflowId %>"
-    data-workflow-json="<%= workflowJson %>"
+    data-cmd-id="<%= cmdId %>"
+    data-cmd-json="<%= cmdJson %>"
     style="display:none">
   </div>
 
@@ -50,7 +55,7 @@
     <header class="wf-topbar">
       <a href="/dashboard/<%= guild.id %>#custom-commands" class="wf-topbar__back">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-        Workflows
+        Commands
       </a>
       <div class="wf-topbar__divider"></div>
 
@@ -64,7 +69,7 @@
           type="text"
           id="wf-name-input"
           class="wf-topbar__name"
-          placeholder="my-workflow"
+          placeholder="command-name"
           maxlength="50"
           autocomplete="off"
           spellcheck="false">
@@ -103,7 +108,7 @@
 
       <div class="wf-toggle-wrap" title="Enable / disable this workflow">
         <label class="wf-toggle">
-          <input type="checkbox" id="wf-enabled-toggle" <%= (typeof workflow === 'undefined' || workflow?.enabled !== false) ? 'checked' : '' %>>
+          <input type="checkbox" id="wf-enabled-toggle" <%= (typeof cmd === 'undefined' || cmd?.enabled !== false) ? 'checked' : '' %>>
           <span class="wf-toggle__track"></span>
         </label>
         <span class="wf-toggle-label">Enabled</span>
@@ -117,7 +122,7 @@
 
       <button id="wf-save-btn" class="wf-btn wf-btn--primary" type="button">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        Save
+        Save Command
       </button>
     </header>
 

@@ -78,55 +78,68 @@ router.get('/owner', requireAuth, async (req, res) => {
 const CustomCommand = require('../models/CustomCommand');
 const Workflow = require('../models/Workflow');
 
-// ── Workflow editor pages (MUST come before /:guildId) ────────
+// ── Helper: shape a CC doc into workflow-editor's expected format ──
+function cmdToEditorFormat(cmd) {
+  if (!cmd) return null;
+  return {
+    _id:         cmd._id.toString(),
+    name:        cmd.name        || '',
+    description: cmd.description || '',
+    enabled:     cmd.enabled !== false,
+    trigger: {
+      type:  cmd.triggerType || 'slash',
+      value: cmd.trigger     || '',   // CC schema: trigger is the value string
+    },
+    permissions: {
+      allowedRoles:        cmd.allowedRoles        || [],
+      allowedChannels:     cmd.allowedChannels     || [],
+      requiredPermissions: cmd.requiredPermissions || [],
+      caseSensitive:       !!cmd.caseSensitive,
+      deleteUserMessage:   !!cmd.deleteUserMessage,
+      cooldownSeconds:     cmd.cooldownSeconds     || 0,
+      cooldownScope:       cmd.cooldownScope       || 'user',
+      ephemeralErrors:     cmd.ephemeralErrors     !== false,
+    },
+    blocks:    cmd.blocks    || [],
+    variables: Array.isArray(cmd.variables) ? cmd.variables : [],
+  };
+}
 
-// New workflow
-router.get('/:guildId/workflows/editor', requireAuth, async (req, res) => {
+// ── Workflow editor (legacy) — redirect to unified command builder ──
+router.get('/:guildId/workflows/editor', requireAuth, (req, res) => {
   const { guildId } = req.params;
   if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
-  const guild = (req.user.guilds || []).find((g) => g.id === guildId && hasAdmin(g.permissions));
-  if (!guild) return res.redirect('/dashboard');
-  res.render('workflow-editor', { guild, user: req.user, workflow: null });
+  res.redirect(302, `/dashboard/${guildId}/custom-commands/builder`);
 });
 
-// Edit existing workflow
-router.get('/:guildId/workflows/editor/:workflowId', requireAuth, async (req, res) => {
-  const { guildId, workflowId } = req.params;
+router.get('/:guildId/workflows/editor/:workflowId', requireAuth, (req, res) => {
+  const { guildId } = req.params;
   if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
-  const guild = (req.user.guilds || []).find((g) => g.id === guildId && hasAdmin(g.permissions));
-  if (!guild) return res.redirect('/dashboard');
-  let workflow = null;
-  try {
-    workflow = await Workflow.findOne({ _id: workflowId, guildId }).lean();
-  } catch {
-    // invalid id — render blank editor
-  }
-  res.render('workflow-editor', { guild, user: req.user, workflow });
+  res.redirect(302, `/dashboard/${guildId}/custom-commands/builder`);
 });
 
-// (Removed duplicate empty route definition)
+// ── Command builder (unified — uses workflow-editor.ejs) ──────
 router.get('/:guildId/custom-commands/builder', requireAuth, async (req, res) => {
   const { guildId } = req.params;
   if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
-  const guilds = req.user.guilds || [];
-  const guild = guilds.find((g) => g.id === guildId && hasAdmin(g.permissions));
+  const guild = (req.user.guilds || []).find((g) => g.id === guildId && hasAdmin(g.permissions));
   if (!guild) return res.redirect('/dashboard');
-  res.render('command-builder', { guild, user: req.user, cmd: null });
+  res.render('workflow-editor', { guild, user: req.user, cmd: null });
 });
 
 router.get('/:guildId/custom-commands/builder/:cmdId', requireAuth, async (req, res) => {
   const { guildId, cmdId } = req.params;
   if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
-  const guilds = req.user.guilds || [];
-  const guild = guilds.find((g) => g.id === guildId && hasAdmin(g.permissions));
+  const guild = (req.user.guilds || []).find((g) => g.id === guildId && hasAdmin(g.permissions));
   if (!guild) return res.redirect('/dashboard');
   let cmd = null;
   try {
-    cmd = await CustomCommand.findOne({ _id: cmdId, guildId }).lean();
+    const raw = await CustomCommand.findOne({ _id: cmdId, guildId }).lean();
+    cmd = cmdToEditorFormat(raw);
   } catch {
     // invalid id or not found — render blank builder
   }
-  res.render('command-builder', { guild, user: req.user, cmd });
+  res.render('workflow-editor', { guild, user: req.user, cmd });
 });
 
 // Server detail

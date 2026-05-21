@@ -1726,17 +1726,17 @@
       if (!dataEl) return;
 
       this._guildId    = dataEl.dataset.guildId   || '';
-      this._wfId       = dataEl.dataset.workflowId || '';
+      this._cmdId      = dataEl.dataset.cmdId || '';
       this._selectedId = null;
       this._autosaveTimer = null;
-      this._draft_key  = `wf_draft_${this._guildId}_${this._wfId || 'new'}`;
+      this._draft_key  = `cc_draft_${this._guildId}_${this._cmdId || 'new'}`;
 
-      // Parse initial workflow JSON
+      // Parse initial command JSON
       let raw = {};
-      try { raw = JSON.parse(dataEl.dataset.workflowJson || '{}'); } catch {}
+      try { raw = JSON.parse(dataEl.dataset.cmdJson || '{}'); } catch {}
 
       this.state = {
-        name:        raw.name        || 'New Workflow',
+        name:        raw.name        || 'new-command',
         description: raw.description || '',
         enabled:     raw.enabled     ?? true,
         trigger: {
@@ -1900,10 +1900,10 @@
       };
 
       try {
-        const method = this._wfId ? 'PATCH' : 'POST';
-        const url    = this._wfId
-          ? `/api/guilds/${this._guildId}/workflows/${this._wfId}`
-          : `/api/guilds/${this._guildId}/workflows`;
+        const method = this._cmdId ? 'PATCH' : 'POST';
+        const url    = this._cmdId
+          ? `/api/guild/${this._guildId}/custom-commands/${this._cmdId}`
+          : `/api/guild/${this._guildId}/custom-commands`;
 
         const res  = await fetch(url, {
           method,
@@ -1917,20 +1917,20 @@
         }
 
         const data = await res.json();
-        if (data.workflow?._id && !this._wfId) {
-          this._wfId = data.workflow._id;
-          history.replaceState({}, '', `/workflow-editor/${this._guildId}/${this._wfId}`);
-          this._draft_key = `wf_draft_${this._guildId}_${this._wfId}`;
+        if (data._id && !this._cmdId) {
+          this._cmdId = data._id;
+          history.replaceState({}, '', `/dashboard/${this._guildId}/custom-commands/builder/${this._cmdId}`);
+          this._draft_key = `cc_draft_${this._guildId}_${this._cmdId}`;
         }
 
         this._clearDirty();
         this._clearDraft();
         this._updateAutosaveIndicator('Saved');
-        showToast('Workflow saved ✓', 'success');
+        showToast('Command saved ✓', 'success');
       } catch (err) {
         showToast(`Save error: ${err.message}`, 'error');
       } finally {
-        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+        if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Command'; }
       }
     }
 
@@ -1938,13 +1938,13 @@
       const validateBtn = qs('#wf-validate-btn');
       if (validateBtn) { validateBtn.disabled = true; validateBtn.textContent = 'Validating…'; }
       try {
-        const res  = await fetch(`/api/guilds/${this._guildId}/workflows/validate`, {
+        const res  = await fetch(`/api/guild/${this._guildId}/custom-commands/validate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ blocks: this._stripIds(this.state.blocks), trigger: this.state.trigger }),
+          body: JSON.stringify({ blocks: this._stripIds(this.state.blocks), trigger: this.state.trigger, name: this.state.name }),
         });
         const data = await res.json();
-        if (data.valid) showToast('✅ Workflow is valid!', 'success');
+        if (data.valid) showToast('✅ Command is valid!', 'success');
         else            showToast(`❌ ${data.errors?.[0] || 'Validation failed'}`, 'error');
       } catch (err) {
         showToast(`Validate error: ${err.message}`, 'error');
@@ -2073,7 +2073,7 @@
       const triggerValRow = qs('#wf-trigger-value-row');
       if (!triggerSel) return;
       const v = (triggerSel.value || '').toLowerCase();
-      const needsValue = ['slash', 'prefix', 'exact', 'contains', 'regex'].includes(v);
+      const needsValue = ['slash', 'prefix', 'exact', 'contains', 'regex', 'startsWith', 'startswith'].includes(v);
       if (triggerValRow) {
         if (needsValue) { triggerValRow.removeAttribute('hidden'); triggerValRow.style.display = ''; }
         else            { triggerValRow.style.display = 'none'; }
