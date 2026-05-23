@@ -188,6 +188,14 @@
     if (triggerType && TRIGGER_SPECIFIC_VARS[triggerType]) {
       vars.push(...TRIGGER_SPECIFIC_VARS[triggerType]);
     }
+    // Add {option.xxx} variables for each slash option defined on the command
+    if ((triggerType === 'slash' || triggerType === 'SLASH') && Array.isArray(state.slashOptions)) {
+      for (const opt of state.slashOptions) {
+        if (opt.name) {
+          vars.push({ key: `option.${opt.name}`, desc: opt.description || `Slash option: ${opt.name}` });
+        }
+      }
+    }
     for (const v of (state.variables || [])) {
       if (v.name) vars.push({ key: v.name, desc: v.description || v.scope || 'workflow variable' });
     }
@@ -1736,18 +1744,19 @@
       try { raw = JSON.parse(dataEl.dataset.cmdJson || '{}'); } catch {}
 
       this.state = {
-        name:        raw.name        || 'new-command',
-        description: raw.description || '',
-        enabled:     raw.enabled     ?? true,
+        name:         raw.name        || 'new-command',
+        description:  raw.description || '',
+        enabled:      raw.enabled     ?? true,
         trigger: {
           // Keep lowercase so it matches the EJS <select> option values.
           // Normalize to uppercase only when sending to the API in save().
           type:  (raw.trigger?.type || raw.triggerType || 'slash').toLowerCase(),
           value: raw.trigger?.value || raw.triggerValue || '',
         },
-        permissions: raw.permissions || {},
-        blocks:      raw.blocks      || [],
-        variables:   raw.variables   || [],
+        permissions:  raw.permissions  || {},
+        blocks:       raw.blocks       || [],
+        variables:    raw.variables    || [],
+        slashOptions: Array.isArray(raw.slashOptions) ? raw.slashOptions : [],
       };
 
       this._ensureIds(this.state.blocks);
@@ -1890,13 +1899,14 @@
       if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
 
       const payload = {
-        name:        this.state.name,
-        description: this.state.description,
-        enabled:     this.state.enabled,
-        trigger:     { type: normalizeTriggerType(this.state.trigger.type), value: this.state.trigger.value },
-        permissions: this.state.permissions,
-        blocks:      this._stripIds(this.state.blocks),
-        variables:   this.state.variables,
+        name:         this.state.name,
+        description:  this.state.description,
+        enabled:      this.state.enabled,
+        trigger:      { type: normalizeTriggerType(this.state.trigger.type), value: this.state.trigger.value },
+        permissions:  this.state.permissions,
+        blocks:       this._stripIds(this.state.blocks),
+        variables:    this.state.variables,
+        slashOptions: this.state.slashOptions,
       };
 
       try {
@@ -1981,12 +1991,13 @@
     _autosave() {
       try {
         const draft = {
-          name:      this.state.name,
-          trigger:   this.state.trigger,
-          blocks:    this._stripIds(this.state.blocks),
-          variables: this.state.variables,
-          enabled:   this.state.enabled,
-          savedAt:   Date.now(),
+          name:         this.state.name,
+          trigger:      this.state.trigger,
+          blocks:       this._stripIds(this.state.blocks),
+          variables:    this.state.variables,
+          slashOptions: this.state.slashOptions,
+          enabled:      this.state.enabled,
+          savedAt:      Date.now(),
         };
         localStorage.setItem(this._draft_key, JSON.stringify(draft));
         this._updateAutosaveIndicator('Draft saved');
@@ -2066,17 +2077,32 @@
       if (validateBtn) {
         validateBtn.addEventListener('click', () => this.validate());
       }
+
+      // JSON editor button
+      const jsonBtn = qs('#wf-json-btn');
+      if (jsonBtn) {
+        jsonBtn.addEventListener('click', () => this._openJsonEditor());
+      }
+
+      // Init slash options editor (reads state.slashOptions, binds add button)
+      this.slashOptionsEditor = new SlashOptionsEditor(this);
+      this.slashOptionsEditor.render();
+      this._updateTriggerValueVisibility();
     }
 
     _updateTriggerValueVisibility() {
-      const triggerSel    = qs('#wf-trigger-type');
-      const triggerValRow = qs('#wf-trigger-value-row');
+      const triggerSel      = qs('#wf-trigger-type');
+      const triggerValRow   = qs('#wf-trigger-value-row');
+      const slashOptsPanel  = qs('#wf-slash-options-panel');
       if (!triggerSel) return;
       const v = (triggerSel.value || '').toLowerCase();
       const needsValue = ['slash', 'prefix', 'exact', 'contains', 'regex', 'startsWith', 'startswith'].includes(v);
       if (triggerValRow) {
         if (needsValue) { triggerValRow.removeAttribute('hidden'); triggerValRow.style.display = ''; }
         else            { triggerValRow.style.display = 'none'; }
+      }
+      if (slashOptsPanel) {
+        slashOptsPanel.style.display = (v === 'slash') ? '' : 'none';
       }
     }
 
@@ -2114,6 +2140,215 @@
           return;
         }
       });
+    }
+
+    /* ── JSON Editor ─────────────────────────────────────────── */
+    _openJsonEditor() {
+      const existing = qs('#wf-json-modal');
+      if (existing) { existing.remove(); return; }
+
+      const payload = {
+        name:         this.state.name,
+        description:  this.state.description,
+        enabled:      this.state.enabled,
+        trigger:      this.state.trigger,
+        permissions:  this.state.permissions,
+        blocks:       this._stripIds(this.state.blocks),
+        variables:    this.state.variables,
+        slashOptions: this.state.slashOptions,
+      };
+
+      const overlay = el('div', { class: 'wf-json-overlay' });
+      overlay.id = 'wf-json-modal';
+
+      const modal = el('div', { class: 'wf-json-modal' });
+      const header = el('div', { class: 'wf-json-modal__header' });
+      const title  = el('h3', { class: 'wf-json-modal__title', text: 'Command JSON' });
+      const closeBtn = el('button', { class: 'wf-json-modal__close btn-icon-sm', type: 'button', text: '✕', title: 'Close' });
+      header.appendChild(title);
+      header.appendChild(closeBtn);
+
+      const textarea = el('textarea', { class: 'wf-json-modal__textarea', spellcheck: 'false' });
+      textarea.value = JSON.stringify(payload, null, 2);
+
+      const footer = el('div', { class: 'wf-json-modal__footer' });
+      const applyBtn  = el('button', { class: 'btn btn-primary', type: 'button', text: 'Apply JSON' });
+      const copyBtn   = el('button', { class: 'btn btn-secondary', type: 'button', text: 'Copy' });
+      const errorEl   = el('span', { class: 'wf-json-modal__error' });
+      footer.appendChild(errorEl);
+      footer.appendChild(copyBtn);
+      footer.appendChild(applyBtn);
+
+      modal.appendChild(header);
+      modal.appendChild(textarea);
+      modal.appendChild(footer);
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+
+      const close = () => overlay.remove();
+      closeBtn.addEventListener('click', close);
+      overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+
+      copyBtn.addEventListener('click', () => {
+        navigator.clipboard?.writeText(textarea.value).then(() => showToast('Copied to clipboard', 'success')).catch(() => {
+          textarea.select();
+          document.execCommand('copy');
+          showToast('Copied', 'success');
+        });
+      });
+
+      applyBtn.addEventListener('click', () => {
+        errorEl.textContent = '';
+        let parsed;
+        try { parsed = JSON.parse(textarea.value); } catch (e) {
+          errorEl.textContent = `Invalid JSON: ${e.message}`;
+          return;
+        }
+        if (!parsed.name) { errorEl.textContent = 'Missing required field: name'; return; }
+        if (!parsed.blocks || !Array.isArray(parsed.blocks)) { errorEl.textContent = 'Missing required field: blocks (array)'; return; }
+
+        // Apply to state
+        this.state.name         = String(parsed.name || '').slice(0, 32);
+        this.state.description  = String(parsed.description || '').slice(0, 100);
+        this.state.enabled      = parsed.enabled !== false;
+        this.state.trigger      = {
+          type:  ((parsed.trigger?.type  || parsed.triggerType  || 'slash')).toLowerCase(),
+          value: parsed.trigger?.value || parsed.triggerValue || '',
+        };
+        this.state.permissions  = parsed.permissions  || {};
+        this.state.variables    = Array.isArray(parsed.variables)    ? parsed.variables    : [];
+        this.state.slashOptions = Array.isArray(parsed.slashOptions) ? parsed.slashOptions : [];
+        this.state.blocks       = Array.isArray(parsed.blocks)       ? parsed.blocks       : [];
+        this._ensureIds(this.state.blocks);
+        this._markDirty();
+
+        // Refresh UI
+        const nameInput = qs('#wf-name-input');
+        if (nameInput) nameInput.value = this.state.name;
+        const trigSel = qs('#wf-trigger-type');
+        if (trigSel) trigSel.value = this.state.trigger.type;
+        const trigVal = qs('#wf-trigger-value');
+        if (trigVal) trigVal.value = this.state.trigger.value;
+        const enabledTog = qs('#wf-enabled-toggle');
+        if (enabledTog) enabledTog.checked = this.state.enabled;
+        this._updateTriggerValueVisibility();
+        this.slashOptionsEditor?.render();
+        this.canvas.render();
+        this.propsPanel.clear();
+        this._updateStepCount();
+        showToast('JSON applied ✓', 'success');
+        close();
+      });
+    }
+  }
+
+  /* ── SlashOptionsEditor ─────────────────────────────────────── */
+  const SLASH_OPTION_TYPES = [
+    { value: 3,  label: 'String'     },
+    { value: 4,  label: 'Integer'    },
+    { value: 5,  label: 'Boolean'    },
+    { value: 6,  label: 'User'       },
+    { value: 7,  label: 'Channel'    },
+    { value: 8,  label: 'Role'       },
+    { value: 10, label: 'Number'     },
+    { value: 11, label: 'Attachment' },
+  ];
+
+  class SlashOptionsEditor {
+    constructor(editor) {
+      this._editor    = editor;
+      this._container = qs('#wf-slash-options-list');
+      const addBtn    = qs('#wf-add-slash-option');
+      if (addBtn) addBtn.addEventListener('click', () => this.addOption());
+    }
+
+    render() {
+      if (!this._container) return;
+      const opts = this._editor.state.slashOptions;
+      this._container.innerHTML = '';
+      if (!opts.length) {
+        const empty = el('p', { class: 'slash-options-empty', text: 'No options yet. Click "+ Add Option" to add one.' });
+        this._container.appendChild(empty);
+        return;
+      }
+      opts.forEach((opt, idx) => {
+        const row = el('div', { class: 'slash-option-row' });
+
+        // Name input
+        const nameInput = el('input', { class: 'slash-opt-name form-control-sm', type: 'text', placeholder: 'option-name', maxlength: '32' });
+        nameInput.value = opt.name || '';
+
+        // Type select
+        const typeSelect = el('select', { class: 'slash-opt-type form-control-sm' });
+        for (const t of SLASH_OPTION_TYPES) {
+          const o = el('option', { value: String(t.value), text: t.label });
+          if (Number(opt.type || 3) === t.value) o.selected = true;
+          typeSelect.appendChild(o);
+        }
+
+        // Description input
+        const descInput = el('input', { class: 'slash-opt-desc form-control-sm', type: 'text', placeholder: 'Description (shown in Discord)', maxlength: '100' });
+        descInput.value = opt.description || '';
+
+        // Required checkbox
+        const reqLabel = el('label', { class: 'slash-opt-req-label' });
+        const reqCheck = el('input', { type: 'checkbox' });
+        reqCheck.checked = !!opt.required;
+        reqLabel.appendChild(reqCheck);
+        reqLabel.appendChild(document.createTextNode(' Required'));
+
+        // Remove button
+        const removeBtn = el('button', { class: 'slash-opt-remove btn-icon-sm', type: 'button', title: 'Remove option', text: '✕' });
+
+        row.appendChild(nameInput);
+        row.appendChild(typeSelect);
+        row.appendChild(descInput);
+        row.appendChild(reqLabel);
+        row.appendChild(removeBtn);
+        this._container.appendChild(row);
+
+        // Events
+        nameInput.addEventListener('input', () => {
+          const clean = nameInput.value.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 32);
+          nameInput.value = clean;
+          this._editor.state.slashOptions[idx].name = clean;
+          this._editor._markDirty();
+          this._notifyVarsChanged();
+        });
+        typeSelect.addEventListener('change', () => {
+          this._editor.state.slashOptions[idx].type = Number(typeSelect.value);
+          this._editor._markDirty();
+        });
+        descInput.addEventListener('input', () => {
+          this._editor.state.slashOptions[idx].description = descInput.value.slice(0, 100);
+          this._editor._markDirty();
+        });
+        reqCheck.addEventListener('change', () => {
+          this._editor.state.slashOptions[idx].required = reqCheck.checked;
+          this._editor._markDirty();
+        });
+        removeBtn.addEventListener('click', () => {
+          this._editor.state.slashOptions.splice(idx, 1);
+          this._editor._markDirty();
+          this.render();
+          this._notifyVarsChanged();
+        });
+      });
+    }
+
+    addOption() {
+      this._editor.state.slashOptions.push({ name: '', type: 3, description: '', required: false, autocomplete: false });
+      this._editor._markDirty();
+      this.render();
+      setTimeout(() => {
+        const inputs = this._container?.querySelectorAll('.slash-opt-name');
+        if (inputs?.length) inputs[inputs.length - 1].focus();
+      }, 40);
+    }
+
+    _notifyVarsChanged() {
+      // Re-render palette so new option.xxx variables appear
+      this._editor.palette?.render();
     }
   }
 

@@ -100,8 +100,9 @@ function cmdToEditorFormat(cmd) {
       cooldownScope:       cmd.cooldownScope       || 'user',
       ephemeralErrors:     cmd.ephemeralErrors     !== false,
     },
-    blocks:    cmd.blocks    || [],
-    variables: Array.isArray(cmd.variables) ? cmd.variables : [],
+    blocks:       cmd.blocks       || [],
+    variables:    Array.isArray(cmd.variables)    ? cmd.variables    : [],
+    slashOptions: Array.isArray(cmd.slashOptions) ? cmd.slashOptions : [],
   };
 }
 

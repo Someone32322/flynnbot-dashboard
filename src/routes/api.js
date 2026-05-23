@@ -2398,6 +2398,32 @@ function normalizeCCTriggerType(triggerType) {
  * as well as the legacy flat format:
  *   { trigger: "value", triggerType: "slash", allowedRoles: [], … }
  */
+// Allowed slash option types (Discord API type numbers)
+const CC_SLASH_OPTION_TYPES = new Set([3, 4, 5, 6, 7, 8, 10, 11]);
+
+function sanitizeCCSlashOptions(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, 25).map((opt) => {
+    if (!opt || typeof opt !== 'object') return null;
+    const name = String(opt.name || '').toLowerCase().trim().replace(/[^a-z0-9_-]/g, '').slice(0, 32);
+    if (!name) return null;
+    const type = CC_SLASH_OPTION_TYPES.has(Number(opt.type)) ? Number(opt.type) : 3;
+    return {
+      name,
+      type,
+      description: String(opt.description || `${name} option`).slice(0, 100),
+      required:    opt.required === true,
+      autocomplete: opt.autocomplete === true && type === 3,
+      choices:     Array.isArray(opt.choices)
+        ? opt.choices.slice(0, 25).map((c) => ({
+            name:  String(c.name || '').slice(0, 100),
+            value: String(c.value || '').slice(0, 100),
+          })).filter((c) => c.name)
+        : [],
+    };
+  }).filter(Boolean);
+}
+
 function normalizeCCBody(body) {
   const trigObj = body.trigger !== null && typeof body.trigger === 'object' ? body.trigger : null;
   const perm    = body.permissions !== null && typeof body.permissions === 'object' ? body.permissions : {};
@@ -2411,7 +2437,7 @@ function normalizeCCBody(body) {
     variables:         Array.isArray(body.variables) ? body.variables : [],
     tags:              body.tags,
     category:          body.category,
-    slashOptions:      body.slashOptions,
+    slashOptions:      sanitizeCCSlashOptions(body.slashOptions),
     allowedRoles:      perm.allowedRoles      !== undefined ? perm.allowedRoles      : body.allowedRoles,
     allowedChannels:   perm.allowedChannels   !== undefined ? perm.allowedChannels   : body.allowedChannels,
     caseSensitive:     perm.caseSensitive      !== undefined ? perm.caseSensitive     : body.caseSensitive,
@@ -2786,6 +2812,7 @@ router.post('/guild/:guildId/custom-commands', requireAuth, requireGuildAdmin, a
       response:         legacyResponse.slice(0, 2000),
       blocks:           cleanBlocks,
       variables:        Array.isArray(n.variables) ? n.variables.slice(0, 50) : [],
+      slashOptions:     n.slashOptions,
       allowedRoles:     Array.isArray(n.allowedRoles) ? n.allowedRoles.filter(r => /^\d+$/.test(r)).slice(0, 50) : [],
       allowedChannels:  Array.isArray(n.allowedChannels) ? n.allowedChannels.filter(c => /^\d+$/.test(c)).slice(0, 50) : [],
       cooldownSeconds:  Math.max(0, Math.min(86400, Number(n.cooldownSeconds) || 0)),
@@ -2835,6 +2862,7 @@ router.patch('/guild/:guildId/custom-commands/:id', requireAuth, requireGuildAdm
       response:         legacyResponse.slice(0, 2000),
       blocks:           cleanBlocks,
       variables:        Array.isArray(n.variables) ? n.variables.slice(0, 50) : [],
+      slashOptions:     n.slashOptions,
       allowedRoles:     Array.isArray(n.allowedRoles) ? n.allowedRoles.filter(r => /^\d+$/.test(r)).slice(0, 50) : [],
       allowedChannels:  Array.isArray(n.allowedChannels) ? n.allowedChannels.filter(c => /^\d+$/.test(c)).slice(0, 50) : [],
       cooldownSeconds:  Math.max(0, Math.min(86400, Number(n.cooldownSeconds) || 0)),

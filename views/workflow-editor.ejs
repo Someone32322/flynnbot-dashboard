@@ -120,11 +120,30 @@
         Validate
       </button>
 
+      <button id="wf-json-btn" class="wf-btn wf-btn--secondary" type="button" title="View / import command as JSON">
+        JSON
+      </button>
+
       <button id="wf-save-btn" class="wf-btn wf-btn--primary" type="button">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         Save Command
       </button>
     </header>
+
+    <%# ── SLASH OPTIONS PANEL (shown only when trigger = slash) ── %>
+    <div id="wf-slash-options-panel" class="wf-slash-options-panel" style="<%= currentTriggerType === 'slash' ? '' : 'display:none' %>">
+      <div class="wf-slash-options-panel__header">
+        <div class="wf-slash-options-panel__title">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+          Slash Command Options
+        </div>
+        <button id="wf-add-slash-option" class="wf-btn wf-btn--sm wf-btn--secondary" type="button">+ Add Option</button>
+      </div>
+      <div id="wf-slash-options-list" class="wf-slash-options-list"></div>
+      <p class="wf-slash-options-panel__hint">
+        Use <code>{option.name}</code> in your blocks to reference an option's value at runtime.
+      </p>
+    </div>
 
     <%# ── PALETTE (left) ── %>
     <aside id="wf-palette" class="wf-palette" role="complementary" aria-label="Block palette"></aside>

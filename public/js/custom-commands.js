@@ -21,7 +21,10 @@
   function init(guildId) {
     _guildId = guildId;
     document.addEventListener('sectionActivated', (e) => {
-      if (e.detail?.section === 'custom-commands' && !_loaded) load();
+      if (e.detail?.section === 'custom-commands') {
+        _loaded = false; // reset so re-activation always re-fetches
+        load();
+      }
     });
     const sec = document.getElementById('section-custom-commands');
     if (sec && sec.style.display !== 'none' && !_loaded) load();
