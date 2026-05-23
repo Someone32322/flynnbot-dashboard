@@ -103,6 +103,14 @@ function cmdToEditorFormat(cmd) {
     blocks:       cmd.blocks       || [],
     variables:    Array.isArray(cmd.variables)    ? cmd.variables    : [],
     slashOptions: Array.isArray(cmd.slashOptions) ? cmd.slashOptions : [],
+    eventTrigger: cmd.eventTrigger
+      ? {
+          emoji:     cmd.eventTrigger.emoji     || null,
+          messageId: cmd.eventTrigger.messageId || null,
+          channelId: cmd.eventTrigger.channelId || null,
+          interval:  cmd.eventTrigger.interval  || '1h',
+        }
+      : null,
   };
 }
 

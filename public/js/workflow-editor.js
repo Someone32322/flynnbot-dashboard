@@ -1757,6 +1757,12 @@
         blocks:       raw.blocks       || [],
         variables:    raw.variables    || [],
         slashOptions: Array.isArray(raw.slashOptions) ? raw.slashOptions : [],
+        eventTrigger: {
+          emoji:     raw.eventTrigger?.emoji     || null,
+          messageId: raw.eventTrigger?.messageId || null,
+          channelId: raw.eventTrigger?.channelId || null,
+          interval:  raw.eventTrigger?.interval  || '1h',
+        },
       };
 
       this._ensureIds(this.state.blocks);
@@ -1906,7 +1912,8 @@
         permissions:  this.state.permissions,
         blocks:       this._stripIds(this.state.blocks),
         variables:    this.state.variables,
-        slashOptions: this.state.slashOptions,
+        slashOptions:  this.state.slashOptions,
+        eventTrigger:  this.state.eventTrigger,
       };
 
       try {
@@ -1996,6 +2003,7 @@
           blocks:       this._stripIds(this.state.blocks),
           variables:    this.state.variables,
           slashOptions: this.state.slashOptions,
+          eventTrigger: this.state.eventTrigger,
           enabled:      this.state.enabled,
           savedAt:      Date.now(),
         };
@@ -2087,6 +2095,8 @@
       // Init slash options editor (reads state.slashOptions, binds add button)
       this.slashOptionsEditor = new SlashOptionsEditor(this);
       this.slashOptionsEditor.render();
+      // Init event trigger config panel (reads state.eventTrigger, binds inputs)
+      this._bindEventTriggerPanel();
       this._updateTriggerValueVisibility();
     }
 
@@ -2094,16 +2104,70 @@
       const triggerSel      = qs('#wf-trigger-type');
       const triggerValRow   = qs('#wf-trigger-value-row');
       const slashOptsPanel  = qs('#wf-slash-options-panel');
+      const etPanel         = qs('#wf-event-trigger-panel');
       if (!triggerSel) return;
       const v = (triggerSel.value || '').toLowerCase();
-      const needsValue = ['slash', 'prefix', 'exact', 'contains', 'regex', 'startsWith', 'startswith'].includes(v);
+
+      // trigger value input: show for text-matching + component triggers
+      const needsValue = ['slash', 'prefix', 'exact', 'contains', 'regex', 'startswith', 'button', 'select_menu'].includes(v);
       if (triggerValRow) {
         if (needsValue) { triggerValRow.removeAttribute('hidden'); triggerValRow.style.display = ''; }
         else            { triggerValRow.style.display = 'none'; }
       }
+
+      // slash options panel
       if (slashOptsPanel) {
         slashOptsPanel.style.display = (v === 'slash') ? '' : 'none';
       }
+
+      // event trigger config panel
+      const EVENT_TYPES = ['reaction_add', 'reaction_remove', 'voice_join', 'voice_leave', 'message_delete', 'scheduled'];
+      if (etPanel) {
+        if (EVENT_TYPES.includes(v)) {
+          etPanel.style.display = '';
+          etPanel.querySelectorAll('.et-section').forEach(sec => {
+            const forTypes = (sec.dataset.for || '').split(' ');
+            sec.style.display = forTypes.includes(v) ? '' : 'none';
+          });
+        } else {
+          etPanel.style.display = 'none';
+        }
+      }
+    }
+
+    _refreshEventTriggerUI() {
+      const et = this.state.eventTrigger || {};
+      const setVal = (id, val) => { const e = qs(`#${id}`); if (e) e.value = val || ''; };
+      setVal('et-emoji',      et.emoji);
+      setVal('et-message-id', et.messageId);
+      setVal('et-channel-id', et.channelId);
+      const intEl = qs('#et-interval');
+      if (intEl) intEl.value = et.interval || '1h';
+    }
+
+    _bindEventTriggerPanel() {
+      const bindInput = (id, field) => {
+        const input = qs(`#${id}`);
+        if (!input) return;
+        input.addEventListener('input', () => {
+          this.state.eventTrigger[field] = input.value.trim() || null;
+          this._markDirty();
+        });
+      };
+      const bindSelect = (id, field) => {
+        const sel = qs(`#${id}`);
+        if (!sel) return;
+        sel.addEventListener('change', () => {
+          this.state.eventTrigger[field] = sel.value || '1h';
+          this._markDirty();
+        });
+      };
+      bindInput('et-emoji',      'emoji');
+      bindInput('et-message-id', 'messageId');
+      bindInput('et-channel-id', 'channelId');
+      bindSelect('et-interval',  'interval');
+      // Load initial values
+      this._refreshEventTriggerUI();
     }
 
     _bindBeforeUnload() {
@@ -2156,6 +2220,7 @@
         blocks:       this._stripIds(this.state.blocks),
         variables:    this.state.variables,
         slashOptions: this.state.slashOptions,
+        eventTrigger: this.state.eventTrigger,
       };
 
       const overlay = el('div', { class: 'wf-json-overlay' });
@@ -2218,6 +2283,12 @@
         this.state.permissions  = parsed.permissions  || {};
         this.state.variables    = Array.isArray(parsed.variables)    ? parsed.variables    : [];
         this.state.slashOptions = Array.isArray(parsed.slashOptions) ? parsed.slashOptions : [];
+        this.state.eventTrigger = {
+          emoji:     parsed.eventTrigger?.emoji     || null,
+          messageId: parsed.eventTrigger?.messageId || null,
+          channelId: parsed.eventTrigger?.channelId || null,
+          interval:  parsed.eventTrigger?.interval  || '1h',
+        };
         this.state.blocks       = Array.isArray(parsed.blocks)       ? parsed.blocks       : [];
         this._ensureIds(this.state.blocks);
         this._markDirty();
@@ -2232,6 +2303,7 @@
         const enabledTog = qs('#wf-enabled-toggle');
         if (enabledTog) enabledTog.checked = this.state.enabled;
         this._updateTriggerValueVisibility();
+        this._refreshEventTriggerUI();
         this.slashOptionsEditor?.render();
         this.canvas.render();
         this.propsPanel.clear();

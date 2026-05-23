@@ -2424,6 +2424,27 @@ function sanitizeCCSlashOptions(raw) {
   }).filter(Boolean);
 }
 
+function sanitizeEventTrigger(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const result = {};
+  if (raw.emoji !== undefined && raw.emoji !== null) {
+    result.emoji = String(raw.emoji).slice(0, 100) || null;
+  }
+  if (raw.messageId !== undefined && raw.messageId !== null) {
+    const mid = String(raw.messageId).trim();
+    result.messageId = /^\d{10,20}$/.test(mid) ? mid : null;
+  }
+  if (raw.channelId !== undefined && raw.channelId !== null) {
+    const cid = String(raw.channelId).trim();
+    result.channelId = /^\d{10,20}$/.test(cid) ? cid : null;
+  }
+  const VALID_INTERVALS = new Set(['1m','5m','15m','30m','1h','6h','12h','24h']);
+  if (raw.interval !== undefined && raw.interval !== null) {
+    result.interval = VALID_INTERVALS.has(raw.interval) ? raw.interval : '1h';
+  }
+  return Object.keys(result).length ? result : null;
+}
+
 function normalizeCCBody(body) {
   const trigObj = body.trigger !== null && typeof body.trigger === 'object' ? body.trigger : null;
   const perm    = body.permissions !== null && typeof body.permissions === 'object' ? body.permissions : {};
@@ -2438,6 +2459,7 @@ function normalizeCCBody(body) {
     tags:              body.tags,
     category:          body.category,
     slashOptions:      sanitizeCCSlashOptions(body.slashOptions),
+    eventTrigger:      sanitizeEventTrigger(body.eventTrigger),
     allowedRoles:      perm.allowedRoles      !== undefined ? perm.allowedRoles      : body.allowedRoles,
     allowedChannels:   perm.allowedChannels   !== undefined ? perm.allowedChannels   : body.allowedChannels,
     caseSensitive:     perm.caseSensitive      !== undefined ? perm.caseSensitive     : body.caseSensitive,
@@ -2515,8 +2537,8 @@ function validateCCBody(body) {
     return 'name must be 1-32 chars: lowercase letters, digits, hyphens, underscores only';
   }
   const ttype = normalizeCCTriggerType(triggerType);
-  // Text-based triggers require a non-empty trigger value; event-based do not
-  const needsTriggerValue = ['slash', 'prefix', 'contains', 'exact', 'regex', 'startsWith'].includes(ttype);
+  // Text-based and component triggers require a non-empty trigger value; pure event-based do not
+  const needsTriggerValue = ['slash', 'prefix', 'contains', 'exact', 'regex', 'startsWith', 'button', 'select_menu'].includes(ttype);
   if (needsTriggerValue && (!trigger || typeof trigger !== 'string' || !trigger.trim())) {
     return 'trigger value is required for this trigger type';
   }
@@ -2813,6 +2835,7 @@ router.post('/guild/:guildId/custom-commands', requireAuth, requireGuildAdmin, a
       blocks:           cleanBlocks,
       variables:        Array.isArray(n.variables) ? n.variables.slice(0, 50) : [],
       slashOptions:     n.slashOptions,
+      eventTrigger:     n.eventTrigger,
       allowedRoles:     Array.isArray(n.allowedRoles) ? n.allowedRoles.filter(r => /^\d+$/.test(r)).slice(0, 50) : [],
       allowedChannels:  Array.isArray(n.allowedChannels) ? n.allowedChannels.filter(c => /^\d+$/.test(c)).slice(0, 50) : [],
       cooldownSeconds:  Math.max(0, Math.min(86400, Number(n.cooldownSeconds) || 0)),
@@ -2863,6 +2886,7 @@ router.patch('/guild/:guildId/custom-commands/:id', requireAuth, requireGuildAdm
       blocks:           cleanBlocks,
       variables:        Array.isArray(n.variables) ? n.variables.slice(0, 50) : [],
       slashOptions:     n.slashOptions,
+      eventTrigger:     n.eventTrigger,
       allowedRoles:     Array.isArray(n.allowedRoles) ? n.allowedRoles.filter(r => /^\d+$/.test(r)).slice(0, 50) : [],
       allowedChannels:  Array.isArray(n.allowedChannels) ? n.allowedChannels.filter(c => /^\d+$/.test(c)).slice(0, 50) : [],
       cooldownSeconds:  Math.max(0, Math.min(86400, Number(n.cooldownSeconds) || 0)),
