@@ -1180,7 +1180,18 @@
         const isTag = el.dataset.fieldType === 'tags';
         _state.trigger[field] = isTag ? el.value.split(',').map(s => s.trim()).filter(Boolean) : el.value;
         markDirty();
-        if (field === 'value') updateTriggerBadge();
+        if (field === 'value') {
+          updateTriggerBadge();
+          // For slash commands, keep _state.name in sync with the trigger command name
+          if (_state.trigger.type === 'slash') {
+            const cleaned = el.value.toLowerCase().replace(/[^a-z0-9-_]/g, '');
+            _state.name = cleaned;
+            const topbarName = document.getElementById('cb-cmd-name');
+            if (topbarName) topbarName.value = cleaned;
+            const propsName = document.getElementById('cp-name');
+            if (propsName) propsName.value = cleaned;
+          }
+        }
       });
     });
     document.querySelectorAll('.cb-trigger-toggle').forEach(el => {
@@ -1431,8 +1442,16 @@
     const descEl = body.querySelector('#cp-desc');
     const enabledEl = body.querySelector('#cp-enabled');
     if (nameEl) nameEl.addEventListener('input', (e) => {
-      _state.name = e.target.value.trim().toLowerCase().replace(/\s+/g, '-');
-      document.getElementById('cb-cmd-name').value = _state.name;
+      const cleaned = e.target.value.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '');
+      _state.name = cleaned;
+      document.getElementById('cb-cmd-name').value = cleaned;
+      // For slash commands, keep trigger.value in sync
+      if (_state.trigger.type === 'slash') {
+        _state.trigger.value = cleaned;
+        const trigVal = document.querySelector('.cb-trigger-field-input[data-field="value"]');
+        if (trigVal) trigVal.value = cleaned;
+        updateTriggerBadge();
+      }
       markDirty();
     });
     if (descEl) descEl.addEventListener('input', (e) => { _state.description = e.target.value; markDirty(); });
@@ -2182,10 +2201,11 @@
 
   function loadCommand(data) {
     _state._id = data._id || data.id || null;
-    _state.name = data.name || '';
-    _state.description = data.description || '';
     _state.trigger = data.trigger || { type: 'slash', value: '', options: [] };
     if (!_state.trigger.options) _state.trigger.options = [];
+    // For slash commands, fall back to trigger.value if name is not stored separately
+    _state.name = data.name || (_state.trigger.type === 'slash' ? _state.trigger.value : '') || '';
+    _state.description = data.description || '';
     _state.conditions = data.conditions || {};
     _state.blocks = (data.blocks || []).map(b => ({ type: b.type, data: b.data || {} }));
     _state.enabled = data.enabled !== false;
@@ -2333,6 +2353,13 @@
         _state.name = cleaned;
         const propsName = document.getElementById('cp-name');
         if (propsName) propsName.value = cleaned;
+        // For slash commands, keep trigger.value in sync with the topbar name
+        if (_state.trigger.type === 'slash') {
+          _state.trigger.value = cleaned;
+          const trigVal = document.querySelector('.cb-trigger-field-input[data-field="value"]');
+          if (trigVal) trigVal.value = cleaned;
+          updateTriggerBadge();
+        }
         markDirty();
       });
     }
