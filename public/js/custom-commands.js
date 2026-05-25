@@ -180,7 +180,7 @@
             <svg style="position:absolute;left:9px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-4)" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input id="ccSearchInput" class="cc-search-input" type="text" placeholder="Search commands..." style="padding-left:28px;width:100%" value="${esc(_filterQuery)}">
           </div>
-          <select id="ccTypeFilter" class="cc-select" style="min-width:130px">
+          <select id="ccTypeFilter" class="cc-select" style="min-width:130px;width:auto;flex-shrink:0">
             <option value="">All Triggers</option>
             ${TRIGGER_TYPES.map(t => `<option value="${esc(t)}"${_filterType === t ? ' selected' : ''}>${esc(TRIGGER_LABELS[t] || t)}</option>`).join('')}
           </select>
