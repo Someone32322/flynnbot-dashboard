@@ -13,7 +13,6 @@ const { connectDb } = require('./lib/db');
 const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
 const apiRoutes = require('./routes/api');
-const workflowRoutes = require('./routes/workflows');
 const statusRoutes = require('./routes/status');
 const changelogRoutes = require('./routes/changelog');
 const ownerRoutes = require('./routes/owner');
@@ -108,7 +107,6 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api', apiLimiter, apiRoutes);
-app.use('/api', apiLimiter, workflowRoutes);
 app.use('/dashboard', dashboardRoutes);
 app.use('/status', statusRoutes);
 app.use('/changelog', changelogRoutes);
