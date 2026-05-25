@@ -2459,8 +2459,6 @@
       }
     });
 
-    /* ── Auto-validate on load ──────────────────────────── */
-    renderValidationBar(validateCommand());
   }
 
   /* Start */
