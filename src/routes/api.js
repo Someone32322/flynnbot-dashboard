@@ -4935,4 +4935,43 @@ router.post('/guild/:guildId/guild-commands/import', requireAuth, async (req, re
   }
 });
 
+// POST /api/guild/:guildId/guild-commands/:id/duplicate
+router.post('/guild/:guildId/guild-commands/:id/duplicate', requireAuth, async (req, res) => {
+  const { guildId, id } = req.params;
+  try {
+    const src = await GuildCommand.findOne({ _id: id, guildId }).lean();
+    if (!src) return res.status(404).json({ error: 'Command not found' });
+    const { _id, __v, discordCommandId, metadata, createdAt, updatedAt, ...rest } = src;
+    // Append " (Copy)" to name and strip discord sync info
+    let copyName = (rest.name + ' copy').slice(0, 50);
+    // Ensure unique name
+    const existing = await GuildCommand.findOne({ guildId, name: copyName });
+    if (existing) copyName = (rest.name + ' copy ' + Date.now()).slice(0, 50);
+    const copy = new GuildCommand({ ...rest, guildId, name: copyName, enabled: false });
+    await copy.save();
+    res.status(201).json({ command: copy });
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to duplicate command' });
+  }
+});
+
+// POST /api/guild/:guildId/guild-commands/validate
+router.post('/guild/:guildId/guild-commands/validate', requireAuth, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const data = sanitizeGuildCommand(req.body);
+    // Check name uniqueness
+    const id = req.body._id || null;
+    const existing = await GuildCommand.findOne({
+      guildId,
+      name: data.name,
+      ...(id ? { _id: { $ne: id } } : {}),
+    });
+    if (existing) return res.status(409).json({ error: 'A command with this name already exists', field: 'name' });
+    res.json({ ok: true, data });
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Validation failed' });
+  }
+});
+
 module.exports = router;

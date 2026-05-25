@@ -1,174 +1,325 @@
 <%- include('partials/head', { title: 'Command Builder' }) %>
-<body class="dash-body">
-<%- include('partials/nav', { guild, user, activePage: 'commands' }) %>
+<link rel="stylesheet" href="/css/command-builder.css?v=20260601">
+<body class="cb-body">
+
+<!-- Server data for JS -->
+<script id="cb-server-data" type="application/json"><%- JSON.stringify({ guildId: guild.id, guildName: guild.name, cmdId: locals.cmdId || null, cmd: locals.cmd || null }) %></script>
 
 <div id="cb-app" class="cb-app">
-  <!-- ── Top Bar ──────────────────────────────────────────── -->
+
+  <!-- ══ TOP BAR ════════════════════════════════════════════════ -->
   <header class="cb-topbar">
     <div class="cb-topbar-left">
-      <a href="/dashboard/<%= guild.id %>" class="cb-back-btn" title="Back to dashboard">
+      <a href="/dashboard/<%= guild.id %>/server" class="cb-back-btn" title="Back to server dashboard">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       </a>
       <div class="cb-title-wrap">
-        <input id="cb-cmd-name" class="cb-cmd-name" type="text" placeholder="Command name..." maxlength="100" autocomplete="off" spellcheck="false" />
-        <span id="cb-trigger-badge" class="cb-trigger-badge cb-type-slash">slash</span>
+        <input id="cb-cmd-name" class="cb-cmd-name" type="text" placeholder="command-name" maxlength="50" autocomplete="off" spellcheck="false" />
+        <span id="cb-trigger-badge" class="cb-trigger-badge cb-type-slash">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <span id="cb-trigger-badge-text">slash</span>
+        </span>
       </div>
     </div>
     <div class="cb-topbar-right">
       <span id="cb-status" class="cb-status cb-status-saved">Saved</span>
-      <button id="cb-json-toggle" class="cb-btn cb-btn-ghost" title="Toggle JSON Editor">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-        JSON
+      <button id="cb-undo-btn" class="cb-icon-btn" title="Undo (Ctrl+Z)" disabled>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
       </button>
-      <button id="cb-import-btn" class="cb-btn cb-btn-ghost" title="Import JSON">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Import
+      <button id="cb-redo-btn" class="cb-icon-btn" title="Redo (Ctrl+Y)" disabled>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
       </button>
-      <button id="cb-export-btn" class="cb-btn cb-btn-ghost" title="Export JSON">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Export
+      <button id="cb-conditions-btn" class="cb-btn cb-btn-ghost cb-btn-sm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Conditions
       </button>
-      <button id="cb-sync-btn" class="cb-btn cb-btn-secondary" title="Register/sync slash command with Discord">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      <button id="cb-json-toggle" class="cb-icon-btn" title="Edit raw JSON">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      </button>
+      <button id="cb-import-btn" class="cb-icon-btn" title="Import command JSON">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </button>
+      <button id="cb-export-btn" class="cb-icon-btn" title="Export command JSON">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
+      <button id="cb-sync-btn" class="cb-btn cb-btn-secondary cb-btn-sm" title="Register or sync slash command with Discord">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         Sync
       </button>
-      <button id="cb-save-btn" class="cb-btn cb-btn-primary">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      <button id="cb-save-btn" class="cb-btn cb-btn-primary cb-btn-sm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
         Save
       </button>
     </div>
   </header>
 
-  <!-- ── Main layout ───────────────────────────────────────── -->
-  <div class="cb-layout">
+  <!-- ══ TRIGGER CONFIG BAR ════════════════════════════════════ -->
+  <div id="cb-trigger-bar" class="cb-trigger-bar">
+    <div id="cb-trigger-inner" class="cb-trigger-inner">
+      <!-- Populated by JS based on trigger type -->
+    </div>
+  </div>
 
-    <!-- ── Left Sidebar: Block Picker ──────────────────────── -->
-    <aside class="cb-sidebar">
-      <div class="cb-sidebar-head">
+  <!-- ══ WORKSPACE (3 panels) ═════════════════════════════════ -->
+  <div class="cb-workspace">
+
+    <!-- ── LEFT: Block Palette ────────────────────────────── -->
+    <aside class="cb-palette">
+      <div class="cb-palette-head">
         <div class="cb-search-wrap">
           <svg class="cb-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="cb-block-search" type="text" class="cb-search-input" placeholder="Search blocks..." />
+          <input id="cb-palette-search" type="text" class="cb-search-input" placeholder="Search blocks..." />
         </div>
       </div>
-      <div id="cb-block-categories" class="cb-block-categories"></div>
+      <div id="cb-palette-body" class="cb-palette-body">
+        <!-- Populated by JS -->
+      </div>
     </aside>
 
-    <!-- ── Canvas ──────────────────────────────────────────── -->
+    <!-- ── CENTER: Canvas ────────────────────────────────── -->
     <main class="cb-canvas">
-      <div id="cb-blocks-container" class="cb-blocks-container">
-        <!-- Trigger block + action blocks rendered here by JS -->
+      <div id="cb-validation-bar" style="display:none; position:relative;"></div>
+      <div id="cb-canvas-inner" class="cb-canvas-inner">
+        <!-- Blocks rendered here by JS -->
       </div>
       <div class="cb-canvas-footer">
-        <button id="cb-add-first-block" class="cb-add-block-btn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <button id="cb-add-block-btn" class="cb-add-block-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add Block
         </button>
+        <span id="cb-block-count" class="cb-block-count"></span>
       </div>
     </main>
 
-    <!-- ── JSON Panel ───────────────────────────────────────── -->
-    <aside id="cb-json-panel" class="cb-json-panel cb-json-hidden">
-      <div class="cb-json-head">
-        <span>JSON Preview</span>
-        <button id="cb-json-copy" class="cb-btn cb-btn-ghost cb-btn-sm">Copy</button>
+    <!-- ── RIGHT: Properties Panel ─────────────────────── -->
+    <aside class="cb-props" id="cb-props">
+      <div class="cb-props-head">
+        <span class="cb-props-title" id="cb-props-title">Command</span>
+        <button id="cb-props-vars-btn" class="cb-btn cb-btn-ghost cb-btn-xs" title="Variable browser" style="display:none">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          Vars
+        </button>
       </div>
-      <textarea id="cb-json-editor" class="cb-json-editor" spellcheck="false" autocomplete="off" wrap="off"></textarea>
-      <div class="cb-json-actions">
-        <button id="cb-json-apply" class="cb-btn cb-btn-primary cb-btn-sm">Apply JSON</button>
-        <span class="cb-json-hint">Edit JSON directly and click Apply</span>
+      <div class="cb-props-tabs" id="cb-props-tabs">
+        <button class="cb-props-tab active" data-tab="config">Config</button>
+        <button class="cb-props-tab" data-tab="vars">Variables</button>
+      </div>
+      <div id="cb-props-body" class="cb-props-body">
+        <!-- Populated by JS when block selected or command info shown -->
       </div>
     </aside>
-  </div>
 
-  <!-- ── Block Picker Modal ────────────────────────────────── -->
-  <div id="cb-picker-modal" class="cb-modal cb-modal-hidden" role="dialog" aria-modal="true" aria-label="Pick a block">
-    <div class="cb-modal-backdrop"></div>
-    <div class="cb-modal-box">
-      <div class="cb-modal-head">
-        <h3>Add Block</h3>
-        <button class="cb-modal-close" id="cb-picker-close" aria-label="Close">✕</button>
-      </div>
-      <input id="cb-picker-search" type="text" class="cb-picker-search" placeholder="Search blocks..." autocomplete="off" />
-      <div id="cb-picker-list" class="cb-picker-list"></div>
+  </div><!-- /cb-workspace -->
+
+</div><!-- /cb-app -->
+
+<!-- ══ UNSAVED BAR ═══════════════════════════════════════════ -->
+<div id="cb-unsaved-bar" class="cb-unsaved-bar">
+  <div class="cb-unsaved-text">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Unsaved changes
+  </div>
+  <div class="cb-unsaved-actions">
+    <button id="cb-discard-btn" class="cb-btn cb-btn-ghost cb-btn-sm">Discard</button>
+    <button id="cb-unsaved-save-btn" class="cb-btn cb-btn-primary cb-btn-sm">Save now</button>
+  </div>
+</div>
+
+<!-- ══ JSON PANEL ════════════════════════════════════════════ -->
+<div id="cb-json-panel" class="cb-json-panel">
+  <div class="cb-json-panel-head">
+    <span style="font-weight:600;font-size:14px">JSON Editor</span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="cb-json-apply" class="cb-btn cb-btn-secondary cb-btn-sm">Apply JSON</button>
+      <button id="cb-json-close" class="cb-icon-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
     </div>
   </div>
+  <div class="cb-json-editor-wrap">
+    <textarea id="cb-json-textarea" class="cb-json-textarea" spellcheck="false"></textarea>
+  </div>
+</div>
 
-  <!-- ── Conditions Modal ─────────────────────────────────── -->
-  <div id="cb-conditions-modal" class="cb-modal cb-modal-hidden" role="dialog" aria-modal="true" aria-label="Command Conditions">
-    <div class="cb-modal-backdrop"></div>
-    <div class="cb-modal-box cb-modal-wide">
-      <div class="cb-modal-head">
-        <h3>Command Conditions</h3>
-        <button class="cb-modal-close" id="cb-cond-close">✕</button>
+<!-- ══ BLOCK PICKER MODAL ════════════════════════════════════ -->
+<div id="cb-picker-modal" class="cb-modal-overlay" role="dialog" aria-modal="true" aria-label="Add block">
+  <div class="cb-modal-box cb-modal-wide">
+    <div class="cb-modal-head">
+      <h3>Add Block</h3>
+      <button class="cb-modal-close" data-close-modal="cb-picker-modal">&times;</button>
+    </div>
+    <div class="cb-modal-body">
+      <div style="margin-bottom:12px">
+        <div class="cb-search-wrap">
+          <svg class="cb-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="cb-picker-search" type="text" class="cb-search-input" placeholder="Search blocks..." style="width:100%" />
+        </div>
+      </div>
+      <div id="cb-picker-grid" class="cb-picker-grid">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SLASH OPTIONS MODAL ══════════════════════════════════ -->
+<div id="cb-options-modal" class="cb-modal-overlay" role="dialog" aria-modal="true" aria-label="Slash command options">
+  <div class="cb-modal-box cb-modal-wide">
+    <div class="cb-modal-head">
+      <h3>Slash Command Options</h3>
+      <button class="cb-modal-close" data-close-modal="cb-options-modal">&times;</button>
+    </div>
+    <div class="cb-modal-body">
+      <div id="cb-options-list" class="cb-opt-list"></div>
+      <button id="cb-options-add" class="cb-add-row-btn" style="margin-top:10px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Option
+      </button>
+    </div>
+    <div class="cb-modal-footer">
+      <button class="cb-btn cb-btn-ghost" data-close-modal="cb-options-modal">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ OPTION EDITOR MODAL ═══════════════════════════════════ -->
+<div id="cb-option-edit-modal" class="cb-modal-overlay" role="dialog" aria-modal="true" aria-label="Edit option">
+  <div class="cb-modal-box">
+    <div class="cb-modal-head">
+      <h3 id="cb-option-edit-title">Edit Option</h3>
+      <button class="cb-modal-close" data-close-modal="cb-option-edit-modal">&times;</button>
+    </div>
+    <div class="cb-modal-body" id="cb-option-edit-body">
+      <!-- Populated by JS -->
+    </div>
+    <div class="cb-modal-footer">
+      <button id="cb-option-delete-btn" class="cb-btn cb-btn-danger cb-btn-sm" style="margin-right:auto">Delete</button>
+      <button class="cb-btn cb-btn-ghost" data-close-modal="cb-option-edit-modal">Cancel</button>
+      <button id="cb-option-save-btn" class="cb-btn cb-btn-primary">Save Option</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CONDITIONS MODAL ══════════════════════════════════════ -->
+<div id="cb-conditions-modal" class="cb-modal-overlay" role="dialog" aria-modal="true" aria-label="Conditions">
+  <div class="cb-modal-box cb-modal-wide">
+    <div class="cb-modal-head">
+      <h3>Command Conditions</h3>
+      <button class="cb-modal-close" data-close-modal="cb-conditions-modal">&times;</button>
+    </div>
+    <div class="cb-modal-body">
+      <p style="font-size:13px;color:var(--text-3);margin:0 0 16px">Restrict when this command can run. All conditions must pass.</p>
+      <div class="cb-field-group">
+        <label class="cb-label">Required Roles <span class="cb-label-hint">(user must have at least one)</span></label>
+        <div id="cb-cond-roles-wrap" class="cb-tags-wrap" id="cb-cond-roles-wrap">
+          <input type="text" class="cb-tag-input" id="cb-cond-roles-input" placeholder="Search roles..." autocomplete="off" />
+        </div>
+        <div id="cb-cond-roles-dropdown" class="cb-roles-dropdown" style="display:none;position:relative;max-height:160px;overflow-y:auto;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;margin-top:2px"></div>
+      </div>
+      <div class="cb-field-group">
+        <label class="cb-label">Blacklisted Roles <span class="cb-label-hint">(command disabled if user has any)</span></label>
+        <div id="cb-cond-blackroles-wrap" class="cb-tags-wrap">
+          <input type="text" class="cb-tag-input" id="cb-cond-blackroles-input" placeholder="Search roles..." autocomplete="off" />
+        </div>
+        <div id="cb-cond-blackroles-dropdown" style="display:none;position:relative;max-height:160px;overflow-y:auto;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;margin-top:2px"></div>
+      </div>
+      <div class="cb-field-group">
+        <label class="cb-label">Allowed Channels <span class="cb-label-hint">(empty = all channels)</span></label>
+        <div id="cb-cond-channels-wrap" class="cb-tags-wrap">
+          <input type="text" class="cb-tag-input" id="cb-cond-channels-input" placeholder="Search channels..." autocomplete="off" />
+        </div>
+        <div id="cb-cond-channels-dropdown" style="display:none;position:relative;max-height:160px;overflow-y:auto;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;margin-top:2px"></div>
       </div>
       <div class="cb-cond-grid">
         <div class="cb-field-group">
-          <label class="cb-label">Allowed Roles <span class="cb-hint">(must have one)</span></label>
-          <input id="cond-allowed-roles" type="text" class="cb-input" placeholder="Role IDs, comma-separated" />
+          <label class="cb-label">Cooldown</label>
+          <div class="cb-number-wrap">
+            <input id="cb-cooldown-val" type="number" class="cb-input" placeholder="0" min="0" max="86400" />
+            <span class="cb-number-unit">sec</span>
+          </div>
         </div>
         <div class="cb-field-group">
-          <label class="cb-label">Ignored Roles <span class="cb-hint">(blocked if has any)</span></label>
-          <input id="cond-ignored-roles" type="text" class="cb-input" placeholder="Role IDs, comma-separated" />
-        </div>
-        <div class="cb-field-group">
-          <label class="cb-label">Allowed Channels</label>
-          <input id="cond-allowed-channels" type="text" class="cb-input" placeholder="Channel IDs, comma-separated" />
-        </div>
-        <div class="cb-field-group">
-          <label class="cb-label">Ignored Channels</label>
-          <input id="cond-ignored-channels" type="text" class="cb-input" placeholder="Channel IDs, comma-separated" />
-        </div>
-        <div class="cb-field-group">
-          <label class="cb-label">Cooldown (seconds)</label>
-          <input id="cond-cooldown-seconds" type="number" class="cb-input" placeholder="0 = none" min="0" max="86400" />
-        </div>
-        <div class="cb-field-group">
-          <label class="cb-label">Cooldown Scope</label>
-          <select id="cond-cooldown-scope" class="cb-select">
+          <label class="cb-label">Scope</label>
+          <select id="cb-cooldown-scope" class="cb-select">
             <option value="user">Per User</option>
-            <option value="channel">Per Channel</option>
             <option value="guild">Per Server</option>
+            <option value="channel">Per Channel</option>
           </select>
         </div>
-        <div class="cb-field-group cb-full">
-          <label class="cb-toggle-label">
-            <input id="cond-ephemeral" type="checkbox" class="cb-toggle-input" />
-            <span class="cb-toggle-track"></span>
-            Ephemeral Reply (only visible to triggering user)
-          </label>
+        <div class="cb-field-group">
+          <label class="cb-label">Permissions</label>
+          <select id="cb-cond-perms" class="cb-select">
+            <option value="">Anyone</option>
+            <option value="MANAGE_MESSAGES">Manage Messages</option>
+            <option value="MANAGE_CHANNELS">Manage Channels</option>
+            <option value="MANAGE_ROLES">Manage Roles</option>
+            <option value="KICK_MEMBERS">Kick Members</option>
+            <option value="BAN_MEMBERS">Ban Members</option>
+            <option value="MODERATE_MEMBERS">Timeout Members</option>
+            <option value="ADMINISTRATOR">Administrator</option>
+          </select>
+        </div>
+        <div class="cb-field-group">
+          <label class="cb-label">Bot Perms</label>
+          <select id="cb-cond-bot-perms" class="cb-select">
+            <option value="">Default</option>
+            <option value="SEND_MESSAGES">Send Messages</option>
+            <option value="MANAGE_MESSAGES">Manage Messages</option>
+            <option value="EMBED_LINKS">Embed Links</option>
+            <option value="MANAGE_ROLES">Manage Roles</option>
+            <option value="KICK_MEMBERS">Kick Members</option>
+            <option value="BAN_MEMBERS">Ban Members</option>
+          </select>
         </div>
       </div>
-      <div class="cb-modal-actions">
-        <button id="cb-cond-save" class="cb-btn cb-btn-primary">Save Conditions</button>
-      </div>
+    </div>
+    <div class="cb-modal-footer">
+      <button class="cb-btn cb-btn-ghost" data-close-modal="cb-conditions-modal">Cancel</button>
+      <button id="cb-conditions-save-btn" class="cb-btn cb-btn-primary">Save Conditions</button>
     </div>
   </div>
-
-  <!-- ── Import Modal ─────────────────────────────────────── -->
-  <div id="cb-import-modal" class="cb-modal cb-modal-hidden" role="dialog" aria-modal="true">
-    <div class="cb-modal-backdrop"></div>
-    <div class="cb-modal-box">
-      <div class="cb-modal-head">
-        <h3>Import Command JSON</h3>
-        <button class="cb-modal-close" id="cb-import-close">✕</button>
-      </div>
-      <textarea id="cb-import-text" class="cb-json-editor" rows="10" placeholder="Paste exported command JSON here..." spellcheck="false"></textarea>
-      <div class="cb-modal-actions">
-        <button id="cb-import-confirm" class="cb-btn cb-btn-primary">Import</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Hidden data passed from server -->
-  <script id="cb-server-data" type="application/json"><%- JSON.stringify({
-    guildId: guild.id,
-    guildName: guild.name,
-    cmdId: locals.cmdId || null,
-    cmd: locals.cmd ? (typeof locals.cmd === 'string' ? JSON.parse(locals.cmd) : locals.cmd) : null,
-  }) %></script>
 </div>
 
-<!-- ── Scripts ────────────────────────────────────────────── -->
+<!-- ══ IMPORT MODAL ═══════════════════════════════════════════ -->
+<div id="cb-import-modal" class="cb-modal-overlay" role="dialog" aria-modal="true" aria-label="Import command">
+  <div class="cb-modal-box">
+    <div class="cb-modal-head">
+      <h3>Import Command JSON</h3>
+      <button class="cb-modal-close" data-close-modal="cb-import-modal">&times;</button>
+    </div>
+    <div class="cb-modal-body">
+      <div class="cb-field-group">
+        <label class="cb-label">Paste JSON</label>
+        <textarea id="cb-import-textarea" class="cb-textarea cb-textarea-lg" placeholder='{"name":"my-command","trigger":{"type":"slash"},"blocks":[...]}'></textarea>
+      </div>
+    </div>
+    <div class="cb-modal-footer">
+      <button class="cb-btn cb-btn-ghost" data-close-modal="cb-import-modal">Cancel</button>
+      <button id="cb-import-apply-btn" class="cb-btn cb-btn-primary">Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EMBED EDITOR MODAL ════════════════════════════════════ -->
+<div id="cb-embed-modal" class="cb-modal-overlay" role="dialog" aria-modal="true" aria-label="Embed editor">
+  <div class="cb-modal-box cb-modal-wide">
+    <div class="cb-modal-head">
+      <h3>Embed Editor</h3>
+      <button class="cb-modal-close" data-close-modal="cb-embed-modal">&times;</button>
+    </div>
+    <div class="cb-modal-body" id="cb-embed-modal-body">
+      <!-- Populated dynamically -->
+    </div>
+    <div class="cb-modal-footer">
+      <button class="cb-btn cb-btn-ghost" data-close-modal="cb-embed-modal">Cancel</button>
+      <button id="cb-embed-save-btn" class="cb-btn cb-btn-primary">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOAST CONTAINER ═══════════════════════════════════════ -->
+<div id="cb-toasts"></div>
+
 <script src="/js/command-builder.js?v=20260601"></script>
 </body>
 </html>

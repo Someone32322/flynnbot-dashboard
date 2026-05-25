@@ -13,9 +13,11 @@
 (function () {
   'use strict';
 
-  let _guildId = null;
-  let _cmds    = [];
-  let _loaded  = false;
+  let _guildId     = null;
+  let _cmds        = [];
+  let _loaded      = false;
+  let _filterType  = '';
+  let _filterQuery = '';
 
   // ── Init ──────────────────────────────────────────────────────
   function init(guildId) {
@@ -56,6 +58,8 @@
     const container = document.getElementById('customCommandsContent');
     if (!container) return;
 
+    const TRIGGER_TYPES = ['slash','prefix','contains','exact','regex','startsWith','button','select_menu','reaction_add','reaction_remove','member_join','member_leave','voice_join','voice_leave','message_delete','scheduled'];
+
     const TRIGGER_ICONS = {
       slash:           `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>`,
       prefix:          `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>`,
@@ -93,7 +97,18 @@
       scheduled:       'Scheduled',
     };
 
-    const listHTML = _cmds.length === 0 ? `
+    const filtered = _cmds.filter(cmd => {
+      if (_filterType && (cmd.trigger?.type || 'exact') !== _filterType) return false;
+      if (_filterQuery) {
+        const q = _filterQuery.toLowerCase();
+        const name = (cmd.name || '').toLowerCase();
+        const val = (cmd.trigger?.value || '').toLowerCase();
+        if (!name.includes(q) && !val.includes(q)) return false;
+      }
+      return true;
+    });
+
+    const listHTML = filtered.length === 0 && !_filterType && !_filterQuery ? `
       <div class="cc-empty">
         <div class="cc-empty-icon">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
@@ -105,9 +120,14 @@
           Create First Command
         </button>
       </div>
+    ` : filtered.length === 0 ? `
+      <div class="cc-empty" style="padding:32px 0">
+        <p class="cc-empty-title" style="font-size:15px">No results</p>
+        <p class="cc-empty-sub">Try adjusting your search or filter</p>
+      </div>
     ` : `
       <div class="cc-list" id="ccList">
-        ${_cmds.map((cmd) => {
+        ${filtered.map((cmd) => {
           const ttype = cmd.trigger?.type || cmd.triggerType || 'exact';
           const blockCount = Array.isArray(cmd.blocks) ? cmd.blocks.length : 0;
           return `
@@ -127,6 +147,9 @@
               </div>
               <div class="cc-card-right">
                 <span class="cc-status-dot ${cmd.enabled === false ? '' : 'cc-status-dot--on'}" title="${cmd.enabled === false ? 'Disabled' : 'Enabled'}"></span>
+                <button class="cc-icon-btn" data-action="duplicate" data-id="${esc(cmd._id)}" title="Duplicate command">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                </button>
                 <button class="cc-icon-btn" data-action="edit" data-id="${esc(cmd._id)}" title="Open in builder">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
@@ -152,14 +175,29 @@
             New Command
           </button>
         </div>
+        <div class="cc-toolbar" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+          <div style="position:relative;flex:1;min-width:160px">
+            <svg style="position:absolute;left:9px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--text-4)" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="ccSearchInput" class="cc-search-input" type="text" placeholder="Search commands..." style="padding-left:28px;width:100%" value="${esc(_filterQuery)}">
+          </div>
+          <select id="ccTypeFilter" class="cc-select" style="min-width:130px">
+            <option value="">All Triggers</option>
+            ${TRIGGER_TYPES.map(t => `<option value="${esc(t)}"${_filterType === t ? ' selected' : ''}>${esc(TRIGGER_LABELS[t] || t)}</option>`).join('')}
+          </select>
+        </div>
         ${listHTML}
       </div>
     `;
 
     document.getElementById('ccNewBtn')?.addEventListener('click', () => openBuilder(null));
     document.getElementById('ccEmptyNewBtn')?.addEventListener('click', () => openBuilder(null));
+    document.getElementById('ccSearchInput')?.addEventListener('input', (e) => { _filterQuery = e.target.value; renderList(); });
+    document.getElementById('ccTypeFilter')?.addEventListener('change', (e) => { _filterType = e.target.value; renderList(); });
     document.querySelectorAll('[data-action="edit"]').forEach(btn =>
       btn.addEventListener('click', () => openBuilder(btn.dataset.id))
+    );
+    document.querySelectorAll('[data-action="duplicate"]').forEach(btn =>
+      btn.addEventListener('click', () => duplicateCmd(btn.dataset.id))
     );
     document.querySelectorAll('[data-action="delete"]').forEach(btn =>
       btn.addEventListener('click', () => deleteCmd(btn.dataset.id))
@@ -171,6 +209,20 @@
     window.location.href = id
       ? `/dashboard/${_guildId}/commands/builder/${id}`
       : `/dashboard/${_guildId}/commands/builder`;
+  }
+
+  // ── Duplicate command ─────────────────────────────────────────
+  async function duplicateCmd(id) {
+    try {
+      const res = await fetch(`/api/guild/${_guildId}/guild-commands/${id}/duplicate`, { method: 'POST' });
+      if (!res.ok) throw new Error('Duplicate failed');
+      const data = await res.json();
+      _cmds.push(data.command);
+      window.showToast?.('Command duplicated.', 'success');
+      renderList();
+    } catch {
+      window.showToast?.('Failed to duplicate command.', 'error');
+    }
   }
 
   // ── Delete command ────────────────────────────────────────────
