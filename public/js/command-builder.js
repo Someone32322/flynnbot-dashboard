@@ -24,7 +24,6 @@
     { key: 'storage',   label: 'Storage',   color: '#43b581', icon: '💾' },
     { key: 'member',    label: 'Member',    color: '#f04747', icon: '👤' },
     { key: 'channel',   label: 'Channel',   color: '#4fdc7c', icon: '#️⃣' },
-    { key: 'economy',   label: 'Economy',   color: '#faa61a', icon: '💰' },
     { key: 'leveling',  label: 'Leveling',  color: '#43b581', icon: '⭐' },
     { key: 'lookup',    label: 'Lookup',    color: '#7289da', icon: '🔍' },
     { key: 'utility',   label: 'Utility',   color: '#99aab5', icon: '🔧' },
@@ -545,40 +544,6 @@
         channel_id: { type: 'channel_picker', label: 'Log Channel', required: true, placeholder: '' },
         content:    { type: 'textarea', label: 'Log Message', required: true, placeholder: 'User {user} ran command...' },
         embeds:     { type: 'embed_list', label: 'Embed (optional)' },
-      },
-    },
-
-    /* ── ECONOMY ──────────────────────────────────────────── */
-    give_coins: {
-      category: 'economy', label: 'Give Coins', icon: '💰', color: '#faa61a',
-      description: 'Add coins to a user\'s balance',
-      schema: {
-        user_id: { type: 'text', label: 'User ID', placeholder: '{user.id}' },
-        amount:  { type: 'text', label: 'Amount', required: true, placeholder: '100 or {var.reward}' },
-      },
-    },
-    take_coins: {
-      category: 'economy', label: 'Take Coins', icon: '💸', color: '#faa61a',
-      description: 'Remove coins from a user\'s balance',
-      schema: {
-        user_id: { type: 'text', label: 'User ID', placeholder: '{user.id}' },
-        amount:  { type: 'text', label: 'Amount', required: true, placeholder: '50' },
-      },
-    },
-    set_coins: {
-      category: 'economy', label: 'Set Coins', icon: '💵', color: '#faa61a',
-      description: 'Set a user\'s coin balance to a specific value',
-      schema: {
-        user_id: { type: 'text', label: 'User ID', placeholder: '{user.id}' },
-        amount:  { type: 'text', label: 'Amount', required: true, placeholder: '0' },
-      },
-    },
-    check_balance: {
-      category: 'economy', label: 'Get Balance', icon: '💳', color: '#faa61a',
-      description: 'Retrieve a user\'s coin balance into a variable',
-      schema: {
-        user_id:    { type: 'text', label: 'User ID', placeholder: '{user.id}' },
-        result_var: { type: 'text', label: 'Store Balance In', required: true, placeholder: 'balance' },
       },
     },
 

@@ -3,7 +3,7 @@
 <body class="cb-body">
 
 <!-- Server data for JS -->
-<script id="cb-server-data" type="application/json"><%- JSON.stringify({ guildId: guild.id, guildName: guild.name, cmdId: locals.cmdId || null, cmd: locals.cmd || null }) %></script>
+<script id="cb-server-data" type="application/json"><%- JSON.stringify({ guildId: guild.id, guildName: guild.name, cmdId: locals.cmdId || null, cmd: locals.cmd || null }).replace(/</g, '\\u003c').replace(/>/g, '\\u003e') %></script>
 
 <div id="cb-app" class="cb-app">
 
@@ -320,6 +320,6 @@
 <!-- ══ TOAST CONTAINER ═══════════════════════════════════════ -->
 <div id="cb-toasts"></div>
 
-<script src="/js/command-builder.js?v=20260704"></script>
+<script src="/js/command-builder.js?v=20260705"></script>
 </body>
 </html>
