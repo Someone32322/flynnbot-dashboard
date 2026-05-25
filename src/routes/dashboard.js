@@ -127,6 +127,33 @@ router.get('/:guildId/commands/builder/:cmdId', requireAuth, async (req, res) =>
   });
 });
 
+// ── Demo / preview server (no auth required, mock data) ──────
+const DEMO_GUILD = {
+  id: '000000000000000000',
+  name: 'Demo Server',
+  icon: null,
+  permissions: '8',
+};
+const DEMO_USER = {
+  id: '000000000000000001',
+  username: 'Preview User',
+  avatar: null,
+  guilds: [DEMO_GUILD],
+};
+
+router.get('/demo', (req, res) => {
+  res.render('server', { guild: DEMO_GUILD, user: DEMO_USER });
+});
+
+router.get('/demo/commands/builder', (req, res) => {
+  res.render('command-builder', {
+    guild: DEMO_GUILD,
+    user: DEMO_USER,
+    cmd: 'null',
+    cmdId: null,
+  });
+});
+
 // Server detail
 router.get('/:guildId', requireAuth, (req, res) => {
   const { guildId } = req.params;
