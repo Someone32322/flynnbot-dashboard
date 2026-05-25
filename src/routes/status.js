@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { BotStatus } = require('../models/BotStatus');
+const { StatusLog } = require('../models/StatusLog');
 
 const OFFLINE_TIMEOUT_MS = 90_000; // 90 s — matches bot's health reporter
 
@@ -9,7 +10,15 @@ router.get('/', async (req, res) => {
   try {
     const doc = await BotStatus.findById('bot').lean();
     const status = resolveStatus(doc);
-    res.render('status', { title: 'Status', status });
+    
+    // Fetch last 5 recent notable incidents (degraded, offline, error) in the last 7 days from bot service
+    const recentIncidents = await StatusLog.find({
+      service: 'bot',
+      type: { $in: ['degraded', 'offline', 'error', 'maintenance'] },
+      timestamp: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+    }).sort({ timestamp: -1 }).limit(5).lean();
+
+    res.render('status', { title: 'Status', status, incidents: recentIncidents });
   } catch (err) {
     console.error('[Status] Route error:', err);
     res.status(500).render('error', { code: 500, message: 'Failed to load status page.' });

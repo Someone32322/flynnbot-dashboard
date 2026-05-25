@@ -1,0 +1,226 @@
+/* ============================================================
+   LEGAL PAGES REDESIGN
+   ============================================================ */
+
+.legal-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 8rem 2rem 4rem;
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: #f1f5f9;
+}
+
+/* ── Hero Section ── */
+.legal-header {
+  margin-bottom: 4rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 3rem;
+  position: relative;
+}
+
+.legal-badge {
+  display: inline-block;
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  padding: 0.4rem 1rem;
+  border-radius: 99px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.legal-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(to right, #ffffff, #94a3b8);
+  -webkit-background-clip: text;
+  color: transparent;
+  line-height: 1.1;
+}
+
+.legal-meta {
+  color: #94a3b8;
+  font-size: 1.1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.legal-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #e2e8f0;
+}
+
+/* ── Layout ── */
+.legal-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 4rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .legal-layout {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
+/* ── Navigation (TOC) ── */
+.legal-sidebar {
+  position: sticky;
+  top: 100px;
+  background: rgba(9, 18, 44, 0.4);
+  backdrop-filter: blur(10px);
+  padding: 2rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.legal-sidebar-title {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #64748b;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+}
+
+.legal-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.toc-link {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  position: relative;
+  padding-left: 1rem;
+  line-height: 1.4;
+}
+
+.toc-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 0;
+  background: #3b82f6;
+  transition: all 0.2s ease;
+}
+
+.toc-link:hover,
+.toc-link.active {
+  color: #ffffff;
+}
+
+.toc-link.active::before {
+  height: 100%;
+}
+
+@media (max-width: 900px) {
+  .legal-sidebar {
+    display: none;
+  }
+}
+
+/* ── Content Typography ── */
+.legal-content {
+  color: #cbd5e1;
+  font-size: 1.1rem;
+  line-height: 1.8;
+}
+
+.legal-section {
+  margin-bottom: 4rem;
+  scroll-margin-top: 120px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.legal-section--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.legal-content h2 {
+  color: #ffffff;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  letter-spacing: -0.5px;
+}
+
+.legal-content h3 {
+  color: #e2e8f0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 2rem 0 1rem;
+}
+
+.legal-content p {
+  margin-bottom: 1.5rem;
+}
+
+.legal-content ul, .legal-content ol {
+  margin: 0 0 1.5rem 1.5rem;
+  padding-left: 1rem;
+}
+
+.legal-content li {
+  margin-bottom: 0.75rem;
+}
+
+.legal-content strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.legal-content a:not(.toc-link) {
+  color: #60a5fa;
+  text-decoration: underline;
+  text-decoration-color: rgba(96, 165, 250, 0.4);
+  text-underline-offset: 4px;
+  transition: text-decoration-color 0.2s;
+}
+
+.legal-content a:not(.toc-link):hover {
+  text-decoration-color: #60a5fa;
+}
+
+.legal-box {
+  background: rgba(59, 130, 246, 0.05);
+  border-left: 4px solid #3b82f6;
+  padding: 1.5rem;
+  border-radius: 0 8px 8px 0;
+  margin: 2rem 0;
+}
+
+.legal-box h4 {
+  color: #60a5fa;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.legal-box p:last-child {
+  margin-bottom: 0;
+}

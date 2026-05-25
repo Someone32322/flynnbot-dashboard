@@ -624,63 +624,94 @@
       .replace(/'/g, '&#39;');
   }
 
-  /* Sections that belong to the Custom Commands module */
-  const CC_MODULE_SECTIONS = new Set(['custom-commands', 'data-storage']);
-  let _prevSection = 'home'; // tracks last non-CC section for back button
+  /* Module Mapping for Navigation */
+  const MODULE_MAP = {
+    'custom-commands': 'custom-commands',
+    'data-storage': 'custom-commands',
+    'embeds': 'messages',
+    'reaction-roles': 'messages',
+    'commands': 'configuration',
+    'applications': 'configuration',
+    'logging': 'configuration',
+    'welcome': 'community',
+    'tickets': 'community',
+    'starboard': 'community',
+    'stats': 'community',
+    'levels': 'community',
+    'cases': 'moderation',
+    'automod': 'moderation',
+    'escalation': 'moderation',
+    'slowmode': 'moderation',
+    'notes': 'moderation',
+    'analytics': 'insights',
+    'invites': 'insights',
+    'audit-log': 'insights',
+    'ai': 'messages' // AI bundled in messages as per grouping? Or omit and keep standalone?
+  };
+  let _prevSection = 'home';
 
-  function enterCCModule(section) {
-    document.getElementById('dashSidebar').classList.add('cc-mode');
-    // Mark correct sub-nav item active
-    document.querySelectorAll('.cc-sub-item').forEach(item => {
-      item.classList.toggle('active', item.dataset.ccSection === section);
+  function enterModule(section) {
+    const modId = MODULE_MAP[section];
+    if (!modId) return switchSection(section);
+
+    document.getElementById('dashSidebar').classList.add('module-mode');
+    document.querySelectorAll('.module-sub-nav').forEach(nav => {
+      nav.style.display = nav.id === `module-${modId}` ? 'flex' : 'none';
+    });
+
+    document.querySelectorAll('.module-sub-item').forEach(item => {
+      item.classList.toggle('active', item.dataset.moduleSection === section);
     });
     switchSection(section);
   }
 
-  function exitCCModule() {
-    document.getElementById('dashSidebar').classList.remove('cc-mode');
-    switchSection(_prevSection);
+  function exitModule() {
+    document.getElementById('dashSidebar').classList.remove('module-mode');
+    document.querySelectorAll('.module-sub-nav').forEach(nav => nav.style.display = 'none');
+    switchSection(_prevSection || 'home');
   }
 
-  /* ------------------------------------------------------------------ */
-  /*  Section navigation                                                  */
-  /* ------------------------------------------------------------------ */
   function initSectionNav() {
-    // Support both hash (#section) and query param (?section=) routing
     const urlParams = new URLSearchParams(window.location.search);
     const querySection = urlParams.get('section');
     const hash = window.location.hash.replace('#', '');
-    // Build valid sections dynamically from DOM — catches all present + future sections
     const domSections = Array.from(document.querySelectorAll('.dash-section[data-section]')).map(s => s.dataset.section);
     const valid = domSections.length ? domSections : ['home'];
     const initial = valid.includes(querySection) ? querySection : (valid.includes(hash) ? hash : 'home');
 
-    document.querySelectorAll('.sidebar-nav-item[data-section]').forEach((btn) => {
+    // Main nav item clicks — if they contain data-module, enter the first section of that module
+    document.querySelectorAll('.sidebar-nav-item').forEach((btn) => {
       btn.addEventListener('click', () => {
-        if (CC_MODULE_SECTIONS.has(btn.dataset.section)) {
-          enterCCModule(btn.dataset.section);
-        } else {
-          exitCCModule();
+        if (btn.dataset.module) {
+          // Find first child section of this module
+          const firstSub = document.querySelector(`#module-${btn.dataset.module} .module-sub-item`);
+          if (firstSub) {
+            enterModule(firstSub.dataset.moduleSection);
+          }
+        } else if (btn.dataset.section) {
+          exitModule();
           switchSection(btn.dataset.section);
         }
       });
     });
 
-    // CC sub-nav items
-    document.querySelectorAll('.cc-sub-item[data-cc-section]').forEach(btn => {
+    // Sub module items
+    document.querySelectorAll('.module-sub-item[data-module-section]').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.cc-sub-item').forEach(i => i.classList.toggle('active', i === btn));
-        switchSection(btn.dataset.ccSection);
+        document.querySelectorAll('.module-sub-item').forEach(i => i.classList.toggle('active', i === btn));
+        switchSection(btn.dataset.moduleSection);
       });
     });
 
-    document.getElementById('cc-sub-back')?.addEventListener('click', exitCCModule);
+    document.querySelectorAll('.module-sub-back').forEach(btn => {
+      btn.addEventListener('click', exitModule);
+    });
 
     document.querySelectorAll('.home-card[data-goto]').forEach((card) => {
       card.addEventListener('click', () => {
         const target = card.dataset.goto;
-        if (CC_MODULE_SECTIONS.has(target)) {
-          enterCCModule(target);
+        if (MODULE_MAP[target]) {
+          enterModule(target);
         } else {
           switchSection(target);
         }
@@ -691,8 +722,8 @@
       btn.addEventListener('click', () => switchSection(btn.dataset.section));
     });
 
-    if (CC_MODULE_SECTIONS.has(initial)) {
-      enterCCModule(initial);
+    if (MODULE_MAP[initial]) {
+      enterModule(initial);
     } else {
       switchSection(initial, false);
     }
@@ -721,12 +752,12 @@
     });
 
     // Sync CC sub-nav active state
-    document.querySelectorAll('.cc-sub-item[data-cc-section]').forEach(item => {
-      item.classList.toggle('active', item.dataset.ccSection === name);
+    document.querySelectorAll('.module-sub-item[data-cc-section]').forEach(item => {
+      item.classList.toggle('active', item.dataset.moduleSection === name);
     });
 
     history.replaceState(null, '', `#${name}`);
-    if (!CC_MODULE_SECTIONS.has(name)) _prevSection = name;
+    if (!MODULE_MAP[name]) _prevSection = name;
     const dashMain = document.getElementById('dashMain');
     if (dashMain) dashMain.scrollTo({ top: 0, behavior: 'smooth' });
 

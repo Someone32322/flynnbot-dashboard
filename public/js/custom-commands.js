@@ -16,6 +16,7 @@
   let _guildId     = null;
   let _cmds        = [];
   let _loaded      = false;
+  let _loading     = false;
   let _filterType  = '';
   let _filterQuery = '';
 
@@ -32,11 +33,15 @@
     if (sec && sec.style.display !== 'none' && !_loaded) load();
   }
 
-  async function load() {
-    if (_loaded) return;
+  async function load(force = false) {
+    if (_loading || (_loaded && !force)) return;
+    _loading = true;
     _loaded = true;
     const container = document.getElementById('customCommandsContent');
-    if (!container) return;
+    if (!container) {
+      _loading = false;
+      return;
+    }
     container.innerHTML = '<div class="cc-loading"><div class="spinner"></div>Loading custom commands…</div>';
     try {
       const res  = await fetch(`/api/guild/${_guildId}/guild-commands`);
@@ -50,6 +55,8 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
           Failed to load commands.
         </div>`;
+    } finally {
+      _loading = false;
     }
   }
 
@@ -147,13 +154,13 @@
               </div>
               <div class="cc-card-right">
                 <span class="cc-status-dot ${cmd.enabled === false ? '' : 'cc-status-dot--on'}" title="${cmd.enabled === false ? 'Disabled' : 'Enabled'}"></span>
-                <button class="cc-icon-btn" data-action="duplicate" data-id="${esc(cmd._id)}" title="Duplicate command">
+                <button class="cc-icon-btn" data-action="duplicate" data-id="${esc(cmd._id || cmd.id)}" title="Duplicate command">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                 </button>
-                <button class="cc-icon-btn" data-action="edit" data-id="${esc(cmd._id)}" title="Open in builder">
+                <button class="cc-icon-btn" data-action="edit" data-id="${esc(cmd._id || cmd.id)}" title="Open in builder">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
-                <button class="cc-icon-btn cc-icon-btn--danger" data-action="delete" data-id="${esc(cmd._id)}" title="Delete command">
+                <button class="cc-icon-btn cc-icon-btn--danger" data-action="delete" data-id="${esc(cmd._id || cmd.id)}" title="Delete command">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
                 </button>
               </div>
@@ -206,9 +213,11 @@
 
   // ── Navigate to dedicated builder page ───────────────────────
   function openBuilder(id) {
-    window.location.href = id
+    if (id === 'undefined') id = null;
+    const url = id
       ? `/dashboard/${_guildId}/commands/builder/${id}`
       : `/dashboard/${_guildId}/commands/builder`;
+    window.location.href = url;
   }
 
   // ── Duplicate command ─────────────────────────────────────────
@@ -227,7 +236,7 @@
 
   // ── Delete command ────────────────────────────────────────────
   async function deleteCmd(id) {
-    const cmd = _cmds.find(c => c._id === id);
+    const cmd = _cmds.find(c => (c._id || c.id) === id);
     const ok  = await window.showConfirm?.(
       `Delete "${cmd?.name || 'this command'}"? This cannot be undone.`,
       { title: 'Delete Command', confirmText: 'Delete', type: 'danger' }
@@ -236,7 +245,7 @@
     try {
       const res = await fetch(`/api/guild/${_guildId}/guild-commands/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
-      _cmds = _cmds.filter(c => c._id !== id);
+      _cmds = _cmds.filter(c => (c._id || c.id) !== id);
       window.showToast?.('Command deleted.', 'success');
       renderList();
     } catch {
@@ -255,6 +264,12 @@
     const gId = pageData?.dataset?.guildId;
     if (!gId) return;
     init(gId);
+  });
+
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted && _guildId) {
+      load(true);
+    }
   });
 })();
 

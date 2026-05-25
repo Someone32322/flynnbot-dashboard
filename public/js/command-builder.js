@@ -2308,6 +2308,23 @@
       renderAll();
     }
 
+    /* ── Unsaved Changes Warning ────────────────────────── */
+    window.addEventListener('beforeunload', (e) => {
+      if (_state.dirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
+
+    const backBtn = document.querySelector('.cb-back-btn');
+    if (backBtn) {
+      backBtn.addEventListener('click', (e) => {
+        if (_state.dirty && !confirm('You have unsaved changes. Are you sure you want to go back?')) {
+          e.preventDefault();
+        }
+      });
+    }
+
     /* ── Topbar name input ──────────────────────────────── */
     const nameInput = document.getElementById('cb-cmd-name');
     if (nameInput) {

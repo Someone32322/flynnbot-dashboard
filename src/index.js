@@ -17,6 +17,7 @@ const statusRoutes = require('./routes/status');
 const changelogRoutes = require('./routes/changelog');
 const ownerRoutes = require('./routes/owner');
 const { ApplicationForm } = require('./models/ApplicationForm');
+const { startBotHealthMonitor } = require('./lib/botHealthMonitor');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -182,16 +183,36 @@ app.use((err, req, res, next) => {
   res.status(500).render('error', { code: 500, message: 'An unexpected error occurred.' });
 });
 
+const { StatusLog } = require('./models/StatusLog');
+
 process.on('unhandledRejection', (reason) => {
   console.error('[Dashboard] Unhandled rejection:', reason);
 });
 
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', async (err) => {
   console.error('[Dashboard] Uncaught exception:', err);
+  try {
+    await StatusLog.create({
+      service: 'dashboard',
+      type: 'error',
+      message: 'Uncaught exception in Dashboard process',
+      details: { stack: err.stack, name: err.name, message: err.message }
+    });
+  } catch(e) {}
 });
 
 async function start() {
   await connectDb();
+  
+  await StatusLog.create({
+    service: 'dashboard',
+    type: 'startup',
+    message: 'Dashboard process started.',
+    details: {}
+  });
+
+  startBotHealthMonitor();
+
   app.listen(PORT, () => {
     console.log(`\n  Dashboard → http://localhost:${PORT}\n`);
   });

@@ -897,3 +897,10 @@ body.dash-reduced-motion *::after {
     display: grid;
   }
 }
+/* Per-module icon colours */
+.sidebar-nav-item[data-module="configuration"] .sidebar-nav-icon { color: #60a5fa; }
+.sidebar-nav-item[data-module="messages"]      .sidebar-nav-icon { color: #818cf8; }
+.sidebar-nav-item[data-module="custom-commands"].sidebar-nav-icon{ color: #c084fc; }
+.sidebar-nav-item[data-module="community"]     .sidebar-nav-icon { color: #34d399; }
+.sidebar-nav-item[data-module="moderation"]    .sidebar-nav-icon { color: #f87171; }
+.sidebar-nav-item[data-module="insights"]      .sidebar-nav-icon { color: #fbbf24; }

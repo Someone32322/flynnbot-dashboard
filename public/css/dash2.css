@@ -3552,8 +3552,8 @@ textarea:focus {
    CUSTOM COMMANDS SUB-NAVIGATION
    ============================================================ */
 
-/* Hidden by default; flexed when #dashSidebar has .cc-mode */
-#cc-sub-nav {
+/* Hidden by default; flexed when #dashSidebar has .module-mode */
+#module-sub-nav {
   display: none;
   flex-direction: column;
   flex: 1;
@@ -3562,11 +3562,11 @@ textarea:focus {
   animation: sidebarSlideIn 0.22s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
-#dashSidebar.cc-mode .sidebar-nav { display: none; }
-#dashSidebar.cc-mode #cc-sub-nav  { display: flex; }
+#dashSidebar.module-mode .sidebar-nav { display: none; }
+#dashSidebar.module-mode #module-sub-nav  { display: flex; }
 
 /* Back button */
-.cc-sub-back {
+.module-sub-back {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -3584,15 +3584,15 @@ textarea:focus {
   text-align: left;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.cc-sub-back:hover {
+.module-sub-back:hover {
   background: rgba(148, 163, 184, 0.08);
   color: var(--text);
   border-color: var(--card-border);
 }
-.cc-sub-back svg { flex-shrink: 0; }
+.module-sub-back svg { flex-shrink: 0; }
 
 /* Module header (icon + name) */
-.cc-sub-module-header {
+.module-sub-header {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -3600,7 +3600,7 @@ textarea:focus {
   border-bottom: 1px solid var(--card-border);
   margin-bottom: 10px;
 }
-.cc-sub-module-icon {
+.module-sub-icon-wrap {
   width: 30px;
   height: 30px;
   border-radius: 8px;
@@ -3611,7 +3611,7 @@ textarea:focus {
   color: #a78bfa;
   flex-shrink: 0;
 }
-.cc-sub-module-name {
+.module-sub-name {
   font-size: 13.5px;
   font-weight: 600;
   color: var(--text);
@@ -3619,12 +3619,12 @@ textarea:focus {
 }
 
 /* Sub-nav items */
-.cc-sub-nav-list {
+.module-sub-nav-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.cc-sub-item {
+.module-sub-item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -3641,18 +3641,18 @@ textarea:focus {
   text-align: left;
   transition: all 0.18s var(--ease);
 }
-.cc-sub-item:hover {
+.module-sub-item:hover {
   background: rgba(139, 92, 246, 0.07);
   color: var(--text);
   border-color: var(--card-border);
 }
-.cc-sub-item.active {
+.module-sub-item.active {
   background: rgba(139, 92, 246, 0.12);
   border-color: rgba(139, 92, 246, 0.2);
   color: #c4b5fd;
   box-shadow: inset 3px 0 0 #8b5cf6;
 }
-.cc-sub-icon {
+.module-item-icon {
   width: 20px;
   height: 20px;
   display: flex;
@@ -3662,8 +3662,8 @@ textarea:focus {
   color: var(--text-3);
   transition: color 0.18s;
 }
-.cc-sub-item.active .cc-sub-icon { color: #a78bfa; }
-.cc-sub-item:hover  .cc-sub-icon { color: var(--text-2); }
+.module-sub-item.active .module-item-icon { color: #a78bfa; }
+.module-sub-item:hover  .module-item-icon { color: var(--text-2); }
 
 
 
@@ -3671,8 +3671,8 @@ textarea:focus {
    CUSTOM COMMANDS SUB-NAVIGATION
    ============================================================ */
 
-/* Hidden by default; flexed when #dashSidebar has .cc-mode */
-#cc-sub-nav {
+/* Hidden by default; flexed when #dashSidebar has .module-mode */
+#module-sub-nav {
   display: none;
   flex-direction: column;
   flex: 1;
@@ -3681,11 +3681,11 @@ textarea:focus {
   animation: sidebarSlideIn 0.22s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
-#dashSidebar.cc-mode .sidebar-nav { display: none; }
-#dashSidebar.cc-mode #cc-sub-nav  { display: flex; }
+#dashSidebar.module-mode .sidebar-nav { display: none; }
+#dashSidebar.module-mode #module-sub-nav  { display: flex; }
 
 /* Back button */
-.cc-sub-back {
+.module-sub-back {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -3703,15 +3703,15 @@ textarea:focus {
   text-align: left;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.cc-sub-back:hover {
+.module-sub-back:hover {
   background: rgba(148, 163, 184, 0.08);
   color: var(--text);
   border-color: var(--card-border);
 }
-.cc-sub-back svg { flex-shrink: 0; }
+.module-sub-back svg { flex-shrink: 0; }
 
 /* Module header (icon + name) */
-.cc-sub-module-header {
+.module-sub-header {
   display: flex;
   align-items: center;
   gap: 9px;
@@ -3719,7 +3719,7 @@ textarea:focus {
   border-bottom: 1px solid var(--card-border);
   margin-bottom: 10px;
 }
-.cc-sub-module-icon {
+.module-sub-icon-wrap {
   width: 30px;
   height: 30px;
   border-radius: 8px;
@@ -3730,7 +3730,7 @@ textarea:focus {
   color: #a78bfa;
   flex-shrink: 0;
 }
-.cc-sub-module-name {
+.module-sub-name {
   font-size: 13.5px;
   font-weight: 600;
   color: var(--text);
@@ -3738,12 +3738,12 @@ textarea:focus {
 }
 
 /* Sub-nav items */
-.cc-sub-nav-list {
+.module-sub-nav-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
-.cc-sub-item {
+.module-sub-item {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -3760,18 +3760,18 @@ textarea:focus {
   text-align: left;
   transition: all 0.18s var(--ease);
 }
-.cc-sub-item:hover {
+.module-sub-item:hover {
   background: rgba(139, 92, 246, 0.07);
   color: var(--text);
   border-color: var(--card-border);
 }
-.cc-sub-item.active {
+.module-sub-item.active {
   background: rgba(139, 92, 246, 0.12);
   border-color: rgba(139, 92, 246, 0.2);
   color: #c4b5fd;
   box-shadow: inset 3px 0 0 #8b5cf6;
 }
-.cc-sub-icon {
+.module-item-icon {
   width: 20px;
   height: 20px;
   display: flex;
@@ -3781,5 +3781,19 @@ textarea:focus {
   color: var(--text-3);
   transition: color 0.18s;
 }
-.cc-sub-item.active .cc-sub-icon { color: #a78bfa; }
-.cc-sub-item:hover  .cc-sub-icon { color: var(--text-2); }
+.module-sub-item.active .module-item-icon { color: #a78bfa; }
+.module-sub-item:hover  .module-item-icon { color: var(--text-2); }
+/* Sub-nav header colors */
+#module-configuration .module-sub-icon-wrap { color: #60a5fa; background: rgba(96, 165, 250, 0.1); }
+#module-messages .module-sub-icon-wrap { color: #818cf8; background: rgba(129, 140, 248, 0.1); }
+#module-custom-commands .module-sub-icon-wrap { color: #c084fc; background: rgba(192, 132, 252, 0.1); }
+#module-community .module-sub-icon-wrap { color: #34d399; background: rgba(52, 211, 153, 0.1); }
+#module-moderation .module-sub-icon-wrap { color: #f87171; background: rgba(248, 113, 113, 0.1); }
+#module-insights .module-sub-icon-wrap { color: #fbbf24; background: rgba(251, 191, 36, 0.1); }
+
+#module-configuration .module-sub-item.active .module-item-icon { color: #60a5fa; }
+#module-messages .module-sub-item.active .module-item-icon { color: #818cf8; }
+#module-custom-commands .module-sub-item.active .module-item-icon { color: #c084fc; }
+#module-community .module-sub-item.active .module-item-icon { color: #34d399; }
+#module-moderation .module-sub-item.active .module-item-icon { color: #f87171; }
+#module-insights .module-sub-item.active .module-item-icon { color: #fbbf24; }

@@ -3603,7 +3603,7 @@ router.post('/owner/reset-module', requireOwner, async (req, res) => {
 // GET /api/status/history — last 30 days of daily snapshots
 router.get('/status/history', async (req, res) => {
   try {
-    const StatusDailySnapshot = require('../models/StatusDailySnapshot');
+    const { StatusLog } = require('../models/StatusLog');
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
 
@@ -3615,24 +3615,40 @@ router.get('/status/history', async (req, res) => {
       days.push(d);
     }
 
-    const snapshots = await StatusDailySnapshot.find({
-      date: { $gte: days[0], $lte: days[days.length - 1] },
+    const start = days[0];
+    const end = new Date(days[days.length - 1]);
+    end.setUTCHours(23, 59, 59, 999);
+
+    const logs = await StatusLog.find({
+      service: 'bot',
+      timestamp: { $gte: start, $lte: end },
     }).lean();
 
-    const snapMap = {};
-    snapshots.forEach((s) => {
-      const key = s.date.toISOString().split('T')[0];
-      snapMap[key] = s;
+    const dayState = {};
+    
+    // Process logs to determine daily status
+    logs.forEach(log => {
+      const dateStr = log.timestamp.toISOString().split('T')[0];
+      if (!dayState[dateStr]) dayState[dateStr] = { status: 'online', note: '' };
+      
+      // Upgrade severity
+      if (log.type === 'offline' || log.type === 'error') {
+        dayState[dateStr].status = 'offline';
+        dayState[dateStr].note = log.message || 'Service outage';
+      } else if (log.type === 'degraded' && dayState[dateStr].status !== 'offline') {
+        dayState[dateStr].status = 'degraded';
+        dayState[dateStr].note = log.message || 'Degraded performance';
+      }
     });
 
     const history = days.map((d) => {
       const key = d.toISOString().split('T')[0];
-      const snap = snapMap[key];
+      const state = dayState[key];
       return {
         date:   key,
-        status: snap ? snap.status : 'none',
-        note:   snap ? (snap.note || '') : '',
-        manual: !!snap,
+        status: state ? state.status : (d < Date.now() ? 'online' : 'none'), // default old days without logs to online if they are in the past
+        note:   state ? (state.note || '') : '',
+        manual: false,
       };
     });
 
@@ -3647,14 +3663,17 @@ router.get('/status/history', async (req, res) => {
 // GET /api/owner/incidents — list all logged incidents
 router.get('/owner/incidents', requireOwner, async (req, res) => {
   try {
-    const StatusDailySnapshot = require('../models/StatusDailySnapshot');
-    const snaps = await StatusDailySnapshot.find().sort({ date: -1 }).limit(60).lean();
+    const { StatusLog } = require('../models/StatusLog');
+    const logs = await StatusLog.find({
+      service: 'bot', 
+      type: { $in: ['degraded', 'offline', 'maintenance', 'error'] }
+    }).sort({ timestamp: -1 }).limit(100).lean();
     res.json({
-      incidents: snaps.map((s) => ({
-        date:   s.date.toISOString().split('T')[0],
-        status: s.status,
-        note:   s.note || '',
-        setBy:  s.setBy || '',
+      incidents: logs.map((s) => ({
+        date:   s.timestamp.toISOString().split('T')[0],
+        status: s.type,
+        note:   s.message || '',
+        setBy:  s.details?.setBy || 'System',
       })),
     });
   } catch (err) {
@@ -3673,30 +3692,35 @@ router.post('/owner/incident', requireOwner, async (req, res) => {
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ error: 'Invalid status value' });
     }
-    const d = new Date(date + 'T00:00:00.000Z');
-    const StatusDailySnapshot = require('../models/StatusDailySnapshot');
-    const snap = await StatusDailySnapshot.findOneAndUpdate(
-      { date: d },
-      { $set: { status, note: (note || '').slice(0, 200), setBy: req.user.id } },
-      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
-    );
-    res.json({ ok: true, incident: { date, status: snap.status, note: snap.note } });
+    const d = new Date(date + 'T12:00:00.000Z'); // middle of the day for manual entry
+    const { StatusLog } = require('../models/StatusLog');
+    
+    // Create an incident log entry for the specified date
+    await StatusLog.create({
+      service: 'bot',
+      type: status,
+      timestamp: d,
+      message: (note || '').slice(0, 200),
+      details: { setBy: req.user.id, manual: true }
+    });
+    res.json({ ok: true, incident: { date, status, note } });
   } catch (err) {
     console.error('[Owner API] POST /owner/incident', err);
     res.status(500).json({ error: 'Failed to save incident' });
   }
 });
 
-// DELETE /api/owner/incident/:date — remove a daily incident record
+// DELETE /api/owner/incident/:date — remove a daily incident record (not fully compatible with event logs, removing all manual ones for day)
 router.delete('/owner/incident/:date', requireOwner, async (req, res) => {
   try {
     const { date } = req.params;
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       return res.status(400).json({ error: 'Invalid date format' });
     }
-    const d = new Date(date + 'T00:00:00.000Z');
-    const StatusDailySnapshot = require('../models/StatusDailySnapshot');
-    await StatusDailySnapshot.deleteOne({ date: d });
+    const start = new Date(date + 'T00:00:00.000Z');
+    const end = new Date(date + 'T23:59:59.999Z');
+    const { StatusLog } = require('../models/StatusLog');
+    await StatusLog.deleteMany({ timestamp: { $gte: start, $lte: end }, 'details.manual': true });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete incident' });

@@ -142,11 +142,29 @@
   <!-- ── INCIDENTS ── -->
   <div class="status-section">
     <p class="status-section-title">Incident History</p>
-    <div class="no-incidents">
-      <div class="no-incidents-icon">✅</div>
-      <h4>No recent incidents</h4>
-      <p>All systems have been running smoothly.</p>
-    </div>
+    <% if (incidents && incidents.length > 0) { %>
+      <div class="incident-list" style="display:flex; flex-direction:column; gap:16px;">
+        <% incidents.forEach(function(inc) { %>
+          <div class="incident-card" style="padding:16px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:8px;">
+            <div style="font-weight:600; margin-bottom:4px; text-transform:capitalize; color: var(--<%= inc.type === 'offline' || inc.type === 'error' ? 'error' : 'warning' %>);">
+              <%= inc.type %> Incident
+            </div>
+            <div style="font-size:0.9rem; color:var(--text-3); margin-bottom:8px;">
+              <%= new Date(inc.timestamp).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) %>
+            </div>
+            <div style="font-size:0.95rem; color:var(--text-2);">
+              <%= inc.message %>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <div class="no-incidents">
+        <div class="no-incidents-icon">✅</div>
+        <h4>No recent incidents</h4>
+        <p>All systems have been running smoothly over the past 7 days.</p>
+      </div>
+    <% } %>
   </div>
 
   <p class="status-footer-note">
