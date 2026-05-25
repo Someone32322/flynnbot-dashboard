@@ -74,85 +74,30 @@ router.get('/owner', requireAuth, async (req, res) => {
   }
 });
 
-// ── Command builder pages (MUST come before /:guildId) ───────
-const CustomCommand = require('../models/CustomCommand');
-const Workflow = require('../models/Workflow');
+// ── Command builder routes (MUST come before /:guildId) ─────
+const { GuildCommand } = require('../models/GuildCommand');
 
-// ── Helper: shape a CC doc into workflow-editor's expected format ──
-function cmdToEditorFormat(cmd) {
-  if (!cmd) return null;
-  return {
-    _id:         cmd._id.toString(),
-    name:        cmd.name        || '',
-    description: cmd.description || '',
-    enabled:     cmd.enabled !== false,
-    trigger: {
-      type:  cmd.triggerType || 'slash',
-      value: cmd.trigger     || '',   // CC schema: trigger is the value string
-    },
-    permissions: {
-      allowedRoles:        cmd.allowedRoles        || [],
-      allowedChannels:     cmd.allowedChannels     || [],
-      requiredPermissions: cmd.requiredPermissions || [],
-      caseSensitive:       !!cmd.caseSensitive,
-      deleteUserMessage:   !!cmd.deleteUserMessage,
-      cooldownSeconds:     cmd.cooldownSeconds     || 0,
-      cooldownScope:       cmd.cooldownScope       || 'user',
-      ephemeralErrors:     cmd.ephemeralErrors     !== false,
-    },
-    blocks:       cmd.blocks       || [],
-    variables:    Array.isArray(cmd.variables)    ? cmd.variables    : [],
-    slashOptions: Array.isArray(cmd.slashOptions) ? cmd.slashOptions : [],
-    eventTrigger: cmd.eventTrigger
-      ? {
-          emoji:     cmd.eventTrigger.emoji     || null,
-          messageId: cmd.eventTrigger.messageId || null,
-          channelId: cmd.eventTrigger.channelId || null,
-          interval:  cmd.eventTrigger.interval  || '1h',
-        }
-      : null,
-  };
-}
-
-// ── Workflow editor (legacy) — redirect to unified command builder ──
+// Legacy redirects — old workflow-editor routes → new command builder
 router.get('/:guildId/workflows/editor', requireAuth, (req, res) => {
   const { guildId } = req.params;
   if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
-  res.redirect(302, `/dashboard/${guildId}/custom-commands/builder`);
+  res.redirect(302, `/dashboard/${guildId}/commands/builder`);
 });
-
 router.get('/:guildId/workflows/editor/:workflowId', requireAuth, (req, res) => {
   const { guildId } = req.params;
   if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
-  res.redirect(302, `/dashboard/${guildId}/custom-commands/builder`);
+  res.redirect(302, `/dashboard/${guildId}/commands/builder`);
 });
-
-// ── Command builder (unified — uses workflow-editor.ejs) ──────
-router.get('/:guildId/custom-commands/builder', requireAuth, async (req, res) => {
+router.get('/:guildId/custom-commands/builder', requireAuth, (req, res) => {
   const { guildId } = req.params;
   if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
-  const guild = (req.user.guilds || []).find((g) => g.id === guildId && hasAdmin(g.permissions));
-  if (!guild) return res.redirect('/dashboard');
-  res.render('workflow-editor', { guild, user: req.user, cmd: null });
+  res.redirect(302, `/dashboard/${guildId}/commands/builder`);
 });
-
-router.get('/:guildId/custom-commands/builder/:cmdId', requireAuth, async (req, res) => {
+router.get('/:guildId/custom-commands/builder/:cmdId', requireAuth, (req, res) => {
   const { guildId, cmdId } = req.params;
   if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
-  const guild = (req.user.guilds || []).find((g) => g.id === guildId && hasAdmin(g.permissions));
-  if (!guild) return res.redirect('/dashboard');
-  let cmd = null;
-  try {
-    const raw = await CustomCommand.findOne({ _id: cmdId, guildId }).lean();
-    cmd = cmdToEditorFormat(raw);
-  } catch {
-    // invalid id or not found — render blank builder
-  }
-  res.render('workflow-editor', { guild, user: req.user, cmd });
+  res.redirect(302, `/dashboard/${guildId}/commands/builder/${cmdId}`);
 });
-
-// ── Advanced Command Builder — GuildCommand model ─────────────
-const { GuildCommand } = require('../models/GuildCommand');
 
 router.get('/:guildId/commands/builder', requireAuth, async (req, res) => {
   const { guildId } = req.params;
