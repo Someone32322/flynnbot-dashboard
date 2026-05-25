@@ -624,6 +624,24 @@
       .replace(/'/g, '&#39;');
   }
 
+  /* Sections that belong to the Custom Commands module */
+  const CC_MODULE_SECTIONS = new Set(['custom-commands', 'data-storage']);
+  let _prevSection = 'home'; // tracks last non-CC section for back button
+
+  function enterCCModule(section) {
+    document.getElementById('dashSidebar').classList.add('cc-mode');
+    // Mark correct sub-nav item active
+    document.querySelectorAll('.cc-sub-item').forEach(item => {
+      item.classList.toggle('active', item.dataset.ccSection === section);
+    });
+    switchSection(section);
+  }
+
+  function exitCCModule() {
+    document.getElementById('dashSidebar').classList.remove('cc-mode');
+    switchSection(_prevSection);
+  }
+
   /* ------------------------------------------------------------------ */
   /*  Section navigation                                                  */
   /* ------------------------------------------------------------------ */
@@ -638,18 +656,46 @@
     const initial = valid.includes(querySection) ? querySection : (valid.includes(hash) ? hash : 'home');
 
     document.querySelectorAll('.sidebar-nav-item[data-section]').forEach((btn) => {
-      btn.addEventListener('click', () => switchSection(btn.dataset.section));
+      btn.addEventListener('click', () => {
+        if (CC_MODULE_SECTIONS.has(btn.dataset.section)) {
+          enterCCModule(btn.dataset.section);
+        } else {
+          exitCCModule();
+          switchSection(btn.dataset.section);
+        }
+      });
     });
 
+    // CC sub-nav items
+    document.querySelectorAll('.cc-sub-item[data-cc-section]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cc-sub-item').forEach(i => i.classList.toggle('active', i === btn));
+        switchSection(btn.dataset.ccSection);
+      });
+    });
+
+    document.getElementById('cc-sub-back')?.addEventListener('click', exitCCModule);
+
     document.querySelectorAll('.home-card[data-goto]').forEach((card) => {
-      card.addEventListener('click', () => switchSection(card.dataset.goto));
+      card.addEventListener('click', () => {
+        const target = card.dataset.goto;
+        if (CC_MODULE_SECTIONS.has(target)) {
+          enterCCModule(target);
+        } else {
+          switchSection(target);
+        }
+      });
     });
 
     document.querySelectorAll('[data-section].quick-nav-btn, [data-section].mobile-nav-item').forEach((btn) => {
       btn.addEventListener('click', () => switchSection(btn.dataset.section));
     });
 
-    switchSection(initial, false);
+    if (CC_MODULE_SECTIONS.has(initial)) {
+      enterCCModule(initial);
+    } else {
+      switchSection(initial, false);
+    }
   }
 
   function switchSection(name, animate = true) {
@@ -674,7 +720,13 @@
       item.classList.toggle('active', item.dataset.section === name);
     });
 
+    // Sync CC sub-nav active state
+    document.querySelectorAll('.cc-sub-item[data-cc-section]').forEach(item => {
+      item.classList.toggle('active', item.dataset.ccSection === name);
+    });
+
     history.replaceState(null, '', `#${name}`);
+    if (!CC_MODULE_SECTIONS.has(name)) _prevSection = name;
     const dashMain = document.getElementById('dashMain');
     if (dashMain) dashMain.scrollTo({ top: 0, behavior: 'smooth' });
 

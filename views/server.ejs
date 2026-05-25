@@ -92,12 +92,7 @@
             </span>
             <span class="sidebar-nav-text">Custom Commands</span>
           </button>
-          <button class="sidebar-nav-item" data-section="data-storage">
-            <span class="sidebar-nav-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-            </span>
-            <span class="sidebar-nav-text">Data Storage</span>
-          </button>
+
           <button class="sidebar-nav-item" data-section="ai">
             <span class="sidebar-nav-icon">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><circle cx="12" cy="10" r="1" fill="currentColor"/><circle cx="8" cy="10" r="1" fill="currentColor"/><circle cx="16" cy="10" r="1" fill="currentColor"/></svg>
@@ -187,6 +182,34 @@
           </button>
         </div>
       </nav>
+
+      <!-- ── Custom Commands sub-navigation (shown when cc-mode is active) ── -->
+      <div id="cc-sub-nav" class="cc-sub-nav">
+        <button id="cc-sub-back" class="cc-sub-back" aria-label="Back to all categories">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          All Categories
+        </button>
+        <div class="cc-sub-module-header">
+          <div class="cc-sub-module-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+          <span class="cc-sub-module-name">Custom Commands</span>
+        </div>
+        <nav class="cc-sub-nav-list" aria-label="Custom Commands navigation">
+          <button class="cc-sub-item" data-cc-section="custom-commands">
+            <span class="cc-sub-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </span>
+            <span>Commands</span>
+          </button>
+          <button class="cc-sub-item" data-cc-section="data-storage">
+            <span class="cc-sub-icon">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            </span>
+            <span>Data Storage</span>
+          </button>
+        </nav>
+      </div>
 
       <div class="sidebar-footer">
         <% if (user && user.id === '1192421681751412746') { %>
@@ -1866,7 +1889,7 @@
 
   <script src="/js/custom-select.js?v=20260427"></script>
   <script src="/js/app.js?v=20260425"></script>
-  <script src="/js/server.js?v=20260425"></script>
+  <script src="/js/server.js?v=20260602"></script>
   <script src="/js/logging.js?v=20260506"></script>
   <script src="/js/builder.js?v=20260506"></script>
   <script src="/js/reactionroles.js?v=20260425"></script>
