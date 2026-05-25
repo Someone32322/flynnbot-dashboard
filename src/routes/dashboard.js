@@ -77,6 +77,33 @@ router.get('/owner', requireAuth, async (req, res) => {
 // ── Command builder routes (MUST come before /:guildId) ─────
 const { GuildCommand } = require('../models/GuildCommand');
 
+// ── Demo / preview server (no auth required, mock data) ──────
+const DEMO_GUILD = {
+  id: '000000000000000000',
+  name: 'Demo Server',
+  icon: null,
+  permissions: '8',
+};
+const DEMO_USER = {
+  id: '000000000000000001',
+  username: 'Preview User',
+  avatar: null,
+  guilds: [DEMO_GUILD],
+};
+
+router.get('/demo', (req, res) => {
+  res.render('server', { guild: DEMO_GUILD, user: DEMO_USER });
+});
+
+router.get('/demo/commands/builder', (req, res) => {
+  res.render('command-builder', {
+    guild: DEMO_GUILD,
+    user: DEMO_USER,
+    cmd: 'null',
+    cmdId: null,
+  });
+});
+
 // Legacy redirects — old workflow-editor routes → new command builder
 router.get('/:guildId/workflows/editor', requireAuth, (req, res) => {
   const { guildId } = req.params;
@@ -124,33 +151,6 @@ router.get('/:guildId/commands/builder/:cmdId', requireAuth, async (req, res) =>
     user:  req.user,
     cmd:   cmd ? JSON.stringify(cmd) : 'null',
     cmdId: cmd ? String(cmdId) : null,
-  });
-});
-
-// ── Demo / preview server (no auth required, mock data) ──────
-const DEMO_GUILD = {
-  id: '000000000000000000',
-  name: 'Demo Server',
-  icon: null,
-  permissions: '8',
-};
-const DEMO_USER = {
-  id: '000000000000000001',
-  username: 'Preview User',
-  avatar: null,
-  guilds: [DEMO_GUILD],
-};
-
-router.get('/demo', (req, res) => {
-  res.render('server', { guild: DEMO_GUILD, user: DEMO_USER });
-});
-
-router.get('/demo/commands/builder', (req, res) => {
-  res.render('command-builder', {
-    guild: DEMO_GUILD,
-    user: DEMO_USER,
-    cmd: 'null',
-    cmdId: null,
   });
 });
 
