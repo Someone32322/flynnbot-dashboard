@@ -1,394 +1,174 @@
 <%- include('partials/head', { title: 'Command Builder' }) %>
-<link rel="stylesheet" href="/css/command-builder.css?v=1">
-<body class="cb-body">
-  <%- include('partials/nav') %>
+<body class="dash-body">
+<%- include('partials/nav', { guild, user, activePage: 'commands' }) %>
 
-  <%
-    const iconUrl = guild.icon
-      ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.${guild.icon.startsWith('a_') ? 'gif' : 'png'}?size=64`
-      : null;
-  %>
-
-  <!-- Hidden data island — read by command-builder.js (no inline scripts needed for CSP) -->
-  <div id="cbPageData"
-    data-guild-id="<%= guild.id %>"
-    data-guild-name="<%= guild.name %>"
-    data-cmd-id="<%= typeof cmd !== 'undefined' && cmd ? cmd._id : '' %>"
-    data-cmd-json="<%= typeof cmd !== 'undefined' && cmd ? JSON.stringify(cmd).replace(/"/g, '&quot;') : '' %>"
-    style="display:none">
-  </div>
-
-  <!-- ═══════════════════════════ TOP BAR ═══════════════════════════ -->
+<div id="cb-app" class="cb-app">
+  <!-- ── Top Bar ──────────────────────────────────────────── -->
   <header class="cb-topbar">
     <div class="cb-topbar-left">
-      <a href="/dashboard/<%= guild.id %>?section=custom-commands" class="cb-back-btn" id="cbBackBtn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><polyline points="15 18 9 12 15 6"/></svg>
-        <span>Commands</span>
+      <a href="/dashboard/<%= guild.id %>" class="cb-back-btn" title="Back to dashboard">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       </a>
-      <div class="cb-topbar-divider"></div>
-      <div class="cb-topbar-guild">
-        <% if (iconUrl) { %>
-          <img src="<%= iconUrl %>" alt="" class="cb-topbar-guild-icon">
-        <% } %>
-        <span class="cb-topbar-guild-name"><%= guild.name %></span>
-      </div>
-      <div class="cb-topbar-divider"></div>
-      <div class="cb-topbar-title">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        Command Builder
+      <div class="cb-title-wrap">
+        <input id="cb-cmd-name" class="cb-cmd-name" type="text" placeholder="Command name..." maxlength="100" autocomplete="off" spellcheck="false" />
+        <span id="cb-trigger-badge" class="cb-trigger-badge cb-type-slash">slash</span>
       </div>
     </div>
-
-    <div class="cb-topbar-center">
-      <input
-        type="text"
-        id="cbCmdName"
-        class="cb-name-input"
-        placeholder="command-name"
-        maxlength="32"
-        autocomplete="off"
-        spellcheck="false"
-        aria-label="Command name"
-      >
-    </div>
-
     <div class="cb-topbar-right">
-      <label class="cb-enabled-toggle" title="Enable / disable this command">
-        <input type="checkbox" id="cbEnabled" checked>
-        <span class="cb-enabled-track">
-          <span class="cb-enabled-thumb"></span>
-        </span>
-        <span class="cb-enabled-label" id="cbEnabledLabel">Enabled</span>
-      </label>
-      <span class="cb-block-count" id="cbBlockCount">0 blocks</span>
-      <button class="cb-validate-btn" id="cbValidateBtn" title="Validate workflow">Validate</button>
-      <button class="cb-save-btn" id="cbSaveBtn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13"/><polyline points="7 3 7 8 15 8"/></svg>
-        Save Command
+      <span id="cb-status" class="cb-status cb-status-saved">Saved</span>
+      <button id="cb-json-toggle" class="cb-btn cb-btn-ghost" title="Toggle JSON Editor">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        JSON
+      </button>
+      <button id="cb-import-btn" class="cb-btn cb-btn-ghost" title="Import JSON">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Import
+      </button>
+      <button id="cb-export-btn" class="cb-btn cb-btn-ghost" title="Export JSON">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export
+      </button>
+      <button id="cb-sync-btn" class="cb-btn cb-btn-secondary" title="Register/sync slash command with Discord">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Sync
+      </button>
+      <button id="cb-save-btn" class="cb-btn cb-btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save
       </button>
     </div>
   </header>
 
-  <!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
-  <div class="cb-main">
+  <!-- ── Main layout ───────────────────────────────────────── -->
+  <div class="cb-layout">
 
-    <!-- ───────── LEFT PANEL: Block Palette + Variables ───────── -->
-    <aside class="cb-panel" id="cbPanel">
-
-      <!-- Dynamic palette rendered by JS -->
-      <div class="cb-palette-search-wrap">
-        <input type="text" id="cbPaletteSearch" class="cb-palette-search" placeholder="Search blocks…" autocomplete="off">
-      </div>
-      <div id="cbPalette"></div>
-
-      <div class="cb-panel-section" style="display:none">
-        <div class="cb-panel-label">Trigger</div>
-        <div class="cb-palette-item cb-palette--trigger" data-block-type="trigger_settings">
-          <span class="cb-palette-icon" style="background:rgba(88,101,242,0.2);color:#5865f2">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          </span>
-          <span>Trigger Settings</span>
-          <span class="cb-palette-fixed">Fixed</span>
+    <!-- ── Left Sidebar: Block Picker ──────────────────────── -->
+    <aside class="cb-sidebar">
+      <div class="cb-sidebar-head">
+        <div class="cb-search-wrap">
+          <svg class="cb-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="cb-block-search" type="text" class="cb-search-input" placeholder="Search blocks..." />
         </div>
       </div>
-
-      <div class="cb-panel-section">
-        <div class="cb-panel-label">Actions</div>
-        <button class="cb-palette-item" data-add-block="reply">
-          <span class="cb-palette-icon" style="background:rgba(87,242,135,0.15);color:#57f287">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-          </span>
-          <span>Send Reply</span>
-        </button>
-        <button class="cb-palette-item" data-add-block="message">
-          <span class="cb-palette-icon" style="background:rgba(59,130,246,0.15);color:#60a5fa">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
-          </span>
-          <span>Send Message</span>
-        </button>
-        <button class="cb-palette-item" data-add-block="embed">
-          <span class="cb-palette-icon" style="background:rgba(88,101,242,0.15);color:#7289da">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-          </span>
-          <span>Send Embed</span>
-        </button>
-        <button class="cb-palette-item" data-add-block="dm">
-          <span class="cb-palette-icon" style="background:rgba(250,166,26,0.15);color:#faa61a">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-          </span>
-          <span>DM User</span>
-        </button>
-      </div>
-
-      <div class="cb-panel-section">
-        <div class="cb-panel-label">Management</div>
-        <button class="cb-palette-item" data-add-block="add_role">
-          <span class="cb-palette-icon" style="background:rgba(87,242,135,0.12);color:#57f287">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-          </span>
-          <span>Add Role</span>
-        </button>
-        <button class="cb-palette-item" data-add-block="remove_role">
-          <span class="cb-palette-icon" style="background:rgba(237,66,69,0.15);color:#ed4245">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-          </span>
-          <span>Remove Role</span>
-        </button>
-        <button class="cb-palette-item" data-add-block="react">
-          <span class="cb-palette-icon" style="background:rgba(250,166,26,0.12);color:#faa61a">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-          </span>
-          <span>Add Reaction</span>
-        </button>
-      </div>
-
-      <div class="cb-panel-section">
-        <div class="cb-panel-label">Discord Components <span class="cb-soon-badge">Soon</span></div>
-        <div class="cb-palette-item cb-palette--disabled">
-          <span class="cb-palette-icon" style="background:rgba(255,255,255,0.05);color:var(--text-4)">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="8" width="20" height="8" rx="2"/></svg>
-          </span>
-          <span>Button Row</span>
-        </div>
-        <div class="cb-palette-item cb-palette--disabled">
-          <span class="cb-palette-icon" style="background:rgba(255,255,255,0.05);color:var(--text-4)">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-          </span>
-          <span>Select Menu</span>
-        </div>
-        <div class="cb-palette-item cb-palette--disabled">
-          <span class="cb-palette-icon" style="background:rgba(255,255,255,0.05);color:var(--text-4)">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
-          </span>
-          <span>Modal</span>
-        </div>
-      </div>
-
-      <!-- Variables Reference -->
-      <div class="cb-panel-section cb-vars-section">
-        <div class="cb-panel-label">Variables</div>
-        <div class="cb-vars-grid">
-          <button class="cb-var-chip" data-copy="{user}" title="Mention the user">{user}</button>
-          <button class="cb-var-chip" data-copy="{username}" title="User's display name">{username}</button>
-          <button class="cb-var-chip" data-copy="{server}" title="Server name">{server}</button>
-          <button class="cb-var-chip" data-copy="{channel}" title="Channel mention">{channel}</button>
-          <button class="cb-var-chip" data-copy="{membercount}" title="Server member count">{membercount}</button>
-          <button class="cb-var-chip" data-copy="{userid}" title="User's Discord ID">{userid}</button>
-          <button class="cb-var-chip" data-copy="{tag}" title="Username#0000 or username">{tag}</button>
-        </div>
-        <p class="cb-vars-hint">Click a variable to copy it to clipboard.</p>
-      </div>
-
+      <div id="cb-block-categories" class="cb-block-categories"></div>
     </aside>
 
-    <!-- ───────── CENTER: Flow Canvas ───────── -->
-    <div class="cb-canvas" id="cbCanvas">
-
-      <!-- Loading state -->
-      <div class="cb-canvas-loading" id="cbCanvasLoading">
-        <div class="cb-spinner"></div>
-        <span>Loading builder…</span>
+    <!-- ── Canvas ──────────────────────────────────────────── -->
+    <main class="cb-canvas">
+      <div id="cb-blocks-container" class="cb-blocks-container">
+        <!-- Trigger block + action blocks rendered here by JS -->
       </div>
-
-      <!-- Flow content (rendered by JS) -->
-      <div class="cb-flow" id="cbFlow" style="display:none">
-
-        <!-- FIXED: Trigger block -->
-        <div class="cb-block cb-block--trigger cb-block--fixed" id="cbBlockTrigger">
-          <div class="cb-block-header" data-collapse="trigger">
-            <div class="cb-block-header-left">
-              <div class="cb-block-drag-placeholder"></div>
-              <div class="cb-block-type-icon cb-icon--trigger">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-              </div>
-              <div class="cb-block-type-label">Trigger</div>
-              <div class="cb-block-summary" id="cbTriggerSummary">Slash command</div>
-            </div>
-            <div class="cb-block-header-right">
-              <div class="cb-block-fixed-badge">Always On</div>
-              <button class="cb-block-collapse-btn" data-collapse-target="cb-trigger-body" aria-label="Toggle">
-                <svg class="cb-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-            </div>
-          </div>
-          <div class="cb-block-body" id="cb-trigger-body">
-            <div class="cb-field-group">
-              <div class="cb-trigger-type-tabs" id="cbTriggerTypeTabs">
-                <button class="cb-tab cb-tab--active" data-ttype="slash">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                  Slash
-                </button>
-                <button class="cb-tab" data-ttype="prefix">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-                  Prefix
-                </button>
-                <button class="cb-tab" data-ttype="contains">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                  Contains
-                </button>
-                <button class="cb-tab" data-ttype="exact">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
-                  Exact
-                </button>
-                <button class="cb-tab" data-ttype="regex">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 9h6v6H9z"/><path d="M3 3h18v18H3z"/></svg>
-                  Regex
-                </button>
-              </div>
-            </div>
-            <div class="cb-field-row">
-              <div class="cb-field cb-field--grow">
-                <label class="cb-label" for="cbTrigger">Trigger / Command Name <span class="cb-req">*</span></label>
-                <input class="cb-input" type="text" id="cbTrigger" maxlength="100" placeholder="e.g. hello" autocomplete="off">
-                <div class="cb-hint" id="cbTriggerHint">The slash command name — no spaces, lowercase</div>
-              </div>
-              <div class="cb-field" style="min-width:110px;max-width:130px">
-                <label class="cb-label" for="cbCooldown">Cooldown (s)</label>
-                <input class="cb-input" type="number" id="cbCooldown" min="0" max="86400" value="0">
-              </div>
-            </div>
-            <div class="cb-field" id="cbDescField">
-              <label class="cb-label" for="cbDescription">Description <span class="cb-hint-inline">shown in /command list</span></label>
-              <input class="cb-input" type="text" id="cbDescription" maxlength="100" placeholder="What does this command do?">
-            </div>
-          </div>
-        </div>
-
-        <!-- FIXED: Permissions & Restrictions block -->
-        <div class="cb-block cb-block--restrictions cb-block--fixed" id="cbBlockRestrictions">
-          <div class="cb-block-header">
-            <div class="cb-block-header-left">
-              <div class="cb-block-drag-placeholder"></div>
-              <div class="cb-block-type-icon cb-icon--restrictions">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-              </div>
-              <div class="cb-block-type-label">Permissions &amp; Restrictions</div>
-              <div class="cb-block-summary" id="cbRestrictionsSummary">No restrictions</div>
-            </div>
-            <div class="cb-block-header-right">
-              <div class="cb-block-fixed-badge">Always On</div>
-              <button class="cb-block-collapse-btn" data-collapse-target="cb-restrictions-body" aria-label="Toggle">
-                <svg class="cb-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
-            </div>
-          </div>
-          <div class="cb-block-body cb-block-body--collapsed" id="cb-restrictions-body">
-            <div class="cb-field-row" id="cbRolesChannelsRow">
-              <div class="cb-field cb-field--grow">
-                <label class="cb-label">Required Roles <span class="cb-hint-inline">user must have one</span></label>
-                <div class="cb-multiselect-wrap" id="cbReqRolesWrap">
-                  <div class="cb-multiselect-tags" id="cbReqRolesTags"></div>
-                  <select class="cb-input cb-multiselect-select" id="cbReqRolesSelect" size="1">
-                    <option value="">Loading roles…</option>
-                  </select>
-                </div>
-              </div>
-              <div class="cb-field cb-field--grow">
-                <label class="cb-label">Allowed Channels <span class="cb-hint-inline">blank = anywhere</span></label>
-                <div class="cb-multiselect-wrap" id="cbAllowedChannelsWrap">
-                  <div class="cb-multiselect-tags" id="cbAllowedChannelsTags"></div>
-                  <select class="cb-input cb-multiselect-select" id="cbAllowedChannelsSelect" size="1">
-                    <option value="">Loading channels…</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div class="cb-toggles-row">
-              <label class="cb-toggle-label">
-                <input type="checkbox" class="cb-checkbox" id="cbCaseSensitive">
-                <span>Case sensitive</span>
-              </label>
-              <label class="cb-toggle-label">
-                <input type="checkbox" class="cb-checkbox" id="cbDeleteTrigger">
-                <span>Delete trigger message</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Dynamic action blocks injected here by JS -->
-        <div id="cbActionBlocks"></div>
-
-        <!-- Add block button -->
-        <div class="cb-add-block-row" id="cbAddBlockRow">
-          <div class="cb-add-block-inner">
-            <button class="cb-add-block-btn" id="cbAddBlockBtn">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Add Action Block
-            </button>
-            <div class="cb-add-block-menu" id="cbAddBlockMenu" style="display:none">
-              <div class="cb-abm-section">
-                <div class="cb-abm-label">Actions</div>
-                <button class="cb-abm-item" data-add-block="reply">
-                  <span class="cb-abm-icon" style="color:#57f287">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                  </span>
-                  Send Reply <span class="cb-abm-desc">Reply to the user's message</span>
-                </button>
-                <button class="cb-abm-item" data-add-block="message">
-                  <span class="cb-abm-icon" style="color:#60a5fa">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
-                  </span>
-                  Send Message <span class="cb-abm-desc">Send a new message to the channel</span>
-                </button>
-                <button class="cb-abm-item" data-add-block="embed">
-                  <span class="cb-abm-icon" style="color:#7289da">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-                  </span>
-                  Send Embed <span class="cb-abm-desc">Rich embed with color, fields &amp; more</span>
-                </button>
-                <button class="cb-abm-item" data-add-block="dm">
-                  <span class="cb-abm-icon" style="color:#faa61a">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                  </span>
-                  DM User <span class="cb-abm-desc">Send a private message to the user</span>
-                </button>
-              </div>
-              <div class="cb-abm-section">
-                <div class="cb-abm-label">Management</div>
-                <button class="cb-abm-item" data-add-block="add_role">
-                  <span class="cb-abm-icon" style="color:#57f287">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-                  </span>
-                  Add Role <span class="cb-abm-desc">Assign a role to the user</span>
-                </button>
-                <button class="cb-abm-item" data-add-block="remove_role">
-                  <span class="cb-abm-icon" style="color:#ed4245">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-                  </span>
-                  Remove Role <span class="cb-abm-desc">Remove a role from the user</span>
-                </button>
-                <button class="cb-abm-item" data-add-block="react">
-                  <span class="cb-abm-icon" style="color:#faa61a">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-                  </span>
-                  Add Reaction <span class="cb-abm-desc">React to the trigger message</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div><!-- /cb-flow -->
-    </div><!-- /cb-canvas -->
-
-  </div><!-- /cb-main -->
-
-  <!-- Unsaved changes warning modal (driven by JS, no inline handlers) -->
-  <div class="cb-modal-overlay" id="cbUnsavedModal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="cbUnsavedTitle">
-    <div class="cb-modal">
-      <div class="cb-modal-icon cb-modal-icon--warning">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div class="cb-canvas-footer">
+        <button id="cb-add-first-block" class="cb-add-block-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Block
+        </button>
       </div>
-      <h3 class="cb-modal-title" id="cbUnsavedTitle">Unsaved Changes</h3>
-      <p class="cb-modal-body">You have unsaved changes to this command. Leave without saving?</p>
+    </main>
+
+    <!-- ── JSON Panel ───────────────────────────────────────── -->
+    <aside id="cb-json-panel" class="cb-json-panel cb-json-hidden">
+      <div class="cb-json-head">
+        <span>JSON Preview</span>
+        <button id="cb-json-copy" class="cb-btn cb-btn-ghost cb-btn-sm">Copy</button>
+      </div>
+      <textarea id="cb-json-editor" class="cb-json-editor" spellcheck="false" autocomplete="off" wrap="off"></textarea>
+      <div class="cb-json-actions">
+        <button id="cb-json-apply" class="cb-btn cb-btn-primary cb-btn-sm">Apply JSON</button>
+        <span class="cb-json-hint">Edit JSON directly and click Apply</span>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ── Block Picker Modal ────────────────────────────────── -->
+  <div id="cb-picker-modal" class="cb-modal cb-modal-hidden" role="dialog" aria-modal="true" aria-label="Pick a block">
+    <div class="cb-modal-backdrop"></div>
+    <div class="cb-modal-box">
+      <div class="cb-modal-head">
+        <h3>Add Block</h3>
+        <button class="cb-modal-close" id="cb-picker-close" aria-label="Close">✕</button>
+      </div>
+      <input id="cb-picker-search" type="text" class="cb-picker-search" placeholder="Search blocks..." autocomplete="off" />
+      <div id="cb-picker-list" class="cb-picker-list"></div>
+    </div>
+  </div>
+
+  <!-- ── Conditions Modal ─────────────────────────────────── -->
+  <div id="cb-conditions-modal" class="cb-modal cb-modal-hidden" role="dialog" aria-modal="true" aria-label="Command Conditions">
+    <div class="cb-modal-backdrop"></div>
+    <div class="cb-modal-box cb-modal-wide">
+      <div class="cb-modal-head">
+        <h3>Command Conditions</h3>
+        <button class="cb-modal-close" id="cb-cond-close">✕</button>
+      </div>
+      <div class="cb-cond-grid">
+        <div class="cb-field-group">
+          <label class="cb-label">Allowed Roles <span class="cb-hint">(must have one)</span></label>
+          <input id="cond-allowed-roles" type="text" class="cb-input" placeholder="Role IDs, comma-separated" />
+        </div>
+        <div class="cb-field-group">
+          <label class="cb-label">Ignored Roles <span class="cb-hint">(blocked if has any)</span></label>
+          <input id="cond-ignored-roles" type="text" class="cb-input" placeholder="Role IDs, comma-separated" />
+        </div>
+        <div class="cb-field-group">
+          <label class="cb-label">Allowed Channels</label>
+          <input id="cond-allowed-channels" type="text" class="cb-input" placeholder="Channel IDs, comma-separated" />
+        </div>
+        <div class="cb-field-group">
+          <label class="cb-label">Ignored Channels</label>
+          <input id="cond-ignored-channels" type="text" class="cb-input" placeholder="Channel IDs, comma-separated" />
+        </div>
+        <div class="cb-field-group">
+          <label class="cb-label">Cooldown (seconds)</label>
+          <input id="cond-cooldown-seconds" type="number" class="cb-input" placeholder="0 = none" min="0" max="86400" />
+        </div>
+        <div class="cb-field-group">
+          <label class="cb-label">Cooldown Scope</label>
+          <select id="cond-cooldown-scope" class="cb-select">
+            <option value="user">Per User</option>
+            <option value="channel">Per Channel</option>
+            <option value="guild">Per Server</option>
+          </select>
+        </div>
+        <div class="cb-field-group cb-full">
+          <label class="cb-toggle-label">
+            <input id="cond-ephemeral" type="checkbox" class="cb-toggle-input" />
+            <span class="cb-toggle-track"></span>
+            Ephemeral Reply (only visible to triggering user)
+          </label>
+        </div>
+      </div>
       <div class="cb-modal-actions">
-        <button class="cb-modal-btn cb-modal-btn--ghost" id="cbUnsavedStay">Stay</button>
-        <button class="cb-modal-btn cb-modal-btn--danger" id="cbUnsavedLeave">Leave Without Saving</button>
+        <button id="cb-cond-save" class="cb-btn cb-btn-primary">Save Conditions</button>
       </div>
     </div>
   </div>
 
-  <script src="/js/command-builder.js?v=1"></script>
+  <!-- ── Import Modal ─────────────────────────────────────── -->
+  <div id="cb-import-modal" class="cb-modal cb-modal-hidden" role="dialog" aria-modal="true">
+    <div class="cb-modal-backdrop"></div>
+    <div class="cb-modal-box">
+      <div class="cb-modal-head">
+        <h3>Import Command JSON</h3>
+        <button class="cb-modal-close" id="cb-import-close">✕</button>
+      </div>
+      <textarea id="cb-import-text" class="cb-json-editor" rows="10" placeholder="Paste exported command JSON here..." spellcheck="false"></textarea>
+      <div class="cb-modal-actions">
+        <button id="cb-import-confirm" class="cb-btn cb-btn-primary">Import</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden data passed from server -->
+  <script id="cb-server-data" type="application/json"><%- JSON.stringify({
+    guildId: guild.id,
+    guildName: guild.name,
+    cmdId: locals.cmdId || null,
+    cmd: locals.cmd ? (typeof locals.cmd === 'string' ? JSON.parse(locals.cmd) : locals.cmd) : null,
+  }) %></script>
+</div>
+
+<!-- ── Scripts ────────────────────────────────────────────── -->
+<script src="/js/command-builder.js?v=20260601"></script>
 </body>
 </html>

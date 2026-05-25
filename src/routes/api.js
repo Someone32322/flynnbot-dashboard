@@ -3,6 +3,8 @@ const path = require('path');
 const router = express.Router();
 
 const { GuildConfig } = require('../models/GuildConfig');
+const { StoredVariable }      = require('../models/StoredVariable');
+const { StoredVariableValue } = require('../models/StoredVariableValue');
 const { LoggingConfig } = require('../models/LoggingConfig');
 const { EmbedTemplate } = require('../models/EmbedTemplate');
 const { ReactionRole } = require('../models/ReactionRole');
@@ -38,6 +40,7 @@ const { InviteTracker, InviteJoin } = require('../models/InviteTracker');
 const { EscalationConfig } = require('../models/EscalationConfig');
 const { AFKEntry } = require('../models/AFKEntry');
 const { SlowmodeConfig } = require('../models/SlowmodeConfig');
+const { GuildCommand } = require('../models/GuildCommand');
 const discordApi = require('../lib/discord');
 const { canReviewSingleApplication } = require('../services/applicationAccess');
 
@@ -4448,6 +4451,487 @@ router.get('/guild/:guildId/applications/:appId/export-csv', requireAuth, requir
   } catch (err) {
     console.error('[API] GET /applications/export-csv', err);
     res.status(500).json({ error: 'Failed to export CSV' });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════
+//  Data Storage — Stored Variable Definitions & Values
+// ══════════════════════════════════════════════════════════════════
+
+const STORED_VAR_REF_RE   = /^[a-z0-9_-]{1,64}$/;
+const SNOWFLAKE_RE_STORED = /^\d{17,19}$/;
+const VALID_TYPES_STORED  = new Set(['text', 'number', 'user', 'channel', 'collection', 'object']);
+const VALID_SCOPES_STORED = new Set(['guild', 'user', 'command']);
+const VALID_ITEM_TYPES    = new Set(['text', 'number', 'boolean', 'user', 'channel']);
+const MAX_STORED_VARS     = 100;
+
+// ── GET /api/guild/:guildId/stored-variables ─────────────────────
+router.get('/guild/:guildId/stored-variables', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const vars = await StoredVariable.find({ guildId }).sort({ createdAt: 1 }).lean();
+    res.json({ variables: vars });
+  } catch (err) {
+    console.error('[API] GET /stored-variables', err);
+    res.status(500).json({ error: 'Failed to fetch stored variables' });
+  }
+});
+
+// ── POST /api/guild/:guildId/stored-variables ────────────────────
+router.post('/guild/:guildId/stored-variables', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId } = req.params;
+  const { name, refName, description, type, scope, config = {} } = req.body;
+
+  // Validation
+  if (!name || typeof name !== 'string' || name.trim().length < 1 || name.trim().length > 100) {
+    return res.status(400).json({ error: 'Name must be 1-100 characters' });
+  }
+  if (!refName || !STORED_VAR_REF_RE.test(refName)) {
+    return res.status(400).json({ error: 'Reference name must be 1-64 lowercase alphanumeric characters, hyphens, or underscores' });
+  }
+  if (!VALID_TYPES_STORED.has(type)) {
+    return res.status(400).json({ error: `Invalid type. Must be one of: ${[...VALID_TYPES_STORED].join(', ')}` });
+  }
+  if (!VALID_SCOPES_STORED.has(scope)) {
+    return res.status(400).json({ error: `Invalid scope. Must be one of: ${[...VALID_SCOPES_STORED].join(', ')}` });
+  }
+
+  try {
+    const count = await StoredVariable.countDocuments({ guildId });
+    if (count >= MAX_STORED_VARS) {
+      return res.status(400).json({ error: `Maximum ${MAX_STORED_VARS} stored variables per server` });
+    }
+    const exists = await StoredVariable.findOne({ guildId, refName });
+    if (exists) return res.status(409).json({ error: `A variable with reference name "${refName}" already exists` });
+
+    const sanitizedConfig = sanitizeStoredVarConfig(type, config);
+
+    const variable = await StoredVariable.create({
+      guildId,
+      name:        name.trim(),
+      refName,
+      description: typeof description === 'string' ? description.trim().slice(0, 200) : '',
+      type,
+      scope,
+      enabled:     true,
+      config:      sanitizedConfig,
+    });
+    res.status(201).json({ variable });
+  } catch (err) {
+    if (err.code === 11000) return res.status(409).json({ error: `Reference name "${refName}" already exists` });
+    console.error('[API] POST /stored-variables', err);
+    res.status(500).json({ error: 'Failed to create stored variable' });
+  }
+});
+
+// ── PATCH /api/guild/:guildId/stored-variables/:varId ───────────
+router.patch('/guild/:guildId/stored-variables/:varId', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId, varId } = req.params;
+  const { name, description, config, enabled } = req.body;
+  try {
+    const variable = await StoredVariable.findOne({ _id: varId, guildId });
+    if (!variable) return res.status(404).json({ error: 'Variable not found' });
+
+    if (name !== undefined) {
+      if (typeof name !== 'string' || name.trim().length < 1 || name.trim().length > 100) {
+        return res.status(400).json({ error: 'Name must be 1-100 characters' });
+      }
+      variable.name = name.trim();
+    }
+    if (description !== undefined) {
+      variable.description = typeof description === 'string' ? description.trim().slice(0, 200) : '';
+    }
+    if (enabled !== undefined) {
+      variable.enabled = Boolean(enabled);
+    }
+    if (config !== undefined) {
+      const sanitized = sanitizeStoredVarConfig(variable.type, config);
+      variable.config = { ...variable.config.toObject?.() ?? variable.config, ...sanitized };
+    }
+    await variable.save();
+    res.json({ variable });
+  } catch (err) {
+    console.error('[API] PATCH /stored-variables/:varId', err);
+    res.status(500).json({ error: 'Failed to update stored variable' });
+  }
+});
+
+// ── DELETE /api/guild/:guildId/stored-variables/:varId ──────────
+router.delete('/guild/:guildId/stored-variables/:varId', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId, varId } = req.params;
+  try {
+    const variable = await StoredVariable.findOne({ _id: varId, guildId });
+    if (!variable) return res.status(404).json({ error: 'Variable not found' });
+
+    // Delete all associated values
+    const { deletedCount } = await StoredVariableValue.deleteMany({ definitionId: varId });
+    await StoredVariable.deleteOne({ _id: varId });
+    res.json({ ok: true, valuesDeleted: deletedCount });
+  } catch (err) {
+    console.error('[API] DELETE /stored-variables/:varId', err);
+    res.status(500).json({ error: 'Failed to delete stored variable' });
+  }
+});
+
+// ── GET /api/guild/:guildId/stored-variables/:varId/values ───────
+router.get('/guild/:guildId/stored-variables/:varId/values', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId, varId } = req.params;
+  const page  = Math.max(1, parseInt(req.query.page) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+  const skip  = (page - 1) * limit;
+  const userId = req.query.userId && SNOWFLAKE_RE_STORED.test(req.query.userId) ? req.query.userId : undefined;
+
+  try {
+    const variable = await StoredVariable.findOne({ _id: varId, guildId }).lean();
+    if (!variable) return res.status(404).json({ error: 'Variable not found' });
+
+    const filter = { definitionId: varId };
+    if (userId) filter.userId = userId;
+
+    const [values, total] = await Promise.all([
+      StoredVariableValue.find(filter).sort({ updatedAt: -1 }).skip(skip).limit(limit).lean(),
+      StoredVariableValue.countDocuments(filter),
+    ]);
+    res.json({ values, total, page, pages: Math.ceil(total / limit) });
+  } catch (err) {
+    console.error('[API] GET /stored-variables/:varId/values', err);
+    res.status(500).json({ error: 'Failed to fetch variable values' });
+  }
+});
+
+// ── POST /api/guild/:guildId/stored-variables/:varId/set-value ───
+router.post('/guild/:guildId/stored-variables/:varId/set-value', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId, varId } = req.params;
+  const { userId, value } = req.body;
+  try {
+    const variable = await StoredVariable.findOne({ _id: varId, guildId }).lean();
+    if (!variable) return res.status(404).json({ error: 'Variable not found' });
+
+    if (variable.scope === 'user' && (!userId || !SNOWFLAKE_RE_STORED.test(userId))) {
+      return res.status(400).json({ error: 'userId (valid Discord snowflake) is required for user-scoped variables' });
+    }
+
+    const filter = { definitionId: varId, scope: variable.scope };
+    if (variable.scope === 'user') filter.userId = userId;
+
+    const doc = await StoredVariableValue.findOneAndUpdate(
+      filter,
+      { $set: { guildId, value, updatedAt: new Date() } },
+      { upsert: true, returnDocument: 'after' }
+    ).lean();
+    res.json({ value: doc });
+  } catch (err) {
+    console.error('[API] POST /stored-variables/:varId/set-value', err);
+    res.status(500).json({ error: 'Failed to set value' });
+  }
+});
+
+// ── POST /api/guild/:guildId/stored-variables/:varId/reset ───────
+router.post('/guild/:guildId/stored-variables/:varId/reset', requireAuth, requireGuildAdmin, async (req, res) => {
+  const { guildId, varId } = req.params;
+  try {
+    const variable = await StoredVariable.findOne({ _id: varId, guildId }).lean();
+    if (!variable) return res.status(404).json({ error: 'Variable not found' });
+
+    const { deletedCount } = await StoredVariableValue.deleteMany({ definitionId: varId });
+    res.json({ ok: true, deleted: deletedCount });
+  } catch (err) {
+    console.error('[API] POST /stored-variables/:varId/reset', err);
+    res.status(500).json({ error: 'Failed to reset values' });
+  }
+});
+
+/**
+ * Sanitize and build a type-appropriate config object.
+ * Strips unknown keys and coerces values to safe types.
+ * @param {string} type
+ * @param {object} raw
+ * @returns {object}
+ */
+function sanitizeStoredVarConfig(type, raw = {}) {
+  const cfg = {};
+
+  // Common
+  cfg.defaultValue = raw.defaultValue !== undefined ? raw.defaultValue : null;
+
+  switch (type) {
+    case 'text':
+      cfg.maxLength = raw.maxLength !== undefined ? Math.min(2000, Math.max(0, parseInt(raw.maxLength) || 0)) : null;
+      break;
+    case 'number':
+      cfg.isFloat = Boolean(raw.isFloat);
+      cfg.min = raw.min !== undefined && raw.min !== '' && raw.min !== null ? Number(raw.min) : null;
+      cfg.max = raw.max !== undefined && raw.max !== '' && raw.max !== null ? Number(raw.max) : null;
+      if (cfg.defaultValue !== null) cfg.defaultValue = cfg.isFloat ? parseFloat(cfg.defaultValue) : parseInt(cfg.defaultValue, 10);
+      break;
+    case 'user':
+      cfg.userDataType = ['id', 'username', 'mention'].includes(raw.userDataType) ? raw.userDataType : 'id';
+      break;
+    case 'channel':
+      cfg.channelDataType = ['id', 'name', 'mention'].includes(raw.channelDataType) ? raw.channelDataType : 'id';
+      break;
+    case 'collection':
+      cfg.itemType = VALID_ITEM_TYPES.has(raw.itemType) ? raw.itemType : 'text';
+      cfg.maxSize  = raw.maxSize ? Math.min(1000, Math.max(1, parseInt(raw.maxSize) || 100)) : 100;
+      break;
+    case 'object':
+      cfg.properties = Array.isArray(raw.properties)
+        ? raw.properties.slice(0, 50).map(p => ({
+            name:         String(p.name || '').trim().slice(0, 64),
+            refName:      String(p.refName || '').trim().slice(0, 64).toLowerCase().replace(/[^a-z0-9_-]/g, '_'),
+            type:         ['text', 'number', 'boolean'].includes(p.type) ? p.type : 'text',
+            required:     Boolean(p.required),
+            defaultValue: p.defaultValue !== undefined ? p.defaultValue : null,
+          })).filter(p => p.name && p.refName)
+        : [];
+      break;
+  }
+
+  return cfg;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GuildCommand CRUD — Advanced Command Builder
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const VALID_TRIGGER_TYPES = new Set([
+  'slash','prefix','contains','exact','startsWith','regex',
+  'button','select_menu','modal_submit',
+  'member_join','member_leave',
+  'reaction_add','reaction_remove',
+  'voice_join','voice_leave',
+  'message_delete','message_edit',
+  'scheduled',
+]);
+
+function sanitizeGuildCommand(body) {
+  const trigger = body.trigger || {};
+  if (!VALID_TRIGGER_TYPES.has(trigger.type)) throw new Error('Invalid trigger type');
+
+  // Sanitize trigger value
+  const value = typeof trigger.value === 'string'
+    ? trigger.value.trim().slice(0, 100)
+    : '';
+
+  // Validate name (alphanumeric, hyphens, underscores)
+  const name = typeof body.name === 'string'
+    ? body.name.trim().slice(0, 100).replace(/[^a-z0-9_\-\s]/gi, '').trim()
+    : '';
+  if (!name) throw new Error('Command name is required');
+
+  // Blocks: strip any executable code fields, only allow data sub-objects
+  const blocks = Array.isArray(body.blocks)
+    ? body.blocks.slice(0, 100).map(b => ({
+        id:   String(b.id || '').slice(0, 64),
+        type: String(b.type || '').slice(0, 64),
+        data: b.data && typeof b.data === 'object' ? b.data : {},
+      }))
+    : [];
+
+  const conditions = body.conditions && typeof body.conditions === 'object' ? {
+    allowedRoles:        Array.isArray(body.conditions.allowedRoles)    ? body.conditions.allowedRoles.slice(0, 50)    : [],
+    ignoredRoles:        Array.isArray(body.conditions.ignoredRoles)    ? body.conditions.ignoredRoles.slice(0, 50)    : [],
+    allowedChannels:     Array.isArray(body.conditions.allowedChannels) ? body.conditions.allowedChannels.slice(0, 50) : [],
+    ignoredChannels:     Array.isArray(body.conditions.ignoredChannels) ? body.conditions.ignoredChannels.slice(0, 50) : [],
+    requiredPermissions: Array.isArray(body.conditions.requiredPermissions) ? body.conditions.requiredPermissions.slice(0, 20) : [],
+    cooldown: body.conditions.cooldown ? {
+      seconds: Math.min(86400, Math.max(0, parseInt(body.conditions.cooldown.seconds) || 0)),
+      scope:   ['user','guild','channel'].includes(body.conditions.cooldown.scope) ? body.conditions.cooldown.scope : 'user',
+    } : undefined,
+    ephemeralReply: Boolean(body.conditions.ephemeralReply),
+  } : {};
+
+  return {
+    name,
+    description:  typeof body.description === 'string' ? body.description.trim().slice(0, 200) : '',
+    enabled:      body.enabled !== false,
+    trigger: {
+      type:    trigger.type,
+      value,
+      options: Array.isArray(trigger.options) ? trigger.options.slice(0, 25) : [],
+      config:  trigger.config && typeof trigger.config === 'object' ? trigger.config : {},
+    },
+    blocks,
+    conditions,
+  };
+}
+
+// GET /api/guild/:guildId/guild-commands
+router.get('/guild/:guildId/guild-commands', requireAuth, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const commands = await GuildCommand.find({ guildId }).sort({ createdAt: -1 }).lean();
+    res.json({ commands });
+  } catch (err) {
+    console.error('GET guild-commands error:', err);
+    res.status(500).json({ error: 'Failed to fetch commands' });
+  }
+});
+
+// POST /api/guild/:guildId/guild-commands
+router.post('/guild/:guildId/guild-commands', requireAuth, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const data = sanitizeGuildCommand(req.body);
+    const cmd = new GuildCommand({ ...data, guildId });
+    await cmd.save();
+    res.status(201).json({ command: cmd });
+  } catch (err) {
+    console.error('POST guild-commands error:', err);
+    res.status(400).json({ error: err.message || 'Failed to create command' });
+  }
+});
+
+// GET /api/guild/:guildId/guild-commands/:id
+router.get('/guild/:guildId/guild-commands/:id', requireAuth, async (req, res) => {
+  const { guildId, id } = req.params;
+  try {
+    const cmd = await GuildCommand.findOne({ _id: id, guildId }).lean();
+    if (!cmd) return res.status(404).json({ error: 'Command not found' });
+    res.json({ command: cmd });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch command' });
+  }
+});
+
+// PUT /api/guild/:guildId/guild-commands/:id
+router.put('/guild/:guildId/guild-commands/:id', requireAuth, async (req, res) => {
+  const { guildId, id } = req.params;
+  try {
+    const data = sanitizeGuildCommand(req.body);
+    const cmd = await GuildCommand.findOneAndUpdate(
+      { _id: id, guildId },
+      { $set: data },
+      { new: true, runValidators: true },
+    );
+    if (!cmd) return res.status(404).json({ error: 'Command not found' });
+    res.json({ command: cmd });
+  } catch (err) {
+    console.error('PUT guild-commands error:', err);
+    res.status(400).json({ error: err.message || 'Failed to update command' });
+  }
+});
+
+// DELETE /api/guild/:guildId/guild-commands/:id
+router.delete('/guild/:guildId/guild-commands/:id', requireAuth, async (req, res) => {
+  const { guildId, id } = req.params;
+  try {
+    const cmd = await GuildCommand.findOneAndDelete({ _id: id, guildId });
+    if (!cmd) return res.status(404).json({ error: 'Command not found' });
+    // If it was a slash command, delete from Discord too
+    if (cmd.trigger?.type === 'slash' && cmd.discordCommandId) {
+      await discordApi.deleteGuildCommand(guildId, cmd.discordCommandId).catch(() => null);
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete command' });
+  }
+});
+
+// POST /api/guild/:guildId/guild-commands/:id/toggle
+router.post('/guild/:guildId/guild-commands/:id/toggle', requireAuth, async (req, res) => {
+  const { guildId, id } = req.params;
+  try {
+    const cmd = await GuildCommand.findOne({ _id: id, guildId });
+    if (!cmd) return res.status(404).json({ error: 'Command not found' });
+    cmd.enabled = !cmd.enabled;
+    await cmd.save();
+    res.json({ enabled: cmd.enabled });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to toggle command' });
+  }
+});
+
+// POST /api/guild/:guildId/guild-commands/:id/sync
+// Register or update this slash command with Discord
+router.post('/guild/:guildId/guild-commands/:id/sync', requireAuth, async (req, res) => {
+  const { guildId, id } = req.params;
+  try {
+    const cmd = await GuildCommand.findOne({ _id: id, guildId });
+    if (!cmd) return res.status(404).json({ error: 'Command not found' });
+    if (cmd.trigger?.type !== 'slash') {
+      return res.status(400).json({ error: 'Only slash commands can be synced with Discord' });
+    }
+
+    const body = {
+      name:        cmd.trigger.value || cmd.name.toLowerCase().replace(/\s+/g, '-'),
+      description: cmd.description || 'Custom command',
+      options:     cmd.trigger.options || [],
+    };
+
+    let result;
+    if (cmd.discordCommandId) {
+      result = await discordApi.updateGuildCommand(guildId, cmd.discordCommandId, body);
+    } else {
+      result = await discordApi.registerGuildCommand(guildId, body);
+    }
+
+    if (result?.id) {
+      cmd.discordCommandId = result.id;
+      await cmd.save();
+    }
+
+    res.json({ ok: true, discordCommandId: cmd.discordCommandId });
+  } catch (err) {
+    console.error('Sync guild command error:', err);
+    res.status(500).json({ error: err.message || 'Failed to sync command' });
+  }
+});
+
+// POST /api/guild/:guildId/guild-commands/sync-all
+router.post('/guild/:guildId/guild-commands/sync-all', requireAuth, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const cmds = await GuildCommand.find({ guildId, 'trigger.type': 'slash', enabled: true });
+    const results = [];
+    for (const cmd of cmds) {
+      const body = {
+        name:        cmd.trigger.value || cmd.name.toLowerCase().replace(/\s+/g, '-'),
+        description: cmd.description || 'Custom command',
+        options:     cmd.trigger.options || [],
+      };
+      try {
+        let result;
+        if (cmd.discordCommandId) {
+          result = await discordApi.updateGuildCommand(guildId, cmd.discordCommandId, body);
+        } else {
+          result = await discordApi.registerGuildCommand(guildId, body);
+        }
+        if (result?.id) { cmd.discordCommandId = result.id; await cmd.save(); }
+        results.push({ id: String(cmd._id), name: cmd.name, ok: true });
+      } catch (e) {
+        results.push({ id: String(cmd._id), name: cmd.name, ok: false, error: e.message });
+      }
+    }
+    res.json({ results });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to sync all commands' });
+  }
+});
+
+// GET /api/guild/:guildId/guild-commands/:id/export
+router.get('/guild/:guildId/guild-commands/:id/export', requireAuth, async (req, res) => {
+  const { guildId, id } = req.params;
+  try {
+    const cmd = await GuildCommand.findOne({ _id: id, guildId }).lean();
+    if (!cmd) return res.status(404).json({ error: 'Command not found' });
+    const { _id, __v, guildId: _g, discordCommandId, metadata, createdAt, updatedAt, ...exportable } = cmd;
+    res.json(exportable);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to export command' });
+  }
+});
+
+// POST /api/guild/:guildId/guild-commands/import
+router.post('/guild/:guildId/guild-commands/import', requireAuth, async (req, res) => {
+  const { guildId } = req.params;
+  try {
+    const data = sanitizeGuildCommand(req.body);
+    const cmd = new GuildCommand({ ...data, guildId });
+    await cmd.save();
+    res.status(201).json({ command: cmd });
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Failed to import command' });
   }
 });
 

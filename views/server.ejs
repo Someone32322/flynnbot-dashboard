@@ -92,6 +92,12 @@
             </span>
             <span class="sidebar-nav-text">Custom Commands</span>
           </button>
+          <button class="sidebar-nav-item" data-section="data-storage">
+            <span class="sidebar-nav-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            </span>
+            <span class="sidebar-nav-text">Data Storage</span>
+          </button>
           <button class="sidebar-nav-item" data-section="ai">
             <span class="sidebar-nav-icon">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><circle cx="12" cy="10" r="1" fill="currentColor"/><circle cx="8" cy="10" r="1" fill="currentColor"/><circle cx="16" cy="10" r="1" fill="currentColor"/></svg>
@@ -1435,6 +1441,279 @@
         </div>
       </section>
 
+      <!-- ── DATA STORAGE SECTION ── -->
+      <section class="dash-section" id="section-data-storage" data-section="data-storage" style="display:none">
+        <div class="section-header">
+          <div>
+            <h2 class="section-page-title">Data Storage</h2>
+            <p class="section-page-sub">Create persistent variables that can be read and written by Custom Commands. Define types, scopes, and default values — then reference them with <code class="ds-code-inline">{stored.refName}</code> in any command.</p>
+          </div>
+          <button class="btn-primary" id="dsNewVarBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Variable
+          </button>
+        </div>
+
+        <!-- Tab bar -->
+        <div class="ds-tabs" id="dsTabs">
+          <button class="ds-tab active" data-tab="variables">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            Variables
+            <span class="ds-tab-badge" id="dsVarCount">0</span>
+          </button>
+          <button class="ds-tab" data-tab="predefined">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+            Predefined Variables
+          </button>
+        </div>
+
+        <!-- Variables tab -->
+        <div class="ds-tab-panel" id="dsTabVariables">
+          <div id="dsVarListWrap">
+            <div class="ds-empty-state" id="dsEmptyState" style="display:none">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+              <p>No stored variables defined yet.</p>
+              <p class="ds-empty-sub">Create your first variable to persist data across command executions.</p>
+              <button class="btn-primary" id="dsEmptyNewBtn">Create First Variable</button>
+            </div>
+            <div class="ds-loading" id="dsLoading">
+              <div class="spinner"></div>Loading…
+            </div>
+            <div id="dsVarTable" style="display:none">
+              <table class="ds-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Reference</th>
+                    <th>Type</th>
+                    <th>Scope</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="dsVarTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Predefined variables tab -->
+        <div class="ds-tab-panel" id="dsTabPredefined" style="display:none">
+          <div class="ds-predefined-header">
+            <input type="text" class="ds-search" id="dsPredefinedSearch" placeholder="Search variables…" autocomplete="off">
+            <span class="ds-predefined-hint">Click any variable to copy its placeholder</span>
+          </div>
+          <div id="dsPredefinedList"></div>
+        </div>
+
+        <!-- ── Edit / Create side panel ── -->
+        <div class="ds-panel-backdrop" id="dsPanelBackdrop" style="display:none"></div>
+        <div class="ds-panel" id="dsPanel" style="display:none">
+          <div class="ds-panel-header">
+            <h3 id="dsPanelTitle">New Variable</h3>
+            <button class="ds-panel-close" id="dsPanelClose" aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="ds-panel-body">
+            <form id="dsVarForm" novalidate>
+              <input type="hidden" id="dsVarId">
+
+              <div class="ds-field">
+                <label class="ds-label" for="dsVarName">Display Name <span class="ds-required">*</span></label>
+                <input type="text" id="dsVarName" class="ds-input" placeholder="e.g. User Points" maxlength="100" autocomplete="off">
+                <p class="ds-hint">A human-readable label for this variable.</p>
+              </div>
+
+              <div class="ds-field">
+                <label class="ds-label" for="dsVarRefName">Reference Name <span class="ds-required">*</span></label>
+                <div class="ds-ref-wrap">
+                  <span class="ds-ref-prefix">{stored.</span>
+                  <input type="text" id="dsVarRefName" class="ds-input ds-ref-input" placeholder="userPoints" maxlength="64" autocomplete="off" pattern="[a-z0-9_\-]+">
+                  <span class="ds-ref-suffix">}</span>
+                </div>
+                <p class="ds-hint">Used in commands as <code class="ds-code-inline">{stored.refName}</code>. Lowercase, letters, numbers, hyphens, underscores only.</p>
+              </div>
+
+              <div class="ds-field">
+                <label class="ds-label" for="dsVarDescription">Description</label>
+                <textarea id="dsVarDescription" class="ds-input ds-textarea" placeholder="What does this variable store?" maxlength="200" rows="2"></textarea>
+              </div>
+
+              <div class="ds-field-row">
+                <div class="ds-field">
+                  <label class="ds-label" for="dsVarType">Variable Type <span class="ds-required">*</span></label>
+                  <select id="dsVarType" class="ds-input ds-select">
+                    <option value="text">Text</option>
+                    <option value="number">Number</option>
+                    <option value="user">User</option>
+                    <option value="channel">Channel</option>
+                    <option value="collection">Collection</option>
+                    <option value="object">Object</option>
+                  </select>
+                </div>
+                <div class="ds-field">
+                  <label class="ds-label" for="dsVarScope">Scope <span class="ds-required">*</span></label>
+                  <select id="dsVarScope" class="ds-input ds-select">
+                    <option value="guild">Guild — one value for the whole server</option>
+                    <option value="user">User — one value per member</option>
+                    <option value="command">Command — one value per command</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- ── Dynamic config ── -->
+              <div id="dsTypeConfig">
+
+                <!-- TEXT config -->
+                <div class="ds-type-block" id="dsConfigText" style="display:none">
+                  <div class="ds-field">
+                    <label class="ds-label" for="dsCfgTextDefault">Default Value</label>
+                    <input type="text" id="dsCfgTextDefault" class="ds-input" placeholder="(empty)" maxlength="2000" autocomplete="off">
+                  </div>
+                  <div class="ds-field">
+                    <label class="ds-label" for="dsCfgTextMax">Max Length</label>
+                    <input type="number" id="dsCfgTextMax" class="ds-input ds-input-sm" placeholder="2000 (no limit)" min="1" max="2000">
+                  </div>
+                </div>
+
+                <!-- NUMBER config -->
+                <div class="ds-type-block" id="dsConfigNumber" style="display:none">
+                  <div class="ds-field">
+                    <label class="ds-label" for="dsCfgNumDefault">Default Value</label>
+                    <input type="number" id="dsCfgNumDefault" class="ds-input ds-input-sm" placeholder="0">
+                  </div>
+                  <div class="ds-field-row">
+                    <div class="ds-field">
+                      <label class="ds-label" for="dsCfgNumMin">Minimum</label>
+                      <input type="number" id="dsCfgNumMin" class="ds-input ds-input-sm" placeholder="(none)">
+                    </div>
+                    <div class="ds-field">
+                      <label class="ds-label" for="dsCfgNumMax">Maximum</label>
+                      <input type="number" id="dsCfgNumMax" class="ds-input ds-input-sm" placeholder="(none)">
+                    </div>
+                  </div>
+                  <div class="ds-field">
+                    <label class="ds-toggle-label">
+                      <input type="checkbox" id="dsCfgNumFloat" class="ds-toggle">
+                      <span class="ds-toggle-track"></span>
+                      Allow Decimals (float)
+                    </label>
+                  </div>
+                </div>
+
+                <!-- USER config -->
+                <div class="ds-type-block" id="dsConfigUser" style="display:none">
+                  <div class="ds-field">
+                    <label class="ds-label" for="dsCfgUserDataType">Stored Value Format</label>
+                    <select id="dsCfgUserDataType" class="ds-input ds-select">
+                      <option value="id">User ID (recommended)</option>
+                      <option value="username">Username</option>
+                      <option value="mention">Mention (@user)</option>
+                    </select>
+                    <p class="ds-hint">How the user value is stored. User ID is safest and most portable.</p>
+                  </div>
+                  <div class="ds-field">
+                    <label class="ds-label" for="dsCfgUserDefault">Default User ID</label>
+                    <input type="text" id="dsCfgUserDefault" class="ds-input" placeholder="(none)" maxlength="20" autocomplete="off">
+                  </div>
+                </div>
+
+                <!-- CHANNEL config -->
+                <div class="ds-type-block" id="dsConfigChannel" style="display:none">
+                  <div class="ds-field">
+                    <label class="ds-label" for="dsCfgChDataType">Stored Value Format</label>
+                    <select id="dsCfgChDataType" class="ds-input ds-select">
+                      <option value="id">Channel ID (recommended)</option>
+                      <option value="name">Channel Name</option>
+                      <option value="mention">Mention (#channel)</option>
+                    </select>
+                  </div>
+                  <div class="ds-field">
+                    <label class="ds-label" for="dsCfgChDefault">Default Channel ID</label>
+                    <input type="text" id="dsCfgChDefault" class="ds-input" placeholder="(none)" maxlength="20" autocomplete="off">
+                  </div>
+                </div>
+
+                <!-- COLLECTION config -->
+                <div class="ds-type-block" id="dsConfigCollection" style="display:none">
+                  <div class="ds-field-row">
+                    <div class="ds-field">
+                      <label class="ds-label" for="dsCfgColItemType">Item Type</label>
+                      <select id="dsCfgColItemType" class="ds-input ds-select">
+                        <option value="text">Text</option>
+                        <option value="number">Number</option>
+                        <option value="boolean">Boolean</option>
+                        <option value="user">User ID</option>
+                        <option value="channel">Channel ID</option>
+                      </select>
+                    </div>
+                    <div class="ds-field">
+                      <label class="ds-label" for="dsCfgColMaxSize">Max Items</label>
+                      <input type="number" id="dsCfgColMaxSize" class="ds-input ds-input-sm" placeholder="100" min="1" max="1000">
+                    </div>
+                  </div>
+                  <div class="ds-field">
+                    <label class="ds-label" for="dsCfgColDefault">Default Value (JSON array)</label>
+                    <input type="text" id="dsCfgColDefault" class="ds-input" placeholder='["item1", "item2"]' autocomplete="off">
+                    <p class="ds-hint">Enter a JSON array or leave empty for an empty collection. Use {stored.refName.0} for first item, {stored.refName.length} for count.</p>
+                  </div>
+                </div>
+
+                <!-- OBJECT config -->
+                <div class="ds-type-block" id="dsConfigObject" style="display:none">
+                  <div class="ds-field">
+                    <label class="ds-label">Object Properties</label>
+                    <p class="ds-hint">Define the shape of this object. Access properties with <code class="ds-code-inline">{stored.refName.propertyName}</code></p>
+                    <div id="dsObjProps" class="ds-obj-props"></div>
+                    <button type="button" class="ds-btn-ghost ds-add-prop-btn" id="dsAddPropBtn">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      Add Property
+                    </button>
+                  </div>
+                </div>
+
+              </div><!-- /dsTypeConfig -->
+
+              <!-- Enabled toggle -->
+              <div class="ds-field ds-field-toggle">
+                <label class="ds-toggle-label">
+                  <input type="checkbox" id="dsVarEnabled" class="ds-toggle" checked>
+                  <span class="ds-toggle-track"></span>
+                  Variable Enabled
+                </label>
+              </div>
+
+              <!-- Form actions -->
+              <div class="ds-panel-actions">
+                <button type="button" class="btn-ghost" id="dsCancelBtn">Cancel</button>
+                <button type="submit" class="btn-primary" id="dsSaveBtn">Save Variable</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- ── Values viewer modal ── -->
+        <div class="ds-modal-backdrop" id="dsValuesModalBackdrop" style="display:none"></div>
+        <div class="ds-modal" id="dsValuesModal" style="display:none">
+          <div class="ds-modal-header">
+            <h3 id="dsValuesModalTitle">Variable Values</h3>
+            <button class="ds-panel-close" id="dsValuesModalClose" aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="ds-modal-body">
+            <div class="ds-modal-toolbar">
+              <input type="text" id="dsValuesSearch" class="ds-search" placeholder="Filter by User ID…" autocomplete="off">
+              <button class="btn-danger-outline" id="dsResetAllBtn" title="Delete all stored values and reset to default">Reset All Values</button>
+            </div>
+            <div id="dsValuesList"></div>
+            <div class="ds-modal-pages" id="dsValuesPager"></div>
+          </div>
+        </div>
+
+      </section>
+
       <!-- ── AI CHAT SECTION ── -->
       <section class="dash-section" id="section-ai" data-section="ai" style="display:none">
         <div class="section-header">
@@ -1609,6 +1888,7 @@
   <script src="/js/audit.js?v=20260701"></script>
   <script src="/js/notes.js?v=20260701"></script>
   <script src="/js/custom-commands.js?v=20260516"></script>
+  <script src="/js/data-storage.js?v=20260523"></script>
   <script src="/js/ai.js?v=20260701"></script>
 
   <!-- ── Modal: Punish type settings ── -->

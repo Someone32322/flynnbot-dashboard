@@ -1,0 +1,815 @@
+/* ============================================================
+   data-storage.css — Data Storage section styles
+   ============================================================ */
+
+/* ── Code inline ─────────────────────────────────────────── */
+.ds-code-inline {
+  font-family:      var(--font-mono, 'Consolas', monospace);
+  font-size:        0.78rem;
+  color:            var(--accent);
+  background:       var(--bg-1);
+  border:           1px solid var(--border);
+  border-radius:    4px;
+  padding:          1px 5px;
+}
+
+/* ── Tabs ────────────────────────────────────────────────── */
+.ds-tabs {
+  display:          flex;
+  gap:              4px;
+  border-bottom:    1px solid var(--border);
+  margin-bottom:    20px;
+}
+
+.ds-tab {
+  display:          flex;
+  align-items:      center;
+  gap:              6px;
+  padding:          8px 16px;
+  border:           none;
+  background:       transparent;
+  color:            var(--text-3);
+  font-size:        0.875rem;
+  font-weight:      500;
+  cursor:           pointer;
+  border-bottom:    2px solid transparent;
+  margin-bottom:    -1px;
+  transition:       color 0.15s, border-color 0.15s;
+}
+
+.ds-tab:hover {
+  color:            var(--text);
+}
+
+.ds-tab.active {
+  color:            var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.ds-tab svg {
+  opacity:          0.75;
+}
+
+.ds-tab-badge {
+  background:       var(--bg-2);
+  color:            var(--text-3);
+  border-radius:    10px;
+  padding:          1px 7px;
+  font-size:        0.7rem;
+  font-weight:      600;
+  min-width:        20px;
+  text-align:       center;
+}
+
+.ds-tab.active .ds-tab-badge {
+  background:       var(--accent-dim);
+  color:            var(--accent);
+}
+
+/* ── Tab panels ──────────────────────────────────────────── */
+.ds-tab-panel {
+  min-height:       200px;
+}
+
+/* ── Loading & empty states ──────────────────────────────── */
+.ds-loading {
+  display:          flex;
+  align-items:      center;
+  gap:              12px;
+  padding:          40px 0;
+  color:            var(--text-3);
+  font-size:        0.875rem;
+}
+
+.ds-empty-state {
+  text-align:       center;
+  padding:          60px 24px;
+  color:            var(--text-3);
+}
+
+.ds-empty-state svg {
+  opacity:          0.3;
+  margin-bottom:    16px;
+}
+
+.ds-empty-state p {
+  margin:           0 0 8px;
+  font-size:        1rem;
+  color:            var(--text-2);
+}
+
+.ds-empty-sub {
+  font-size:        0.875rem !important;
+  color:            var(--text-3) !important;
+  margin-bottom:    24px !important;
+}
+
+/* ── Table ───────────────────────────────────────────────── */
+.ds-table {
+  width:            100%;
+  border-collapse:  separate;
+  border-spacing:   0;
+  font-size:        0.875rem;
+}
+
+.ds-table thead tr {
+  background:       var(--bg-1);
+}
+
+.ds-table th {
+  padding:          10px 14px;
+  text-align:       left;
+  font-weight:      600;
+  font-size:        0.75rem;
+  text-transform:   uppercase;
+  letter-spacing:   0.04em;
+  color:            var(--text-3);
+  border-bottom:    1px solid var(--border);
+}
+
+.ds-table td {
+  padding:          12px 14px;
+  vertical-align:   middle;
+  border-bottom:    1px solid var(--border);
+  color:            var(--text);
+}
+
+.ds-table tbody tr:hover td {
+  background:       var(--bg-1);
+}
+
+.ds-table tbody tr:last-child td {
+  border-bottom:    none;
+}
+
+/* Variable name + description */
+.ds-var-name {
+  font-weight:      500;
+  color:            var(--text);
+}
+
+.ds-var-desc {
+  font-size:        0.78rem;
+  color:            var(--text-3);
+  margin-top:       2px;
+}
+
+/* Reference pill */
+.ds-ref-pill {
+  display:          inline-block;
+  font-family:      var(--font-mono, monospace);
+  font-size:        0.78rem;
+  background:       var(--bg-2);
+  border:           1px solid var(--border);
+  border-radius:    6px;
+  padding:          2px 8px;
+  color:            var(--text-2);
+  cursor:           default;
+}
+
+.ds-ref-pill strong {
+  color:            var(--accent);
+}
+
+/* Type badge */
+.ds-type-badge {
+  display:          inline-block;
+  font-size:        0.72rem;
+  font-weight:      600;
+  padding:          2px 8px;
+  border-radius:    10px;
+  background:       color-mix(in srgb, var(--badge-color) 15%, transparent);
+  color:            var(--badge-color);
+  border:           1px solid color-mix(in srgb, var(--badge-color) 30%, transparent);
+  text-transform:   uppercase;
+  letter-spacing:   0.04em;
+}
+
+/* Scope badge */
+.ds-scope-badge {
+  display:          inline-block;
+  font-size:        0.72rem;
+  font-weight:      500;
+  padding:          2px 8px;
+  border-radius:    10px;
+  background:       var(--bg-2);
+  border:           1px solid var(--border);
+  color:            var(--text-3);
+  text-transform:   capitalize;
+}
+
+/* Status dot */
+.ds-status-dot {
+  display:          inline-flex;
+  align-items:      center;
+  gap:              5px;
+  font-size:        0.8rem;
+}
+
+.ds-status-dot::before {
+  content:          '';
+  display:          inline-block;
+  width:            7px;
+  height:           7px;
+  border-radius:    50%;
+}
+
+.ds-status-dot.enabled::before  { background: var(--green); }
+.ds-status-dot.disabled::before { background: var(--text-4); }
+.ds-status-dot.enabled  { color: var(--green); }
+.ds-status-dot.disabled { color: var(--text-4); }
+
+/* Actions cell */
+.ds-actions-cell {
+  display:          flex;
+  align-items:      center;
+  gap:              4px;
+  white-space:      nowrap;
+}
+
+/* ── Icon buttons ────────────────────────────────────────── */
+.ds-btn-icon {
+  display:          inline-flex;
+  align-items:      center;
+  justify-content:  center;
+  width:            30px;
+  height:           30px;
+  border:           1px solid var(--border);
+  border-radius:    6px;
+  background:       transparent;
+  color:            var(--text-3);
+  cursor:           pointer;
+  transition:       background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.ds-btn-icon:hover {
+  background:       var(--bg-2);
+  color:            var(--text);
+  border-color:     var(--accent);
+}
+
+.ds-delete-btn:hover {
+  color:            var(--red);
+  border-color:     var(--red);
+  background:       color-mix(in srgb, var(--red) 10%, transparent);
+}
+
+/* ── Side panel ──────────────────────────────────────────── */
+.ds-panel-backdrop {
+  position:         fixed;
+  inset:            0;
+  background:       rgba(0,0,0,0.45);
+  z-index:          200;
+  backdrop-filter:  blur(2px);
+}
+
+.ds-panel {
+  position:         fixed;
+  top:              0;
+  right:            0;
+  width:            min(500px, 100vw);
+  height:           100vh;
+  background:       var(--bg-0);
+  border-left:      1px solid var(--border);
+  z-index:          201;
+  display:          flex;
+  flex-direction:   column;
+  overflow:         hidden;
+  box-shadow:       -8px 0 32px rgba(0,0,0,0.4);
+}
+
+.ds-panel-header {
+  display:          flex;
+  align-items:      center;
+  justify-content:  space-between;
+  padding:          18px 20px;
+  border-bottom:    1px solid var(--border);
+  background:       var(--bg-1);
+  flex-shrink:      0;
+}
+
+.ds-panel-header h3 {
+  margin:           0;
+  font-size:        1rem;
+  font-weight:      600;
+  color:            var(--text);
+}
+
+.ds-panel-close {
+  display:          flex;
+  align-items:      center;
+  justify-content:  center;
+  width:            32px;
+  height:           32px;
+  border:           none;
+  border-radius:    6px;
+  background:       transparent;
+  color:            var(--text-3);
+  cursor:           pointer;
+  transition:       background 0.15s, color 0.15s;
+}
+
+.ds-panel-close:hover {
+  background:       var(--bg-2);
+  color:            var(--text);
+}
+
+.ds-panel-body {
+  flex:             1;
+  overflow-y:       auto;
+  padding:          20px;
+}
+
+/* ── Form fields ─────────────────────────────────────────── */
+.ds-field {
+  margin-bottom:    16px;
+}
+
+.ds-label {
+  display:          block;
+  font-size:        0.8rem;
+  font-weight:      600;
+  color:            var(--text-2);
+  margin-bottom:    6px;
+  text-transform:   uppercase;
+  letter-spacing:   0.04em;
+}
+
+.ds-required {
+  color:            var(--red);
+}
+
+.ds-input {
+  width:            100%;
+  padding:          8px 12px;
+  background:       var(--input-bg, var(--bg-2));
+  border:           1px solid var(--border);
+  border-radius:    6px;
+  color:            var(--text);
+  font-size:        0.875rem;
+  transition:       border-color 0.15s;
+  box-sizing:       border-box;
+}
+
+.ds-input:focus {
+  outline:          none;
+  border-color:     var(--accent);
+}
+
+.ds-input.ds-input-sm {
+  width:            auto;
+  min-width:        80px;
+}
+
+.ds-textarea {
+  resize:           vertical;
+  min-height:       64px;
+  font-family:      inherit;
+}
+
+.ds-select {
+  appearance:       none;
+  cursor:           pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right:    30px;
+}
+
+.ds-hint {
+  margin:           5px 0 0;
+  font-size:        0.75rem;
+  color:            var(--text-4);
+}
+
+.ds-field-row {
+  display:          grid;
+  grid-template-columns: 1fr 1fr;
+  gap:              12px;
+  margin-bottom:    16px;
+}
+
+/* Reference name wrapper */
+.ds-ref-wrap {
+  display:          flex;
+  align-items:      center;
+  border:           1px solid var(--border);
+  border-radius:    6px;
+  overflow:         hidden;
+  background:       var(--input-bg, var(--bg-2));
+  transition:       border-color 0.15s;
+}
+
+.ds-ref-wrap:focus-within {
+  border-color:     var(--accent);
+}
+
+.ds-ref-prefix,
+.ds-ref-suffix {
+  padding:          8px 10px;
+  background:       var(--bg-1);
+  color:            var(--accent);
+  font-family:      var(--font-mono, monospace);
+  font-size:        0.825rem;
+  white-space:      nowrap;
+  flex-shrink:      0;
+  border-right:     1px solid var(--border);
+}
+
+.ds-ref-suffix {
+  border-left:      1px solid var(--border);
+  border-right:     none;
+}
+
+.ds-ref-input {
+  border:           none !important;
+  border-radius:    0 !important;
+  flex:             1;
+  background:       transparent !important;
+  font-family:      var(--font-mono, monospace);
+  font-size:        0.875rem;
+}
+
+.ds-ref-input:focus {
+  outline:          none;
+  border:           none !important;
+}
+
+/* Toggle */
+.ds-toggle-label {
+  display:          flex;
+  align-items:      center;
+  gap:              10px;
+  cursor:           pointer;
+  font-size:        0.875rem;
+  color:            var(--text-2);
+  user-select:      none;
+}
+
+.ds-toggle {
+  position:         absolute;
+  opacity:          0;
+  width:            0;
+  height:           0;
+}
+
+.ds-toggle-track {
+  position:         relative;
+  display:          inline-block;
+  width:            40px;
+  height:           22px;
+  background:       var(--bg-3);
+  border:           1px solid var(--border);
+  border-radius:    11px;
+  transition:       background 0.2s, border-color 0.2s;
+  flex-shrink:      0;
+}
+
+.ds-toggle-track::after {
+  content:          '';
+  position:         absolute;
+  left:             2px;
+  top:              2px;
+  width:            16px;
+  height:           16px;
+  border-radius:    50%;
+  background:       var(--text-4);
+  transition:       transform 0.2s, background 0.2s;
+}
+
+.ds-toggle:checked + .ds-toggle-track {
+  background:       var(--accent);
+  border-color:     var(--accent);
+}
+
+.ds-toggle:checked + .ds-toggle-track::after {
+  transform:        translateX(18px);
+  background:       #fff;
+}
+
+.ds-field-toggle {
+  padding-top:      4px;
+}
+
+/* Type config blocks */
+.ds-type-block {
+  background:       var(--bg-1);
+  border:           1px solid var(--border);
+  border-radius:    8px;
+  padding:          14px;
+  margin-bottom:    16px;
+}
+
+/* Object property editor */
+.ds-obj-props {
+  display:          flex;
+  flex-direction:   column;
+  gap:              8px;
+  margin-bottom:    10px;
+}
+
+.ds-prop-row {
+  background:       var(--bg-0);
+  border:           1px solid var(--border);
+  border-radius:    6px;
+  padding:          10px;
+}
+
+.ds-prop-fields {
+  display:          grid;
+  grid-template-columns: 1fr 1fr auto auto auto auto;
+  gap:              8px;
+  align-items:      center;
+}
+
+.ds-prop-required {
+  display:          flex;
+  align-items:      center;
+  gap:              5px;
+  font-size:        0.78rem;
+  color:            var(--text-3);
+  white-space:      nowrap;
+  cursor:           pointer;
+}
+
+.ds-btn-ghost {
+  display:          inline-flex;
+  align-items:      center;
+  gap:              6px;
+  padding:          6px 12px;
+  border:           1px dashed var(--border);
+  border-radius:    6px;
+  background:       transparent;
+  color:            var(--text-3);
+  font-size:        0.8rem;
+  cursor:           pointer;
+  transition:       color 0.15s, border-color 0.15s;
+}
+
+.ds-btn-ghost:hover {
+  color:            var(--accent);
+  border-color:     var(--accent);
+}
+
+/* Panel actions */
+.ds-panel-actions {
+  display:          flex;
+  gap:              10px;
+  justify-content:  flex-end;
+  padding-top:      8px;
+  border-top:       1px solid var(--border);
+  margin-top:       4px;
+}
+
+/* ── Values modal ────────────────────────────────────────── */
+.ds-modal-backdrop {
+  position:         fixed;
+  inset:            0;
+  background:       rgba(0,0,0,0.5);
+  z-index:          210;
+  backdrop-filter:  blur(2px);
+}
+
+.ds-modal {
+  position:         fixed;
+  top:              50%;
+  left:             50%;
+  transform:        translate(-50%, -50%);
+  width:            min(780px, 95vw);
+  max-height:       80vh;
+  background:       var(--bg-0);
+  border:           1px solid var(--border);
+  border-radius:    12px;
+  z-index:          211;
+  display:          flex;
+  flex-direction:   column;
+  overflow:         hidden;
+  box-shadow:       0 16px 48px rgba(0,0,0,0.5);
+}
+
+.ds-modal-header {
+  display:          flex;
+  align-items:      center;
+  justify-content:  space-between;
+  padding:          16px 20px;
+  border-bottom:    1px solid var(--border);
+  background:       var(--bg-1);
+  flex-shrink:      0;
+}
+
+.ds-modal-header h3 {
+  margin:           0;
+  font-size:        0.95rem;
+  font-weight:      600;
+  color:            var(--text);
+}
+
+.ds-modal-body {
+  flex:             1;
+  overflow-y:       auto;
+  padding:          16px 20px;
+}
+
+.ds-modal-toolbar {
+  display:          flex;
+  align-items:      center;
+  gap:              10px;
+  margin-bottom:    14px;
+}
+
+.ds-search {
+  padding:          7px 12px;
+  background:       var(--input-bg, var(--bg-2));
+  border:           1px solid var(--border);
+  border-radius:    6px;
+  color:            var(--text);
+  font-size:        0.875rem;
+  width:            220px;
+}
+
+.ds-search:focus {
+  outline:          none;
+  border-color:     var(--accent);
+}
+
+.ds-values-empty {
+  padding:          32px;
+  text-align:       center;
+  color:            var(--text-4);
+  font-size:        0.875rem;
+}
+
+.ds-val-cell {
+  max-width:        250px;
+  overflow:         hidden;
+}
+
+.ds-val-cell span {
+  display:          block;
+  white-space:      nowrap;
+  overflow:         hidden;
+  text-overflow:    ellipsis;
+  font-family:      var(--font-mono, monospace);
+  font-size:        0.8rem;
+}
+
+.ds-val-date {
+  white-space:      nowrap;
+  font-size:        0.8rem;
+  color:            var(--text-3);
+}
+
+.ds-values-table td {
+  padding:          8px 14px;
+}
+
+/* Pagination */
+.ds-modal-pages {
+  padding-top:      12px;
+  border-top:       1px solid var(--border);
+  margin-top:       12px;
+}
+
+.ds-page-btns {
+  display:          flex;
+  align-items:      center;
+  justify-content:  center;
+  gap:              12px;
+  font-size:        0.8rem;
+  color:            var(--text-3);
+}
+
+.ds-page-btn {
+  padding:          5px 12px;
+  background:       var(--bg-2);
+  border:           1px solid var(--border);
+  border-radius:    6px;
+  color:            var(--text);
+  font-size:        0.8rem;
+  cursor:           pointer;
+  transition:       border-color 0.15s;
+}
+
+.ds-page-btn:hover {
+  border-color:     var(--accent);
+  color:            var(--accent);
+}
+
+/* ── Predefined variables tab ────────────────────────────── */
+.ds-predefined-header {
+  display:          flex;
+  align-items:      center;
+  gap:              12px;
+  margin-bottom:    20px;
+}
+
+.ds-predefined-hint {
+  font-size:        0.8rem;
+  color:            var(--text-4);
+}
+
+.ds-pre-group {
+  margin-bottom:    24px;
+}
+
+.ds-pre-cat {
+  font-size:        0.72rem;
+  font-weight:      700;
+  text-transform:   uppercase;
+  letter-spacing:   0.08em;
+  color:            var(--text-4);
+  margin-bottom:    10px;
+  padding-bottom:   6px;
+  border-bottom:    1px solid var(--border);
+}
+
+.ds-pre-grid {
+  display:          grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap:              8px;
+}
+
+.ds-pre-item {
+  display:          flex;
+  flex-direction:   column;
+  align-items:      flex-start;
+  gap:              3px;
+  padding:          10px 12px;
+  background:       var(--bg-1);
+  border:           1px solid var(--border);
+  border-radius:    8px;
+  cursor:           pointer;
+  text-align:       left;
+  transition:       background 0.15s, border-color 0.15s;
+}
+
+.ds-pre-item:hover {
+  background:       var(--bg-2);
+  border-color:     var(--accent);
+}
+
+.ds-pre-key {
+  font-family:      var(--font-mono, monospace);
+  font-size:        0.8rem;
+  color:            var(--accent);
+  background:       var(--accent-dim);
+  border-radius:    4px;
+  padding:          1px 5px;
+}
+
+.ds-pre-label {
+  font-size:        0.78rem;
+  font-weight:      600;
+  color:            var(--text);
+}
+
+.ds-pre-desc {
+  font-size:        0.72rem;
+  color:            var(--text-4);
+  line-height:      1.4;
+}
+
+/* ── Danger button outline ───────────────────────────────── */
+.btn-danger-outline {
+  display:          inline-flex;
+  align-items:      center;
+  gap:              6px;
+  padding:          6px 14px;
+  border:           1px solid var(--red);
+  border-radius:    6px;
+  background:       transparent;
+  color:            var(--red);
+  font-size:        0.8rem;
+  font-weight:      500;
+  cursor:           pointer;
+  transition:       background 0.15s;
+}
+
+.btn-danger-outline:hover {
+  background:       color-mix(in srgb, var(--red) 12%, transparent);
+}
+
+/* ── body class when panel open ──────────────────────────── */
+body.ds-panel-open {
+  overflow:         hidden;
+}
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .ds-field-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ds-panel {
+    width:          100vw;
+  }
+
+  .ds-prop-fields {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+  }
+
+  .ds-pre-grid {
+    grid-template-columns: 1fr;
+  }
+}

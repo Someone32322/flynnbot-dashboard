@@ -7,8 +7,8 @@
  * Delete button → confirmation + API call
  *
  * The block-based workflow builder lives at:
- *   New:  /dashboard/:guildId/custom-commands/builder
- *   Edit: /dashboard/:guildId/custom-commands/builder/:cmdId
+ *   New:  /dashboard/:guildId/commands/builder
+ *   Edit: /dashboard/:guildId/commands/builder/:cmdId
  */
 (function () {
   'use strict';
@@ -37,9 +37,9 @@
     if (!container) return;
     container.innerHTML = '<div class="cc-loading"><div class="spinner"></div>Loading custom commands…</div>';
     try {
-      const res  = await fetch(`/api/guild/${_guildId}/custom-commands`);
-      const cmds = await res.json();
-      _cmds = Array.isArray(cmds) ? cmds : [];
+      const res  = await fetch(`/api/guild/${_guildId}/guild-commands`);
+      const json = await res.json();
+      _cmds = Array.isArray(json.commands) ? json.commands : (Array.isArray(json) ? json : []);
       renderList();
     } catch (err) {
       console.error('[CC]', err);
@@ -108,7 +108,7 @@
     ` : `
       <div class="cc-list" id="ccList">
         ${_cmds.map((cmd) => {
-          const ttype = cmd.triggerType || 'exact';
+          const ttype = cmd.trigger?.type || cmd.triggerType || 'exact';
           const blockCount = Array.isArray(cmd.blocks) ? cmd.blocks.length : 0;
           return `
             <div class="cc-card ${cmd.enabled === false ? 'cc-card--disabled' : ''}" data-cmd-id="${esc(cmd._id)}">
@@ -169,8 +169,8 @@
   // ── Navigate to dedicated builder page ───────────────────────
   function openBuilder(id) {
     window.location.href = id
-      ? `/dashboard/${_guildId}/custom-commands/builder/${id}`
-      : `/dashboard/${_guildId}/custom-commands/builder`;
+      ? `/dashboard/${_guildId}/commands/builder/${id}`
+      : `/dashboard/${_guildId}/commands/builder`;
   }
 
   // ── Delete command ────────────────────────────────────────────
@@ -182,7 +182,7 @@
     );
     if (!ok) return;
     try {
-      const res = await fetch(`/api/guild/${_guildId}/custom-commands/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/guild/${_guildId}/guild-commands/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
       _cmds = _cmds.filter(c => c._id !== id);
       window.showToast?.('Command deleted.', 'success');

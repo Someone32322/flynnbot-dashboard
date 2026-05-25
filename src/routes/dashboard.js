@@ -151,6 +151,37 @@ router.get('/:guildId/custom-commands/builder/:cmdId', requireAuth, async (req, 
   res.render('workflow-editor', { guild, user: req.user, cmd });
 });
 
+// ── Advanced Command Builder — GuildCommand model ─────────────
+const { GuildCommand } = require('../models/GuildCommand');
+
+router.get('/:guildId/commands/builder', requireAuth, async (req, res) => {
+  const { guildId } = req.params;
+  if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
+  const guild = (req.user.guilds || []).find((g) => g.id === guildId && hasAdmin(g.permissions));
+  if (!guild) return res.redirect('/dashboard');
+  res.render('command-builder', { guild, user: req.user, cmd: null, cmdId: null });
+});
+
+router.get('/:guildId/commands/builder/:cmdId', requireAuth, async (req, res) => {
+  const { guildId, cmdId } = req.params;
+  if (!/^\d+$/.test(guildId)) return res.redirect('/dashboard');
+  const guild = (req.user.guilds || []).find((g) => g.id === guildId && hasAdmin(g.permissions));
+  if (!guild) return res.redirect('/dashboard');
+  let cmd = null;
+  try {
+    cmd = await GuildCommand.findOne({ _id: cmdId, guildId }).lean();
+    if (cmd) cmd._id = cmd._id.toString();
+  } catch {
+    // not found — render blank builder
+  }
+  res.render('command-builder', {
+    guild,
+    user:  req.user,
+    cmd:   cmd ? JSON.stringify(cmd) : 'null',
+    cmdId: cmd ? String(cmdId) : null,
+  });
+});
+
 // Server detail
 router.get('/:guildId', requireAuth, (req, res) => {
   const { guildId } = req.params;
