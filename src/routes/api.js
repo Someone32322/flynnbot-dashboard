@@ -49,6 +49,101 @@ const COMMAND_MANIFEST = require(path.join(__dirname, '../commands/manifest.json
 const COMMAND_META = COMMAND_MANIFEST.meta || {};
 const COMMAND_DATA = COMMAND_MANIFEST.commandData || {};
 
+// ── Demo mode (fake guild for local visual testing) ──────────
+const DEMO_GUILD_ID = '000000000000000000';
+const DEMO_USER_OBJ = {
+  id: '000000000000000001',
+  username: 'Preview User',
+  avatar: null,
+  guilds: [{ id: DEMO_GUILD_ID, name: 'Demo Server', icon: null, permissions: '8' }],
+};
+const DEMO_CHANNELS = [
+  { id: '111111111111111100', name: 'Text Channels',    type: 4,  position: 0  },
+  { id: '111111111111111101', name: 'Voice Channels',   type: 4,  position: 10 },
+  { id: '111111111111111111', name: 'general',          type: 0,  position: 1  },
+  { id: '111111111111111112', name: 'announcements',    type: 0,  position: 2  },
+  { id: '111111111111111113', name: 'mod-log',          type: 0,  position: 3  },
+  { id: '111111111111111114', name: 'welcome',          type: 0,  position: 4  },
+  { id: '111111111111111115', name: 'starboard',        type: 0,  position: 5  },
+  { id: '111111111111111116', name: 'ticket-transcripts',type: 0, position: 6  },
+  { id: '111111111111111117', name: 'bot-logs',         type: 0,  position: 7  },
+  { id: '111111111111111118', name: 'Member Count',     type: 2,  position: 11 },
+  { id: '111111111111111119', name: 'Online Now',       type: 2,  position: 12 },
+  { id: '111111111111111120', name: 'Boosts',           type: 2,  position: 13 },
+];
+const DEMO_ROLES = [
+  { id: '222222222222222221', name: 'Admin',      color: 0xe74c3c, position: 5 },
+  { id: '222222222222222222', name: 'Moderator',  color: 0x3498db, position: 4 },
+  { id: '222222222222222223', name: 'Staff',      color: 0x2ecc71, position: 3 },
+  { id: '222222222222222224', name: 'Member',     color: 0x9b59b6, position: 2 },
+  { id: '222222222222222225', name: 'Verified',   color: 0x95a5a6, position: 1 },
+];
+
+// Inject demo user so requireAuth + requireGuildAdmin pass for demo guild
+router.use('/guild/000000000000000000', (req, res, next) => {
+  req.isAuthenticated = () => true;
+  req.user = DEMO_USER_OBJ;
+  next();
+});
+
+// Demo: channels
+router.get('/guild/000000000000000000/channels', (req, res) => {
+  const includeVoice = req.query.voice === '1';
+  res.json(includeVoice ? DEMO_CHANNELS : DEMO_CHANNELS.filter((c) => c.type !== 2));
+});
+
+// Demo: roles
+router.get('/guild/000000000000000000/roles', (req, res) => {
+  res.json(DEMO_ROLES);
+});
+
+// Demo: emojis
+router.get('/guild/000000000000000000/emojis', (req, res) => {
+  res.json([{ id: '111111111111111199', name: 'star', animated: false }]);
+});
+
+// Demo: audit log (synthetic entries)
+router.get('/guild/000000000000000000/audit-log', (req, res) => {
+  const now = Date.now();
+  const snowflake = (ms) => String(BigInt(ms - 1420070400000) << 22n);
+  const entries = [
+    { id: snowflake(now - 60000),    action_type: 22, user_id: '000000000000000001', target_id: '000000000000000002', reason: 'Spamming', changes: [] },
+    { id: snowflake(now - 300000),   action_type: 20, user_id: '000000000000000001', target_id: '000000000000000003', reason: null,        changes: [] },
+    { id: snowflake(now - 600000),   action_type: 25, user_id: '000000000000000001', target_id: '000000000000000004', reason: 'Promoted',  changes: [{ key: '$add', new_value: [{ id: '222222222222222222', name: 'Moderator' }] }] },
+    { id: snowflake(now - 900000),   action_type: 11, user_id: '000000000000000001', target_id: '111111111111111111', reason: null,        changes: [{ key: 'name', old_value: 'general-chat', new_value: 'general' }] },
+    { id: snowflake(now - 1200000),  action_type: 30, user_id: '000000000000000001', target_id: '222222222222222226', reason: null,        changes: [{ key: 'name', new_value: 'Booster' }] },
+    { id: snowflake(now - 1500000),  action_type: 72, user_id: '000000000000000001', target_id: '111111111111111111', reason: null,        changes: [] },
+    { id: snowflake(now - 2400000),  action_type: 10, user_id: '000000000000000001', target_id: '111111111111111120', reason: null,        changes: [{ key: 'name', new_value: 'nsfw-zone' }] },
+    { id: snowflake(now - 3600000),  action_type:  1, user_id: '000000000000000001', target_id: DEMO_GUILD_ID,        reason: null,        changes: [{ key: 'name', old_value: 'Old Server', new_value: 'Demo Server' }] },
+  ];
+  const users = [
+    { id: '000000000000000001', username: 'Preview User', global_name: 'Preview User', avatar: null },
+  ];
+  res.json({ audit_log: { audit_log_entries: entries, users } });
+});
+
+// Demo: notes POST (skip Discord user lookup)
+router.post('/guild/000000000000000000/notes', async (req, res) => {
+  const { targetUserId, content, caseId } = req.body;
+  if (!targetUserId || !/^\d+$/.test(String(targetUserId))) return res.status(400).json({ error: 'Invalid targetUserId' });
+  if (!content || !String(content).trim()) return res.status(400).json({ error: 'content required' });
+  try {
+    const note = await require('../models/UserNote').UserNote.create({
+      guildId: DEMO_GUILD_ID,
+      targetUserId: String(targetUserId),
+      targetTag: `DemoUser#${String(targetUserId).slice(-4)}`,
+      addedBy: '000000000000000001',
+      addedByTag: 'Preview User#0',
+      content: String(content).trim().slice(0, 2000),
+      caseId: caseId || undefined,
+    });
+    res.json({ ok: true, note });
+  } catch (err) {
+    console.error('[Demo API] POST /notes', err);
+    res.status(500).json({ error: 'Failed to add note' });
+  }
+});
+
 // ── Auth guard ────────────────────────────────────────────────
 function requireAuth(req, res, next) {
   if (req.isAuthenticated()) return next();
