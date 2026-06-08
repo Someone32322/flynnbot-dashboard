@@ -453,8 +453,8 @@ function renderAI(container, guildId) {
         <label class="ec-field">
           <span>Model</span>
           <select id="aiModel" class="ec-input" data-cs>
-            <option value="llama3-8b-8192" ${cfg.model === 'llama3-8b-8192' ? 'selected' : ''}>Llama 3 8B (fast, free)</option>
-            <option value="llama3-70b-8192" ${cfg.model === 'llama3-70b-8192' ? 'selected' : ''}>Llama 3 70B (smart, free)</option>
+            <option value="llama-3.1-8b-instant" ${(cfg.model === 'llama-3.1-8b-instant' || cfg.model === 'llama3-8b-8192') ? 'selected' : ''}>Llama 3.1 8B (fast, free)</option>
+            <option value="llama-3.3-70b-versatile" ${(cfg.model === 'llama-3.3-70b-versatile' || cfg.model === 'llama3-70b-8192') ? 'selected' : ''}>Llama 3.3 70B (smart, free)</option>
             <option value="mixtral-8x7b-32768" ${cfg.model === 'mixtral-8x7b-32768' ? 'selected' : ''}>Mixtral 8x7B (balanced)</option>
             <option value="gemma2-9b-it" ${cfg.model === 'gemma2-9b-it' ? 'selected' : ''}>Gemma 2 9B</option>
           </select>
