@@ -22,6 +22,8 @@ const levelConfigSchema = new mongoose.Schema(
     levelUpChannelId:  { type: String, default: null },
     roleStack:         { type: Boolean, default: true },
     formula:           { type: formulaSchema, default: () => ({}) },
+    rankBackground:     { type: String, default: null },
+    leaderboardBackground: { type: String, default: null },
   },
   { timestamps: true }
 );

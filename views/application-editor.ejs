@@ -1,0 +1,263 @@
+<%- include('partials/head', { title: 'Application Editor — ' + guild.name }) %>
+<link rel="stylesheet" href="/css/application-editor.css?v=20260608">
+<body class="app-editor-page">
+  <%- include('partials/nav') %>
+
+  <div class="aep-shell" id="aepShell"
+    data-guild-id="<%= guild.id %>"
+    data-app-id="<%= appId || '' %>"
+    data-app='<%- appData %>'>
+
+    <!-- ── Top Bar ── -->
+    <header class="aep-topbar">
+      <div class="aep-topbar-left">
+        <a href="/dashboard/<%= guild.id %>#applications" class="aep-back-btn" title="Back to Applications">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </a>
+        <div class="aep-guild-chip">
+          <span class="aep-guild-name"><%= guild.name %></span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+          <span id="aepBreadcrumb">New Application</span>
+        </div>
+      </div>
+      <div class="aep-topbar-center">
+        <input type="text" id="aepNameInput" class="aep-name-input" maxlength="80" placeholder="Application name…" autocomplete="off">
+      </div>
+      <div class="aep-topbar-right">
+        <button class="aep-btn aep-btn-ghost" id="aepPreviewToggle" title="Toggle live preview">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Preview
+        </button>
+        <button class="aep-btn aep-btn-secondary" id="aepCancelBtn">Cancel</button>
+        <button class="aep-btn aep-btn-primary" id="aepSaveBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save Application
+        </button>
+      </div>
+    </header>
+
+    <!-- ── Status bar ── -->
+    <div class="aep-statusbar" id="aepStatusBar" style="display:none">
+      <span id="aepStatusMsg"></span>
+    </div>
+
+    <!-- ── Main Split ── -->
+    <div class="aep-body" id="aepBody">
+
+      <!-- LEFT PANEL: Editor -->
+      <aside class="aep-panel aep-panel-left" id="aepLeft">
+        <div class="aep-panel-inner">
+
+          <!-- Tabs -->
+          <div class="aep-tabs">
+            <button class="aep-tab active" data-tab="fields">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+              Fields
+            </button>
+            <button class="aep-tab" data-tab="settings">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+              Settings
+            </button>
+            <button class="aep-tab" data-tab="notifications">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+              Notifications
+            </button>
+          </div>
+
+          <!-- ── FIELDS TAB ── -->
+          <div class="aep-tab-content active" id="aep-tab-fields">
+            <div class="aep-field-actions">
+              <button class="aep-btn aep-btn-sm aep-btn-secondary" id="aepAddSection">+ Section</button>
+              <button class="aep-btn aep-btn-sm aep-btn-primary" id="aepAddQuestion">+ Question</button>
+            </div>
+            <div id="aepFieldBuilder" class="aep-field-builder">
+              <!-- Fields rendered by JS -->
+            </div>
+            <p id="aepBuilderEmpty" class="aep-empty-hint">No fields yet. Add a section or question above.</p>
+          </div>
+
+          <!-- ── SETTINGS TAB ── -->
+          <div class="aep-tab-content" id="aep-tab-settings">
+            <div class="aep-settings-grid">
+
+              <div class="aep-field-group">
+                <label class="aep-label">Description</label>
+                <textarea id="aepDescription" class="aep-textarea" rows="2" maxlength="1200" placeholder="What is this application for?"></textarea>
+              </div>
+
+              <div class="aep-two-col">
+                <div class="aep-field-group">
+                  <label class="aep-label">Send Results To</label>
+                  <select id="aepRecipientType" class="aep-select">
+                    <option value="channel">Channel</option>
+                    <option value="user">User</option>
+                  </select>
+                </div>
+                <div class="aep-field-group">
+                  <label class="aep-label">Target ID <span class="aep-required">*</span></label>
+                  <input type="text" id="aepRecipientTargetId" class="aep-input" maxlength="30" placeholder="Channel or User ID">
+                </div>
+              </div>
+
+              <div class="aep-field-group">
+                <label class="aep-label">Reviewer Role IDs <span class="aep-hint-inline">(comma-separated)</span></label>
+                <input type="text" id="aepReviewerRoleIds" class="aep-input" placeholder="e.g. 123456789, 987654321">
+              </div>
+
+              <div class="aep-field-group">
+                <label class="aep-label">Transcript Channel ID <span class="aep-hint-inline">(optional)</span></label>
+                <input type="text" id="aepTranscriptChannelId" class="aep-input" maxlength="30" placeholder="Channel ID for transcripts">
+              </div>
+
+              <div class="aep-two-col">
+                <div class="aep-field-group">
+                  <label class="aep-label">Accent Color</label>
+                  <div class="aep-color-row">
+                    <input type="color" id="aepStyleAccent" value="#22d3ee" class="aep-color-input">
+                    <input type="text" id="aepStyleAccentHex" class="aep-input" value="#22d3ee" maxlength="7" placeholder="#22d3ee">
+                  </div>
+                </div>
+                <div class="aep-field-group">
+                  <label class="aep-label">Animation Style</label>
+                  <select id="aepStyleAnim" class="aep-select">
+                    <option value="wave">Wave</option>
+                    <option value="pulse">Pulse</option>
+                    <option value="float">Float</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="aep-two-col">
+                <div class="aep-field-group">
+                  <label class="aep-label">Cooldown (minutes)</label>
+                  <input type="number" id="aepCooldown" class="aep-input" min="0" max="10080" value="60">
+                </div>
+                <div class="aep-field-group">
+                  <label class="aep-label">Max Submissions / User</label>
+                  <input type="number" id="aepMaxSubmissions" class="aep-input" min="1" max="1000" value="3">
+                </div>
+              </div>
+
+              <div class="aep-toggles-group">
+                <label class="aep-toggle-row">
+                  <div>
+                    <span class="aep-toggle-label">Application Open</span>
+                    <span class="aep-toggle-hint">Allow users to submit this application</span>
+                  </div>
+                  <label class="aep-switch">
+                    <input type="checkbox" id="aepIsActive" checked>
+                    <span class="aep-switch-slider"></span>
+                  </label>
+                </label>
+                <label class="aep-toggle-row">
+                  <div>
+                    <span class="aep-toggle-label">One Submission Per User</span>
+                    <span class="aep-toggle-hint">Users cannot submit more than once</span>
+                  </div>
+                  <label class="aep-switch">
+                    <input type="checkbox" id="aepOnePerUser" checked>
+                    <span class="aep-switch-slider"></span>
+                  </label>
+                </label>
+                <label class="aep-toggle-row">
+                  <div>
+                    <span class="aep-toggle-label">Block While Pending</span>
+                    <span class="aep-toggle-hint">Prevent new submissions while one is pending</span>
+                  </div>
+                  <label class="aep-switch">
+                    <input type="checkbox" id="aepBlockPending" checked>
+                    <span class="aep-switch-slider"></span>
+                  </label>
+                </label>
+              </div>
+
+              <details class="aep-json-details">
+                <summary>Advanced: Raw JSON Fields</summary>
+                <p class="aep-hint">Edit raw JSON — changes here sync to the builder above.</p>
+                <textarea id="aepFieldsJson" class="aep-textarea aep-json-textarea" rows="10" spellcheck="false"></textarea>
+              </details>
+
+            </div>
+          </div>
+
+          <!-- ── NOTIFICATIONS TAB ── -->
+          <div class="aep-tab-content" id="aep-tab-notifications">
+            <div class="aep-settings-grid">
+              <div class="aep-toggles-group">
+                <label class="aep-toggle-row">
+                  <div>
+                    <span class="aep-toggle-label">Notify applicant on status updates</span>
+                    <span class="aep-toggle-hint">Sends a DM when status changes</span>
+                  </div>
+                  <label class="aep-switch">
+                    <input type="checkbox" id="aepNotifyEnabled" checked>
+                    <span class="aep-switch-slider"></span>
+                  </label>
+                </label>
+                <label class="aep-toggle-row">
+                  <div>
+                    <span class="aep-toggle-label">Include "Application" field in embed</span>
+                    <span class="aep-toggle-hint">Shows the application name in status DM</span>
+                  </div>
+                  <label class="aep-switch">
+                    <input type="checkbox" id="aepShowApplicationField" checked>
+                    <span class="aep-switch-slider"></span>
+                  </label>
+                </label>
+                <label class="aep-toggle-row">
+                  <div>
+                    <span class="aep-toggle-label">Include "New Status" field in embed</span>
+                    <span class="aep-toggle-hint">Shows the new status in status DM</span>
+                  </div>
+                  <label class="aep-switch">
+                    <input type="checkbox" id="aepShowStatusField" checked>
+                    <span class="aep-switch-slider"></span>
+                  </label>
+                </label>
+              </div>
+              <p class="aep-hint">For each status, choose a DM template (or none).</p>
+              <div id="aepStatusTemplates" class="aep-status-templates"></div>
+            </div>
+          </div>
+
+        </div><!-- /aep-panel-inner -->
+      </aside><!-- /aep-panel-left -->
+
+      <!-- DIVIDER (draggable) -->
+      <div class="aep-divider" id="aepDivider"></div>
+
+      <!-- RIGHT PANEL: Preview -->
+      <main class="aep-panel aep-panel-right" id="aepRight">
+        <div class="aep-preview-topbar">
+          <span class="aep-preview-label">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Live Preview
+          </span>
+          <div class="aep-preview-device-btns">
+            <button class="aep-device-btn active" data-device="desktop" title="Desktop view">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </button>
+            <button class="aep-device-btn" data-device="mobile" title="Mobile view">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="aep-preview-frame" id="aepPreviewFrame">
+          <div class="aep-preview-inner" id="aepPreviewInner">
+            <!-- Form preview rendered by JS -->
+          </div>
+        </div>
+      </main>
+
+    </div><!-- /aep-body -->
+
+  </div><!-- /aep-shell -->
+
+  <script>
+    window.__AEP_GUILD_ID = '<%= guild.id %>';
+    window.__AEP_APP_ID   = '<%= appId || "" %>';
+    window.__AEP_APP_DATA = <%- appData %>;
+  </script>
+  <script src="/js/application-editor.js?v=20260608"></script>
+</body>
+</html>

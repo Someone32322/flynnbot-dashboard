@@ -195,17 +195,12 @@ textarea:focus {
 }
 
 /* ── Save bar entrance ──────────────────────────────────────── */
-/* design.css handles the height/opacity reveal; we add a subtle
-   translateY pop when the bar becomes visible */
+/* design.css handles the full slide-up animation from bottom */
 #globalSaveBar {
-  transform: translateY(8px);
-  transition: height var(--dur-normal) var(--ease),
-              opacity var(--dur-normal) var(--ease),
-              transform 320ms cubic-bezier(0.34, 1.20, 0.64, 1),
-              border-color var(--dur-normal) var(--ease);
+  /* design.css owns the transition — no override needed here */
 }
 #globalSaveBar.visible {
-  transform: translateY(0);
+  /* defined in design.css */
 }
 
 /* ── Toast notifications ────────────────────────────────────── */
@@ -521,7 +516,7 @@ textarea:focus {
 
 /* ── SECTIONS ─────────────────────────────────────────────── */
 .dash-section {
-  padding: 40px 48px 100px;
+  padding: 40px 48px 72px;
   min-height: 100%;
   animation: sectionFadeIn 0.26s var(--ease) both;
 }

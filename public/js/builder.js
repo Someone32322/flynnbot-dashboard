@@ -169,13 +169,28 @@
   }
 
   function openNewEditor() {
+    // If running on the server page (not standalone), navigate to the editor page
+    if (!window.__MEP_STANDALONE && _guildId) {
+      window.location.href = '/dashboard/' + _guildId + '/messages/new';
+      return;
+    }
     _editing = defaultMsg();
+    // In standalone mode, pre-load data from window
+    if (window.__MEP_MSG_DATA && window.__MEP_MSG_DATA._id) {
+      _editing = JSON.parse(JSON.stringify(window.__MEP_MSG_DATA));
+      (_editing.embeds || []).forEach(function (e) { e._uid = e._uid || uid(); });
+    }
     buildEditorUI();
     showEditor();
   }
 
   /* ── open existing message in editor ────────────────────────── */
   function openEditor(msgId) {
+    // If running on server page (list mode), navigate to dedicated editor page
+    if (!window.__MEP_STANDALONE && _guildId) {
+      window.location.href = '/dashboard/' + _guildId + '/messages/edit/' + msgId;
+      return;
+    }
     var m = _messages.find(function (x) { return x._id === msgId; });
     if (!m) return;
     _editing = JSON.parse(JSON.stringify(m));

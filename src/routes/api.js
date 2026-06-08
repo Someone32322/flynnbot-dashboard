@@ -2060,6 +2060,8 @@ const DEFAULT_LEVEL_CONFIG = {
   levelUpChannelId: null,
   roleStack: true,
   formula: { ...DEFAULT_FORMULA },
+  rankBackground: null,
+  leaderboardBackground: null,
 };
 
 // ── GET /api/guild/:guildId/levels ────────────────────────────
@@ -2118,6 +2120,16 @@ router.patch('/guild/:guildId/levels', requireAuth, requireGuildAdmin, async (re
         .filter((r) => typeof r.level === 'number' && r.level >= 1 && /^\d+$/.test(String(r.roleId || '')))
         .map((r) => ({ level: Math.floor(r.level), roleId: String(r.roleId) }))
         .sort((a, b) => a.level - b.level);
+    }
+
+    // Background image URLs for rank card and leaderboard card
+    if ('rankBackground' in body) {
+      const url = typeof body.rankBackground === 'string' ? body.rankBackground.trim() : '';
+      update.rankBackground = url && /^https?:\/\/.+/i.test(url) ? url.slice(0, 512) : null;
+    }
+    if ('leaderboardBackground' in body) {
+      const url = typeof body.leaderboardBackground === 'string' ? body.leaderboardBackground.trim() : '';
+      update.leaderboardBackground = url && /^https?:\/\/.+/i.test(url) ? url.slice(0, 512) : null;
     }
 
     if (!Object.keys(update).length) return res.status(400).json({ error: 'Nothing to update' });

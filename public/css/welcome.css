@@ -308,3 +308,73 @@
 }
 .welcome-input:focus { border-color: var(--accent); }
 
+/* ── Enhanced visual polish ───────────────────────────────────── */
+.welcome-card {
+  background: linear-gradient(135deg, rgba(255,255,255,.03) 0%, rgba(255,255,255,.015) 100%);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 1.25rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  transition: border-color .15s;
+}
+.welcome-card:hover { border-color: rgba(255,255,255,.12); }
+
+.welcome-tab {
+  border-radius: 6px 6px 0 0;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+.welcome-tab.active {
+  background: rgba(88,101,242,.1);
+  color: #a5b4fc;
+  border-bottom-color: #5865f2;
+}
+
+.welcome-dc-preview {
+  background: #1e1f22;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,.07);
+  padding: 1rem 1.15rem;
+  box-shadow: 0 4px 24px rgba(0,0,0,.3);
+}
+
+.welcome-row-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text, #e2e8f0);
+}
+.welcome-row-hint {
+  font-size: 0.78rem;
+  color: var(--text-2, #a0aec0);
+  margin-top: 2px;
+  line-height: 1.45;
+}
+
+.welcome-var-chip {
+  background: rgba(88,101,242,.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(88,101,242,.25);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-family: monospace;
+  cursor: pointer;
+  transition: background .12s;
+}
+.welcome-var-chip:hover { background: rgba(88,101,242,.3); }
+
+/* Card section labels with icon styling */
+.welcome-card-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text, #e2e8f0);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+

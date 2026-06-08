@@ -70,11 +70,31 @@
 
     // Mark dirty on any change
     ['lvXpRate', 'lvXpCooldown', 'lvLevelUpMessage', 'lvLevelUpChannel',
-      'lvRoleStack', 'lvFormulaA', 'lvFormulaB', 'lvFormulaC'].forEach((id) => {
+      'lvRoleStack', 'lvFormulaA', 'lvFormulaB', 'lvFormulaC',
+      'lvRankBackground', 'lvLbBackground'].forEach((id) => {
       const el = $(id);
       if (!el) return;
       el.addEventListener('change', markDirty);
-      if (el.tagName === 'TEXTAREA') el.addEventListener('input', markDirty);
+      if (el.tagName === 'TEXTAREA' || el.type === 'text' || el.type === 'url') el.addEventListener('input', markDirty);
+    });
+
+    // Formula live preview
+    ['lvFormulaA', 'lvFormulaB', 'lvFormulaC'].forEach((id) => {
+      $(id)?.addEventListener('input', updateFormulaPreview);
+    });
+
+    // Background URL previews
+    $('lvRankBackground')?.addEventListener('input', () => updateBgPreview('lvRankBackground', 'lvRankBgPreviewWrap', 'lvRankBgPreview'));
+    $('lvLbBackground')?.addEventListener('input', () => updateBgPreview('lvLbBackground', 'lvLbBgPreviewWrap', 'lvLbBgPreview'));
+    $('lvRankBgClear')?.addEventListener('click', () => {
+      if ($('lvRankBackground')) $('lvRankBackground').value = '';
+      updateBgPreview('lvRankBackground', 'lvRankBgPreviewWrap', 'lvRankBgPreview');
+      markDirty();
+    });
+    $('lvLbBgClear')?.addEventListener('click', () => {
+      if ($('lvLbBackground')) $('lvLbBackground').value = '';
+      updateBgPreview('lvLbBackground', 'lvLbBgPreviewWrap', 'lvLbBgPreview');
+      markDirty();
     });
 
     // Fallback delegated handler in case the button is replaced/re-rendered
@@ -206,8 +226,15 @@
     populateChannelSelector(cfg.xpChannels || []);
     populateLevelUpChannelSelector(cfg.levelUpChannelId || '');
 
+    // Card backgrounds
+    setVal('lvRankBackground', cfg.rankBackground || '');
+    setVal('lvLbBackground', cfg.leaderboardBackground || '');
+    updateBgPreview('lvRankBackground', 'lvRankBgPreviewWrap', 'lvRankBgPreview');
+    updateBgPreview('lvLbBackground', 'lvLbBgPreviewWrap', 'lvLbBgPreview');
+
     rewards = (cfg.rewards || []).map((r) => ({ level: r.level, roleId: r.roleId }));
     renderRewards();
+    updateFormulaPreview();
 
     dirty = false;
     window.SaveBar?.markClean();
@@ -345,6 +372,8 @@
       rewards,
       xpChannels: [...($('lvChannelsSelect')?.querySelectorAll('.lv-channel-chip.active') || [])]
         .map((c) => c.dataset.id),
+      rankBackground: $('lvRankBackground')?.value?.trim() || null,
+      leaderboardBackground: $('lvLbBackground')?.value?.trim() || null,
     };
 
     try {
@@ -455,6 +484,33 @@
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+  }
+
+  function updateBgPreview(inputId, wrapId, imgId) {
+    const url = $(inputId)?.value?.trim() || '';
+    const wrap = $(wrapId);
+    const img = $(imgId);
+    if (!wrap || !img) return;
+    if (url && /^https?:\/\/.+/i.test(url)) {
+      img.src = url;
+      wrap.style.display = '';
+    } else {
+      img.src = '';
+      wrap.style.display = 'none';
+    }
+  }
+
+  function updateFormulaPreview() {
+    const a = parseFloat($('lvFormulaA')?.value) || 5;
+    const b = parseFloat($('lvFormulaB')?.value) || 50;
+    const c = parseFloat($('lvFormulaC')?.value) || 100;
+    const xpFor = (lv) => Math.max(1, Math.floor(a * lv * lv + b * lv + c));
+    const l1 = $(  'lvFormulaL1');
+    const l5 = $('lvFormulaL5');
+    const l10 = $('lvFormulaL10');
+    if (l1) l1.textContent = xpFor(1).toLocaleString();
+    if (l5) l5.textContent = xpFor(5).toLocaleString();
+    if (l10) l10.textContent = xpFor(10).toLocaleString();
   }
 
   // ── Boot ──────────────────────────────────────────────────

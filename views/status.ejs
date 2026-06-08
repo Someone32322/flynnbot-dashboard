@@ -54,22 +54,22 @@
 
   <!-- ── METRICS ── -->
   <div class="status-metrics" id="status-metrics">
-    <div class="metric-card metric-info">
+    <div class="metric-card metric-info animate-in">
       <div class="metric-label">Latency</div>
       <div class="metric-value" id="metric-latency"><%= s.latencyMs !== null ? s.latencyMs : '—' %><% if (s.latencyMs !== null) { %><span style="font-size:1rem;font-weight:600;color:var(--text-3)"> ms</span><% } %></div>
       <div class="metric-unit">Discord API ping</div>
     </div>
-    <div class="metric-card metric-info">
+    <div class="metric-card metric-info animate-in">
       <div class="metric-label">Uptime</div>
       <div class="metric-value good" id="metric-uptime"><%= s.uptimeSeconds !== null ? formatUptimeSsr(s.uptimeSeconds) : '—' %></div>
       <div class="metric-unit">Since last restart</div>
     </div>
-    <div class="metric-card metric-info">
+    <div class="metric-card metric-info animate-in">
       <div class="metric-label">Servers</div>
       <div class="metric-value" id="metric-guilds"><%= s.guildCount !== null ? Number(s.guildCount).toLocaleString() : '—' %></div>
       <div class="metric-unit">Active guilds</div>
     </div>
-    <div class="metric-card metric-info">
+    <div class="metric-card metric-info animate-in">
       <div class="metric-label">Memory</div>
       <div class="metric-value" id="metric-memory"><%= s.memoryMB !== null ? s.memoryMB : '—' %><% if (s.memoryMB !== null) { %><span style="font-size:1rem;font-weight:600;color:var(--text-3)"> MB</span><% } %></div>
       <div class="metric-unit">Process RSS</div>

@@ -1,0 +1,183 @@
+<%- include('partials/head', { title: 'Message Editor — ' + guild.name }) %>
+<link rel="stylesheet" href="/css/builder.css?v=20260608">
+<body class="message-editor-page">
+  <%- include('partials/nav') %>
+
+  <div class="mep-shell"
+    id="mepShell"
+    data-guild-id="<%= guild.id %>"
+    data-msg-id="<%= msgId || '' %>"
+    data-standalone="1">
+
+    <!-- Top bar -->
+    <header class="mep-topbar">
+      <div class="mep-topbar-left">
+        <a href="/dashboard/<%= guild.id %>#embeds" class="mep-back-btn" title="Back to Messages">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </a>
+        <div class="mep-breadcrumb">
+          <span class="mep-guild-name"><%= guild.name %></span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          <span id="mepBreadcrumb"><%= msgId ? 'Edit Message' : 'New Message' %></span>
+        </div>
+      </div>
+      <div class="mep-topbar-center">
+        <input type="text" id="builderEditorMsgName" class="mep-name-input" maxlength="60" placeholder="Message name…">
+      </div>
+      <div class="mep-topbar-right" id="builderEditorBtns">
+        <button class="btn btn-ghost btn-sm" id="builderImportJsonBtn" title="Import from JSON">⬆ Import JSON</button>
+        <button class="btn btn-ghost btn-sm" id="builderExportJsonBtn" title="Export as JSON">⬇ Export JSON</button>
+        <input type="file" id="builderJsonFileInput" accept=".json" style="display:none">
+        <button class="btn btn-secondary btn-sm" id="mepCancelBtn">Cancel</button>
+        <button class="btn btn-secondary btn-sm" id="builderFocusBtn">⤢ Focus Mode</button>
+        <button class="btn btn-primary btn-sm" id="builderSaveBtn">💾 Save</button>
+        <button class="btn btn-success btn-sm" id="builderSendNowBtn">▶ Send Now</button>
+      </div>
+    </header>
+
+    <!-- Embed the full builder split panel (reuse existing builder CSS classes) -->
+    <div class="mep-body">
+      <div class="builder-split" id="builderEditor" style="display:flex;height:100%">
+
+        <!-- LEFT: form (reuses builder.css) -->
+        <div class="builder-left" id="builderLeft">
+
+          <div class="bsec open">
+            <div class="bsec-header" data-collapsible>
+              <div class="bsec-header-left"><span class="bsec-icon">📝</span> Content</div>
+              <span class="bsec-chevron">▾</span>
+            </div>
+            <div class="bsec-body">
+              <p class="bf-hint">Plain text above embeds. Supports Discord markdown and <code>{variables}</code>.</p>
+              <label class="bf-label">
+                Message Content
+                <textarea id="builderContent" rows="4" maxlength="2000"
+                  placeholder="Message content… Use {user}, {server}, {membercount}, {date}, {time}, {channel}"></textarea>
+              </label>
+              <div class="bf-char"><span id="builderContentCount">0</span> / 2000</div>
+            </div>
+          </div>
+
+          <div class="bsec open">
+            <div class="bsec-header" style="cursor:default">
+              <div class="bsec-header-left"><span class="bsec-icon">📦</span> Embeds <small style="font-weight:400;opacity:.6;font-size:0.78rem">(up to 10)</small></div>
+              <button class="btn btn-sm" id="builderAddEmbedBtn" style="margin-left:auto">+ Add Embed</button>
+            </div>
+            <div class="bsec-body" id="builderEmbedsBody">
+              <div id="builderEmbedsList"></div>
+              <p id="builderEmbedsEmpty" style="font-size:0.82rem;color:var(--text-2);margin:0">No embeds yet. Click <strong>+ Add Embed</strong> above.</p>
+            </div>
+          </div>
+
+          <div class="bsec open">
+            <div class="bsec-header" data-collapsible>
+              <div class="bsec-header-left"><span class="bsec-icon">📅</span> Delivery</div>
+              <span class="bsec-chevron">▾</span>
+            </div>
+            <div class="bsec-body">
+              <div class="delivery-type-grid" id="deliveryTypeGrid"></div>
+              <div class="delivery-config" id="deliveryConfig"></div>
+            </div>
+          </div>
+
+          <div class="bsec open" id="actionRowsSec">
+            <div class="bsec-header" style="cursor:default">
+              <div class="bsec-header-left"><span class="bsec-icon">🔘</span> Action Rows <small style="font-weight:400;opacity:.6;font-size:0.78rem">(up to 5)</small></div>
+              <button class="btn btn-sm" id="builderAddRowBtn" style="margin-left:auto">+ Add Row</button>
+            </div>
+            <div class="bsec-body" id="builderActionRowsBody">
+              <p class="bf-hint">Add buttons, select menus, or emoji reactions.</p>
+              <div id="builderActionRowsList"></div>
+              <p id="builderActionRowsEmpty" class="bf-hint" style="background:none;border:none;padding:0;text-align:center;margin:0">No action rows yet.</p>
+              <button class="btn btn-sm" id="builderAttachMsgBtn" style="margin-top:0.5rem;width:100%;background:rgba(88,101,242,0.12);border-color:rgba(88,101,242,0.3);color:#a5b4fc">🔗 Attach to Existing Message</button>
+            </div>
+          </div>
+
+          <div class="bsec">
+            <div class="bsec-header" data-collapsible>
+              <div class="bsec-header-left"><span class="bsec-icon">📚</span> Available Variables</div>
+              <span class="bsec-chevron">▾</span>
+            </div>
+            <div class="bsec-body">
+              <div class="vars-grid">
+                <code>{user}</code><span>Mentions the user</span>
+                <code>{username}</code><span>User's display name</span>
+                <code>{server}</code><span>Server name</span>
+                <code>{serverid}</code><span>Server ID</span>
+                <code>{membercount}</code><span>Current member count</span>
+                <code>{date}</code><span>Today's date</span>
+                <code>{time}</code><span>Current time in UTC</span>
+                <code>{channel}</code><span>Mentions the current channel</span>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /builder-left -->
+
+        <!-- RIGHT: Discord preview (reuses builder.css) -->
+        <div class="builder-right" id="builderRight">
+          <div class="builder-preview-label">Discord Preview</div>
+          <div class="discord-preview-wrap">
+            <div class="discord-msg-row">
+              <div class="discord-avatar">F</div>
+              <div class="discord-msg-body">
+                <div class="discord-username-row">
+                  <span class="discord-username">FlynnBot</span>
+                  <span class="discord-bot-badge">BOT</span>
+                  <span class="discord-timestamp" id="previewTimestamp"></span>
+                </div>
+                <div id="previewContent"></div>
+                <div id="previewEmbeds"></div>
+                <div id="previewComponents"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /builder-split -->
+    </div><!-- /mep-body -->
+
+    <!-- Attach-to-message modal (same as in server.ejs) -->
+    <div id="attachMsgBackdrop" class="modal-backdrop" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" style="max-width:520px">
+        <button class="modal-close" id="attachMsgClose" aria-label="Close">✕</button>
+        <h3 style="margin-bottom:1rem">🔗 Attach to Existing Message</h3>
+        <p style="font-size:0.83rem;color:var(--text-2);margin-bottom:1.2rem;line-height:1.5">Paste a Discord message link below.</p>
+        <label class="rr-label" style="margin-bottom:1rem">
+          Discord Message URL <span class="required">*</span>
+          <input type="url" id="attachMsgUrl" placeholder="https://discord.com/channels/…/…/…" style="font-size:0.85rem" />
+        </label>
+        <p id="attachMsgStatus" style="font-size:0.82rem;min-height:1.1rem;margin-bottom:0.75rem;color:var(--text-2)"></p>
+        <div style="display:flex;gap:0.6rem;justify-content:flex-end">
+          <button class="btn btn-secondary" id="attachMsgCancel">Cancel</button>
+          <button class="btn btn-primary" id="attachMsgConfirm">🔗 Attach Components</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /mep-shell -->
+
+  <!-- Hidden pageData element builder.js depends on -->
+  <div id="pageData" data-guild-id="<%= guild.id %>" style="display:none"></div>
+
+  <script>
+    window.__MEP_GUILD_ID = '<%= guild.id %>';
+    window.__MEP_MSG_ID   = '<%= msgId || "" %>';
+    window.__MEP_MSG_DATA = <%- msgData %>;
+    // Tell builder.js it's running in standalone (full-page) mode
+    window.__MEP_STANDALONE = true;
+  </script>
+  <script src="/js/builder.js?v=20260608"></script>
+  <script>
+    // Wire cancel button
+    document.getElementById('mepCancelBtn')?.addEventListener('click', () => {
+      window.location.href = '/dashboard/<%= guild.id %>#embeds';
+    });
+    // Update breadcrumb from name input
+    document.getElementById('builderEditorMsgName')?.addEventListener('input', function() {
+      const bc = document.getElementById('mepBreadcrumb');
+      if (bc) bc.textContent = this.value || '<%= msgId ? "Edit Message" : "New Message" %>';
+    });
+  </script>
+</body>
+</html>

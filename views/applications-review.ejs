@@ -1,35 +1,76 @@
-<%- include('partials/head', { title: guild.name + ' Applications Review' }) %>
+<%- include('partials/head', { title: guild.name + ' — Application Reviews' }) %>
 <body>
   <%- include('partials/nav') %>
 
   <main class="app-review-shell" id="appReviewShell" data-guild-id="<%= guild.id %>" data-is-admin="<%= isGuildAdmin ? '1' : '0' %>">
-    <div class="app-review-wrap">
-      <header class="app-review-head">
-        <div>
-          <h1 class="section-page-title">Application Reviews</h1>
-          <p class="section-page-sub">Review submissions for applications where you are allowed to review.</p>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <a href="/dashboard/<%= guild.id %>#applications" class="btn btn-ghost">Back to Applications</a>
-          <button id="exportCsvBtn" class="btn btn-secondary" style="display:none" title="Download submissions as CSV">⬇ Export CSV</button>
-          <select id="appReviewFormSelect" class="settings-select" style="min-width:260px">
-            <option value="">Select an application…</option>
-          </select>
-        </div>
-      </header>
 
+    <!-- Top header -->
+    <header class="app-review-header">
+      <div class="app-review-header-left">
+        <a href="/dashboard/<%= guild.id %>#applications" class="btn btn-ghost btn-sm" style="margin-right:0.5rem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </a>
+        <div>
+          <h1 class="app-review-title">Application Reviews</h1>
+          <p class="app-review-sub">
+            <span class="app-review-server-name"><%= guild.name %></span>
+          </p>
+        </div>
+      </div>
+      <div class="app-review-header-right">
+        <button id="exportCsvBtn" class="btn btn-secondary btn-sm" style="display:none" title="Export submissions as CSV">⬇ Export CSV</button>
+      </div>
+    </header>
+
+    <!-- Step 1: Select Application -->
+    <div class="app-review-step-bar">
+      <div class="app-review-step active" id="stepSelectApp">
+        <span class="app-review-step-num">1</span>
+        <span>Select Application</span>
+      </div>
+      <svg class="app-review-step-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      <div class="app-review-step" id="stepSelectSubmission">
+        <span class="app-review-step-num">2</span>
+        <span>View Submissions</span>
+      </div>
+      <svg class="app-review-step-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      <div class="app-review-step" id="stepReviewDetail">
+        <span class="app-review-step-num">3</span>
+        <span>Review Submission</span>
+      </div>
+    </div>
+
+    <!-- Application selector (Step 1) -->
+    <div class="app-review-form-picker" id="appFormPickerArea">
+      <p class="app-review-picker-hint">Choose an application form to review its submissions.</p>
+      <div id="appFormCards" class="app-review-form-cards">
+        <div class="commands-loading"><div class="spinner"></div>Loading applications…</div>
+      </div>
+      <!-- Hidden native select for compatibility -->
+      <select id="appReviewFormSelect" style="display:none"></select>
+    </div>
+
+    <!-- Submissions + Detail grid (Steps 2 & 3, shown after form selected) -->
+    <div class="app-review-wrap" id="appReviewWrap" style="display:none">
       <div class="app-review-grid">
+        <!-- Sidebar: submission list -->
         <aside class="app-review-list" id="appReviewList">
           <div class="commands-loading"><div class="spinner"></div>Loading…</div>
         </aside>
-
+        <!-- Main: detail -->
         <section class="app-review-detail" id="appReviewDetail">
-          <div class="commands-loading" style="color:var(--text-2)">Select a submission to review.</div>
+          <div class="app-review-detail-empty">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.35"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+            <p>Select a submission from the list to review it.</p>
+          </div>
         </section>
       </div>
     </div>
+
   </main>
 
-  <script src="/js/applications-review.js?v=20260425"></script>
+  <script src="/js/applications-review.js?v=20260608"></script>
 </body>
 </html>
+

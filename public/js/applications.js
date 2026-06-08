@@ -2,30 +2,41 @@
   const GUILD_ID = document.getElementById('pageData')?.dataset?.guildId;
   if (!GUILD_ID) return;
 
-  const listEl = document.getElementById('appsList');
-  const newBtn = document.getElementById('appNewBtn');
+  const listEl   = document.getElementById('appsList');
+  const newBtn   = document.getElementById('appNewBtn');
   const reviewBtn = document.getElementById('appReviewPageBtn');
-  const statusEl = document.getElementById('appGlobalStatus');
+  const statusEl  = document.getElementById('appGlobalStatus');
 
-  const backdrop = document.getElementById('appEditorBackdrop');
-  const closeBtn = document.getElementById('appEditorClose');
-  const cancelBtn = document.getElementById('appEditorCancel');
-  const saveBtn = document.getElementById('appEditorSave');
-  const titleEl = document.getElementById('appEditorTitle');
+  // The modal/backdrop elements may still be in the DOM for legacy — we do NOT use them.
+  // "New" and "Edit" now navigate to the dedicated full-page editor.
 
-  const addQuestionBtn = document.getElementById('appAddQuestionBtn');
-  const addSectionBtn = document.getElementById('appAddSectionBtn');
-  const fieldBuilderEl = document.getElementById('appFieldBuilder');
-  const fieldsJsonEl = document.getElementById('appFieldsJson');
-  const statusTemplatesEl = document.getElementById('appStatusTemplates');
-  const notifyEnabledEl = document.getElementById('appNotifyEnabled');
-
-  if (!listEl || !newBtn || !reviewBtn || !backdrop) return;
+  if (!listEl || !newBtn || !reviewBtn) return;
 
   let applications = [];
-  let editingId = null;
-  let embedTemplates = [];
-  let builderFields = [];
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadApplications();
+
+    newBtn.addEventListener('click', () => {
+      window.location.href = `/dashboard/${GUILD_ID}/applications/new`;
+    });
+  });
+
+  // Also fire when the section becomes active
+  document.addEventListener('sectionActivated', (e) => {
+    if (e.detail?.section !== 'applications') return;
+    loadApplications();
+  });
+
+  async function apiFetch(path, options = {}) {
+    const res = await fetch(`/api${path}`, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    return data;
+  }
 
   const DEFAULT_FIELDS = [
     {
@@ -195,8 +206,7 @@
 
     listEl.querySelectorAll('button[data-action="edit"]').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const app = applications.find((a) => a._id === btn.dataset.id);
-        if (app) openEditor(app);
+        window.location.href = `/dashboard/${GUILD_ID}/applications/edit/${btn.dataset.id}`;
       });
     });
 

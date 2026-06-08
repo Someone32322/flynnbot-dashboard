@@ -445,13 +445,27 @@ img { max-width: 100%; display: block; }
 .feature-card:hover::after { opacity: 1; }
 
 .feature-card {
-  animation: cardSlideIn 0.6s ease-out backwards;
+  /* scroll-observer .animate-in handles entrance — no fixed animation needed */
 }
+.feature-card:nth-child(1) { /* delay handled by animate-in stagger */ }
+.feature-card:nth-child(2) { }
+.feature-card:nth-child(3) { }
+.feature-card:nth-child(4) { }
 
-.feature-card:nth-child(1) { animation-delay: 0.3s; }
-.feature-card:nth-child(2) { animation-delay: 0.4s; }
-.feature-card:nth-child(3) { animation-delay: 0.5s; }
-.feature-card:nth-child(4) { animation-delay: 0.6s; }
+/* shimmer on CTA button hover */
+.btn-primary.btn-lg { overflow: hidden; position: relative; }
+.btn-primary.btn-lg::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+  transform: skewX(-15deg);
+  transition: left .5s ease;
+  pointer-events: none;
+}
+.btn-primary.btn-lg:hover::before { left: 150%; }
 
 @keyframes cardSlideIn {
   from {
